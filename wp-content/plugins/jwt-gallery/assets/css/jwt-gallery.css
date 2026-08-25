@@ -1,0 +1,884 @@
+body.jg-blank-page {
+	margin: 0;
+	padding: 48px 20px;
+	background: #f4f4f2;
+	font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.jg-gallery {
+	--jg-border: #dcdcd6;
+	--jg-ink: #1a1c1c; /* mismo negro del theme (--ta-ink) */
+	--jg-muted: #6b6b64;
+	--jg-accent: #03854a; /* mismo verde del theme (--ta-accent), reemplaza el azul anterior */
+	--jg-accent-dark: #03854a; /* --ta-accent-dark, para estados hover */
+	--jg-danger: #b3261e;
+	--jg-success: #03854a;
+	--jg-surface: #fbfbf9;
+	--jg-surface-2: #f1f1ee;
+
+	max-width: 960px;
+	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+	font-size: 15px;
+	color: var(--jg-ink);
+}
+
+/* Centra el formulario de login (única tarjeta de esta vista) tanto
+   horizontal como verticalmente en la pantalla — antes solo tenía
+   margin:0 auto, que lo centraba a él como bloque pero no centraba la
+   tarjeta angosta (.jg-panel--narrow) dentro suyo, así que quedaba pegada
+   arriba a la izquierda. Se restringe a la vista de login con el atributo
+   data-jg-view="login" para no afectar el panel autenticado (grilla +
+   sidebar), que sigue alineado arriba como corresponde a ese layout. */
+.jg-gallery[data-jg-view="login"] {
+	min-height: calc(100vh - 96px); /* 96px = padding vertical del body (48px x2) */
+	align-items: center;
+	justify-content: center;
+}
+
+/* Logo + nombre del sitio arriba de la tarjeta de login. align-items:center
+   del bloque de arriba ya lo centra horizontalmente; el gap:24px de
+   .jg-gallery separa el logo de la tarjeta sin necesidad de margin extra. */
+.jg-brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.jg-brand-logo {
+	height: 48px;
+	width: auto;
+	display: block;
+}
+
+.jg-brand-name {
+	font-size: 1.3rem;
+	font-weight: 700;
+	color: var(--jg-accent);
+}
+
+.jg-gallery--panel {
+	max-width: 1280px;
+}
+
+/* The [hidden] attribute must always win, even over elements whose own
+   class sets `display` (e.g. .jg-card-view, .jg-form both use display:flex,
+   which otherwise ties in specificity with the UA [hidden] rule and can
+   end up winning by source order, showing "hidden" content anyway). */
+.jg-gallery [hidden] {
+	display: none !important;
+}
+
+.jg-gallery * {
+	box-sizing: border-box;
+}
+
+.jg-panel {
+	background: var(--jg-surface);
+	border: 1px solid var(--jg-border);
+	border-radius: 8px;
+	padding: 20px 22px;
+}
+
+.jg-panel--narrow {
+	max-width: 460px;
+}
+
+.jg-form h3,
+.jg-panel h3 {
+	margin: 0 0 4px;
+	font-size: 1.05rem;
+}
+
+.jg-sidebar-hint {
+	margin: 0 0 16px;
+	font-size: 0.8rem;
+	color: var(--jg-muted);
+}
+
+.jg-form {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.jg-form label {
+	display: flex;
+	flex-direction: column;
+	gap: 5px;
+	font-size: 0.85rem;
+	color: var(--jg-muted);
+}
+
+.jg-form input,
+.jg-form textarea,
+.jg-form select {
+	font: inherit;
+	padding: 9px 10px;
+	border: 1px solid var(--jg-border);
+	border-radius: 5px;
+	color: var(--jg-ink);
+	background: #fff;
+}
+
+.jg-form input:focus,
+.jg-form textarea:focus,
+.jg-form select:focus {
+	outline: 2px solid var(--jg-accent);
+	outline-offset: 1px;
+}
+
+.jg-password-field {
+	position: relative;
+	display: block;
+}
+
+.jg-password-field input {
+	width: 100%;
+	padding-right: 40px;
+}
+
+/* ".jg-password-field .jg-password-toggle" (dos clases) en vez de solo
+   ".jg-password-toggle": esta es un <button> dentro de .jg-form, así que
+   ".jg-form button" (0,1,1) le ganaba en especificidad a esta regla
+   (0,1,0) y la forzaba a fondo sólido + texto blanco en vez de quedar
+   como ícono circular transparente — se veía como un cuadrado sólido en
+   vez del ícono del ojo (bug visible incluso antes, en azul). */
+.jg-password-field .jg-password-toggle {
+	position: absolute;
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--jg-muted);
+	cursor: pointer;
+}
+
+.jg-password-field .jg-password-toggle:hover,
+.jg-password-field .jg-password-toggle:focus-visible {
+	background: rgba(0, 0, 0, 0.06);
+	color: var(--jg-accent);
+}
+
+/* Botón primario negro con hover verde, igual que .ta-button--dark del
+   theme (ej. "Enviar mensaje" en Contacto). */
+.jg-form button,
+.jg-button-secondary {
+	align-self: flex-start;
+	font: inherit;
+	font-weight: 600;
+	padding: 9px 18px;
+	border-radius: 5px;
+	border: 1px solid var(--jg-ink);
+	background: var(--jg-ink);
+	color: #fff;
+	cursor: pointer;
+}
+
+/* :not(.jg-password-toggle) — el botón del ojo también es un <button>
+   dentro de .jg-form, así que esta regla lo alcanzaba en hover pese al
+   fix de especificidad de arriba: ".jg-form button:hover:not(:disabled)"
+   tiene un elemento "button" de más en la cadena, lo que le gana en
+   especificidad a ".jg-password-field .jg-password-toggle:hover" aunque
+   ambas empaten en cantidad de clases. El resultado era un círculo verde
+   sólido tapando el ícono del ojo. Excluir la clase acá es más simple y
+   confiable que seguir subiendo la especificidad de un lado a otro. */
+.jg-form button:hover:not(:disabled):not(.jg-password-toggle) {
+	background: var(--jg-accent-dark);
+	border-color: var(--jg-accent-dark);
+}
+
+.jg-form button:disabled {
+	opacity: 0.6;
+	cursor: default;
+}
+
+/* Secundario en contorno negro que se rellena de verde al hover, igual
+   que .ta-button--outline del theme (ej. "Cerrar sesión"). */
+.jg-button-secondary {
+	background: transparent;
+	border-color: var(--jg-border);
+	color: var(--jg-ink);
+}
+
+.jg-button-secondary:hover {
+	background: var(--jg-accent);
+	border-color: var(--jg-accent);
+	color: #fff;
+}
+
+.jg-button-danger {
+	border-color: var(--jg-danger);
+	background: transparent;
+	color: var(--jg-danger);
+}
+
+/* Botón "Guardar" al renombrar una categoría (jwt-gallery.js ~L566) — es un
+   <button> suelto, no vive dentro de un <form class="jg-form">, así que no
+   heredaba ningún color y quedaba con el estilo gris/azul por defecto del
+   navegador. Se le da color explícito acá. */
+.jg-button-small {
+	padding: 5px 12px;
+	font-size: 0.8rem;
+	font-weight: 600;
+	border: 1px solid var(--jg-accent);
+	border-radius: 5px;
+	background: var(--jg-accent);
+	color: #fff;
+	cursor: pointer;
+}
+
+.jg-button-small:hover {
+	background: var(--jg-accent-dark);
+	border-color: var(--jg-accent-dark);
+}
+
+.jg-message {
+	margin: 4px 0 0;
+	font-size: 0.85rem;
+}
+
+.jg-message--error {
+	color: var(--jg-danger);
+}
+
+.jg-message--success {
+	color: var(--jg-success);
+}
+
+/* ---- topbar (panel view) ---- */
+
+.jg-topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--jg-border);
+}
+
+.jg-topbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.jg-topbar-user {
+	font-size: 0.85rem;
+	color: var(--jg-accent);
+}
+
+/* ---- layout: sidebar + content ---- */
+
+.jg-layout {
+	display: grid;
+	grid-template-columns: 300px 1fr;
+	gap: 24px;
+	align-items: start;
+}
+
+.jg-sidebar {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	position: sticky;
+	top: 20px;
+}
+
+.jg-content {
+	min-width: 0;
+}
+
+@media (max-width: 860px) {
+	.jg-layout {
+		grid-template-columns: 1fr;
+	}
+
+	.jg-sidebar {
+		position: static;
+	}
+}
+
+/* ---- category manager (sidebar) ---- */
+
+.jg-category-manager .jg-form--inline {
+	flex-direction: row;
+	gap: 8px;
+	max-width: none;
+}
+
+.jg-form--inline input {
+	flex: 1;
+	min-width: 0;
+}
+
+.jg-form--inline button {
+	align-self: stretch;
+	flex: none;
+}
+
+.jg-category-list {
+	list-style: none;
+	margin: 0 0 16px;
+	padding: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.jg-category-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	border: 1px solid var(--jg-border);
+	border-radius: 5px;
+	max-width: 100%;
+}
+
+.jg-category-name {
+	flex: 1;
+	min-width: 0;
+	font-size: 0.9rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.jg-category-count {
+	flex: none;
+	font-size: 0.78rem;
+	color: var(--jg-muted);
+}
+
+.jg-category-rename-input {
+	flex: 1;
+	min-width: 0;
+	font: inherit;
+	padding: 5px 8px;
+	border: 1px solid var(--jg-border);
+	border-radius: 4px;
+}
+
+.jg-category-edit-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--jg-muted);
+	cursor: pointer;
+}
+
+.jg-category-edit-btn:hover {
+	background: var(--jg-surface-2);
+	color: var(--jg-accent);
+}
+
+.jg-category-delete-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--jg-muted);
+	cursor: pointer;
+}
+
+.jg-category-delete-btn:hover {
+	background: var(--jg-surface-2);
+	color: var(--jg-danger);
+}
+
+/* ---- category filter tabs (content area) ---- */
+
+.jg-cat-tab {
+	font: inherit;
+	font-size: 0.92rem;
+	font-weight: 600;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 10px 14px;
+	border: none;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: var(--jg-muted);
+	cursor: pointer;
+}
+
+.jg-cat-tab.is-active {
+	color: var(--jg-ink);
+	border-bottom-color: var(--jg-accent);
+}
+
+.jg-cat-tab-count {
+	font-size: 0.72rem;
+	font-weight: 600;
+	padding: 1px 7px;
+	border-radius: 999px;
+	background: var(--jg-surface-2);
+	color: var(--jg-muted);
+}
+
+.jg-cat-tab.is-active .jg-cat-tab-count {
+	background: var(--jg-accent);
+	color: #fff;
+}
+
+[data-jg-category-tabs] {
+	display: flex;
+	flex-wrap: wrap;
+	border-bottom: 1px solid var(--jg-border);
+	margin-bottom: 20px;
+}
+
+/* ---- image grid ---- */
+
+.jg-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 18px;
+}
+
+.jg-empty {
+	grid-column: 1 / -1;
+	color: var(--jg-muted);
+	font-size: 0.9rem;
+}
+
+.jg-card {
+	border: 1px solid var(--jg-border);
+	border-radius: 8px;
+	overflow: hidden;
+	background: var(--jg-surface);
+	display: flex;
+	flex-direction: column;
+}
+
+.jg-card-view {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+}
+
+.jg-card-figure {
+	position: relative;
+	aspect-ratio: 4 / 3;
+	overflow: hidden;
+	background: #eee;
+}
+
+.jg-card-figure img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.jg-card-badge {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: rgba(20, 22, 20, 0.72);
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 600;
+}
+
+.jg-card-icons {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	display: flex;
+	gap: 6px;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.jg-card-figure:hover .jg-card-icons,
+.jg-card-figure:focus-within .jg-card-icons {
+	opacity: 1;
+}
+
+/* ---- mini-carrusel: publicaciones con más de una imagen ---- */
+
+.jg-card-nav {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: rgba(20, 22, 20, 0.55);
+	color: #fff;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.jg-card-figure:hover .jg-card-nav,
+.jg-card-figure:focus-within .jg-card-nav {
+	opacity: 1;
+}
+
+.jg-card-nav:hover {
+	background: var(--jg-accent);
+}
+
+.jg-card-nav--prev {
+	left: 6px;
+}
+
+.jg-card-nav--next {
+	right: 6px;
+}
+
+.jg-card-counter {
+	position: absolute;
+	bottom: 8px;
+	right: 8px;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: rgba(20, 22, 20, 0.72);
+	color: #fff;
+	font-size: 0.7rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.jg-card-icon-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.jg-card-icon-btn--edit {
+	background: #fff;
+	color: var(--jg-ink);
+}
+
+.jg-card-icon-btn--edit:hover {
+	background: var(--jg-accent);
+	color: #fff;
+}
+
+.jg-card-icon-btn--delete {
+	background: var(--jg-danger);
+	color: #fff;
+}
+
+.jg-card-icon-btn--delete:hover {
+	background: #911d16;
+}
+
+.jg-card-body {
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1;
+}
+
+.jg-card-body h4 {
+	margin: 0;
+	font-size: 0.98rem;
+}
+
+.jg-card-body p {
+	margin: 0;
+	font-size: 0.86rem;
+	color: var(--jg-muted);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+}
+
+.jg-card-meta {
+	font-size: 0.75rem !important;
+	color: var(--jg-muted);
+	margin-top: auto !important;
+	-webkit-line-clamp: unset !important;
+}
+
+.jg-edit-form {
+	padding: 14px;
+	gap: 10px;
+}
+
+.jg-edit-actions {
+	display: flex;
+	gap: 8px;
+}
+
+/* ---- pagination (reusable component) ---- */
+
+.jg-pagination {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid var(--jg-border);
+}
+
+.jg-pagination-info {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--jg-muted);
+}
+
+.jg-pagination-nav {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.jg-pagination-btn {
+	font: inherit;
+	font-size: 0.82rem;
+	font-weight: 600;
+	padding: 7px 12px;
+	border: 1px solid var(--jg-border);
+	border-radius: 5px;
+	background: #fff;
+	color: var(--jg-ink);
+	cursor: pointer;
+}
+
+.jg-pagination-btn:hover:not(:disabled) {
+	border-color: var(--jg-accent);
+	color: var(--jg-accent);
+}
+
+.jg-pagination-btn:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.jg-pagination-page {
+	font: inherit;
+	font-size: 0.82rem;
+	font-weight: 600;
+	width: 30px;
+	height: 30px;
+	border: 1px solid transparent;
+	border-radius: 5px;
+	background: transparent;
+	color: var(--jg-muted);
+	cursor: pointer;
+}
+
+.jg-pagination-page:hover {
+	background: var(--jg-surface-2);
+	color: var(--jg-accent);
+}
+
+.jg-pagination-page.is-active {
+	background: var(--jg-accent);
+	color: #fff;
+}
+
+.jg-pagination-ellipsis {
+	padding: 0 4px;
+	color: var(--jg-muted);
+}
+
+/* ---- reusable confirm modal (appended to <body>, so it defines its own
+   tokens instead of relying on being nested inside .jg-gallery) ---- */
+
+.jg-modal-overlay {
+	--jgm-ink: #1a1c1c; /* mismo negro del theme (--ta-ink) */
+	--jgm-muted: #6b6b64;
+	--jgm-border: #dcdcd6;
+	--jgm-surface: #ffffff;
+	--jgm-accent: #1a1c1c; /* botón de confirmar: negro, igual que el resto de los botones primarios */
+	--jgm-green: #03854a; /* botón "Cancelar": verde del theme (--ta-accent) */
+	--jgm-accent-dark: #026a3b; /* hover verde oscuro */
+	--jgm-danger: #b3261e;
+
+	position: fixed;
+	inset: 0;
+	background: rgba(20, 22, 20, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	z-index: 1000;
+	font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.jg-modal {
+	background: var(--jgm-surface);
+	border-radius: 10px;
+	padding: 24px;
+	max-width: 380px;
+	width: 100%;
+	box-shadow: 0 12px 36px rgba(0, 0, 0, 0.3);
+}
+
+.jg-modal-title {
+	margin: 0 0 10px;
+	font-size: 1.05rem;
+	color: var(--jgm-ink);
+}
+
+.jg-modal-message {
+	margin: 0;
+	font-size: 0.92rem;
+	color: var(--jgm-muted);
+	line-height: 1.5;
+}
+
+.jg-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 22px;
+}
+
+.jg-modal-actions button {
+	font: inherit;
+	font-weight: 600;
+	font-size: 0.9rem;
+	padding: 9px 18px;
+	border-radius: 6px;
+	border: 1px solid var(--jgm-accent);
+	background: var(--jgm-accent);
+	color: #fff;
+	cursor: pointer;
+}
+
+.jg-modal-actions button:hover:not(.jg-modal-confirm-danger) {
+	background: var(--jgm-accent-dark);
+	border-color: var(--jgm-accent-dark);
+}
+
+.jg-modal-actions .jg-button-secondary {
+	background: var(--jgm-green);
+	border-color: var(--jgm-green);
+	color: #fff;
+}
+
+.jg-modal-actions .jg-button-secondary:hover {
+	background: var(--jgm-accent-dark);
+	border-color: var(--jgm-accent-dark);
+}
+
+.jg-modal-confirm-danger {
+	border-color: var(--jgm-danger) !important;
+	background: var(--jgm-danger) !important;
+}
+
+/* ---- reusable image-URL repeater ---- */
+
+.jg-url-repeater {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.jg-url-repeater-rows {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.jg-url-repeater-row {
+	display: flex;
+	gap: 6px;
+}
+
+.jg-url-repeater-row input {
+	flex: 1;
+	min-width: 0;
+	font: inherit;
+	padding: 9px 10px;
+	border: 1px solid var(--jg-border);
+	border-radius: 5px;
+	color: var(--jg-ink);
+	background: #fff;
+}
+
+.jg-url-repeater-row input:focus {
+	outline: 2px solid var(--jg-accent);
+	outline-offset: 1px;
+}
+
+.jg-url-repeater-remove {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	border: 1px solid var(--jg-border);
+	border-radius: 5px;
+	background: #fff;
+	color: var(--jg-muted);
+	font-size: 1.1rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.jg-url-repeater-remove:hover {
+	color: var(--jg-danger);
+	border-color: var(--jg-danger);
+}
+
+.jg-url-repeater-add {
+	align-self: flex-start;
+	font: inherit;
+	font-size: 0.85rem;
+	font-weight: 600;
+	padding: 6px 4px;
+	border: none;
+	background: transparent;
+	color: var(--jg-accent);
+	cursor: pointer;
+}
+
+.jg-url-repeater-add:hover {
+	text-decoration: underline;
+}
+
+.jg-url-repeater-count {
+	margin: 0;
+	font-size: 0.78rem;
+	color: var(--jg-muted);
+}
