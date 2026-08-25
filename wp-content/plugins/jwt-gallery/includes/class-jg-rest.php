@@ -11,6 +11,12 @@ class JG_REST {
 
 	const MAX_IMAGES_PER_POST = 10;
 
+	const LOGIN_MAX_ATTEMPTS = 5;
+
+	const LOGIN_WINDOW_SECONDS = 300;
+
+	const COOKIE_NAME = 'jg_session';
+
 	public static function init() {
 		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
 	}
@@ -22,6 +28,16 @@ class JG_REST {
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( __CLASS__, 'login' ),
+				'permission_callback' => '__return_true',
+			)
+		);
+
+		register_rest_route(
+			self::NS,
+			'/logout',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( __CLASS__, 'logout' ),
 				'permission_callback' => '__return_true',
 			)
 		);
@@ -97,10 +113,15 @@ class JG_REST {
 
 	private static function get_bearer_token( WP_REST_Request $request ) {
 		$auth = $request->get_header( 'authorization' );
-		if ( ! $auth || stripos( $auth, 'Bearer ' ) !== 0 ) {
-			return '';
+		if ( $auth && stripos( $auth, 'Bearer ' ) === 0 ) {
+			return trim( substr( $auth, 7 ) );
 		}
-		return trim( substr( $auth, 7 ) );
+
+		if ( ! empty( $_COOKIE[ self::COOKIE_NAME ] ) ) {
+			return sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE_NAME ] ) );
+		}
+
+		return '';
 	}
 
 	private static function authenticated_user( WP_REST_Request $request ) {
@@ -125,6 +146,11 @@ class JG_REST {
 		$email    = sanitize_email( (string) $request->get_param( 'email' ) );
 		$password = (string) $request->get_param( 'password' );
 
+		$limit = self::check_login_rate_limit();
+		if ( is_wp_error( $limit ) ) {
+			return $limit;
+		}
+
 		if ( ! $email || ! is_email( $email ) || '' === $password ) {
 			return new WP_Error( 'jg_bad_request', 'Correo y contraseña son obligatorios.', array( 'status' => 400 ) );
 		}
@@ -132,8 +158,11 @@ class JG_REST {
 		$user = get_user_by( 'email', $email );
 
 		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) ) {
+			self::register_login_attempt();
 			return new WP_Error( 'jg_invalid_credentials', 'Correo o contraseña incorrectos.', array( 'status' => 401 ) );
 		}
+
+		self::clear_login_rate_limit();
 
 		$ttl   = JG_JWT::DEFAULT_TTL;
 		$token = JG_JWT::issue(
@@ -143,6 +172,8 @@ class JG_REST {
 			),
 			$ttl
 		);
+
+		self::set_session_cookie( $token, $ttl );
 
 		return rest_ensure_response(
 			array(
@@ -155,6 +186,87 @@ class JG_REST {
 				),
 			)
 		);
+	}
+
+	public static function logout( WP_REST_Request $request ) {
+		self::clear_session_cookie();
+		return rest_ensure_response( array( 'logged_out' => true ) );
+	}
+
+	private static function set_session_cookie( $token, $ttl ) {
+		if ( headers_sent() ) {
+			return;
+		}
+
+		setcookie(
+			self::COOKIE_NAME,
+			$token,
+			array(
+				'expires'  => time() + (int) $ttl,
+				'path'     => '/',
+				'secure'   => is_ssl(),
+				'httponly' => true,
+				'samesite' => 'Lax',
+			)
+		);
+	}
+
+	private static function clear_session_cookie() {
+		if ( headers_sent() ) {
+			return;
+		}
+
+		setcookie(
+			self::COOKIE_NAME,
+			'',
+			array(
+				'expires'  => time() - 3600,
+				'path'     => '/',
+				'secure'   => is_ssl(),
+				'httponly' => true,
+				'samesite' => 'Lax',
+			)
+		);
+	}
+
+	private static function login_client_id() {
+		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '0.0.0.0';
+
+		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			$parts = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+			$first = trim( $parts[0] );
+			if ( filter_var( $first, FILTER_VALIDATE_IP ) ) {
+				$ip = $first;
+			}
+		}
+
+		return 'jg_login_' . md5( $ip );
+	}
+
+	private static function check_login_rate_limit() {
+		$transient = self::login_client_id();
+		$attempts  = (int) get_transient( $transient );
+
+		if ( $attempts >= self::LOGIN_MAX_ATTEMPTS ) {
+			return new WP_Error(
+				'jg_too_many_attempts',
+				'Demasiados intentos. Inténtalo de nuevo en unos minutos.',
+				array( 'status' => 429 )
+			);
+		}
+
+		return null;
+	}
+
+	private static function register_login_attempt() {
+		$transient = self::login_client_id();
+		$attempts  = (int) get_transient( $transient );
+
+		set_transient( $transient, $attempts + 1, self::LOGIN_WINDOW_SECONDS );
+	}
+
+	private static function clear_login_rate_limit() {
+		delete_transient( self::login_client_id() );
 	}
 
 	private static function validate_image_url( $raw_url ) {
@@ -439,10 +551,22 @@ class JG_REST {
 		return rest_ensure_response( array_map( array( __CLASS__, 'format_category' ), $terms ) );
 	}
 
+	private static function require_category_manager( $user ) {
+		if ( ! user_can( $user, 'manage_categories' ) ) {
+			return new WP_Error( 'jg_forbidden', 'No tienes permisos para gestionar categorías.', array( 'status' => 403 ) );
+		}
+		return null;
+	}
+
 	public static function create_category( WP_REST_Request $request ) {
 		$user = self::authenticated_user( $request );
 		if ( is_wp_error( $user ) ) {
 			return $user;
+		}
+
+		$cap = self::require_category_manager( $user );
+		if ( is_wp_error( $cap ) ) {
+			return $cap;
 		}
 
 		$name = sanitize_text_field( (string) $request->get_param( 'name' ) );
@@ -468,6 +592,11 @@ class JG_REST {
 		$user = self::authenticated_user( $request );
 		if ( is_wp_error( $user ) ) {
 			return $user;
+		}
+
+		$cap = self::require_category_manager( $user );
+		if ( is_wp_error( $cap ) ) {
+			return $cap;
 		}
 
 		$term_id = (int) $request->get_param( 'id' );
@@ -496,6 +625,11 @@ class JG_REST {
 		$user = self::authenticated_user( $request );
 		if ( is_wp_error( $user ) ) {
 			return $user;
+		}
+
+		$cap = self::require_category_manager( $user );
+		if ( is_wp_error( $cap ) ) {
+			return $cap;
 		}
 
 		$term_id = (int) $request->get_param( 'id' );

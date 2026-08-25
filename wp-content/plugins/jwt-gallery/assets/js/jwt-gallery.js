@@ -2,6 +2,7 @@
 	'use strict';
 
 	var STORAGE_KEY = 'jg_session';
+
 	var REST_URL = window.JGGallery ? window.JGGallery.restUrl.replace(/\/$/, '') : '';
 	var LOGIN_URL = window.JGGallery ? window.JGGallery.loginUrl : '';
 	var PANEL_URL = window.JGGallery ? window.JGGallery.panelUrl : '';
@@ -28,7 +29,7 @@
 			var raw = window.localStorage.getItem(STORAGE_KEY);
 			if (!raw) return null;
 			var session = JSON.parse(raw);
-			if (!session || !session.token || !session.expiresAt) return null;
+			if (!session || !session.expiresAt) return null;
 			if (Date.now() >= session.expiresAt) {
 				window.localStorage.removeItem(STORAGE_KEY);
 				return null;
@@ -48,7 +49,7 @@
 	}
 
 	function authHeaders(session, extra) {
-		var headers = { Authorization: 'Bearer ' + session.token };
+		var headers = {};
 		if (extra) {
 			for (var key in extra) {
 				if (Object.prototype.hasOwnProperty.call(extra, key)) headers[key] = extra[key];
@@ -58,6 +59,8 @@
 	}
 
 	function apiFetch(path, options) {
+		options = options || {};
+		options.credentials = 'include';
 		return fetch(REST_URL + path, options).then(function (res) {
 			return res.json().then(
 				function (data) {
@@ -401,7 +404,6 @@
 						return;
 					}
 					setSession({
-						token: result.data.token,
 						expiresAt: Date.now() + result.data.expires_in * 1000,
 						user: result.data.user,
 					});
@@ -437,7 +439,9 @@
 
 		root.querySelector('[data-jg-logout]').addEventListener('click', function () {
 			clearSession();
-			window.location.href = LOGIN_URL;
+			apiFetch('/logout', { method: 'POST' }).finally(function () {
+				window.location.href = LOGIN_URL;
+			});
 		});
 
 		initCategoryManager(root, state);

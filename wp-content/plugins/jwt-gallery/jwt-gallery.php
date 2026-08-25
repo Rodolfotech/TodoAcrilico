@@ -29,6 +29,20 @@ JG_REST::init();
 JG_Shortcode::init();
 JG_Template::init();
 
+/**
+ * Seguridad: deshabilitar XML-RPC.
+ *
+ * xmlrpc.php permite amplificación de brute-force vía system.multicall
+ * (cientos de intentos de contraseña en una sola petición). El plugin no
+ * usa la app móvil ni pingbacks, así que se deshabilita por completo.
+ *
+ * - El filtro devuelve false → WP responde 403 a toda petición a xmlrpc.php.
+ * - pingback.ping se deshabilita al desactivar XML-RPC por completo.
+ * - El REST API (wp-json) y los endpoints del plugin no se ven afectados.
+ */
+add_filter( 'xmlrpc_enabled', '__return_false' );
+add_filter( 'xmlrpc_methods', '__return_empty_array' );
+
 register_activation_hook(
 	__FILE__,
 	function () {
