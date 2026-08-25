@@ -552,7 +552,14 @@ class JG_REST {
 	}
 
 	private static function require_category_manager( $user ) {
-		if ( ! user_can( $user, 'manage_categories' ) ) {
+		// El usuario ya fue autenticado vía JWT por authenticated_user() antes de
+		// llegar aquí. Las categorías son compartidas por todo el panel (igual que
+		// en el admin nativo de WordPress), por lo que cualquier usuario con sesión
+		// iniciada puede crearlas, editarlas y eliminarlas. Esto se alinea con el
+		// modelo de permisos de las imágenes del plugin, que solo exige
+		// autenticación, no la capability manage_categories (que solo tienen
+		// Administrador y Editor).
+		if ( ! $user || ! ( $user instanceof WP_User ) ) {
 			return new WP_Error( 'jg_forbidden', 'No tienes permisos para gestionar categorías.', array( 'status' => 403 ) );
 		}
 		return null;

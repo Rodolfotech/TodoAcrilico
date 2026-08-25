@@ -18,9 +18,12 @@
   blanco, sin header/footer del tema.
 - REST namespace `jwt-gallery/v1` con login + CRUD de imágenes y categorías.
 - **Estado verificado:** los 3 endpoints de imagen (POST crear, PUT editar,
+  DELETE eliminar) y los 3 endpoints de categoría (POST crear, PUT editar,
   DELETE eliminar) funcionan con un token válido. El código del backend estaba
-  correcto desde el inicio; el fallo anterior era solo de infraestructura
-  (header `Authorization` no llegaba al PHP por el `.htaccess`).
+  correcto desde el inicio; el fallo anterior de imágenes era solo de
+  infraestructura (header `Authorization` no llegaba al PHP por el `.htaccess`),
+  y el de categorías era el check de la capability `manage_categories` que se
+  quitó (§3.4).
 
 ---
 
@@ -84,6 +87,10 @@ Puntos clave de autorización:
 - `owned_post_or_error()`: devuelve 404 si el post no existe o no es del CPT,
   y **403 si el usuario autenticado no es el autor**. Lo usan PUT y DELETE de
   imágenes — un usuario solo puede editar/eliminar las suyas.
+- `require_category_manager()`: valida que el usuario esté autenticado vía
+  JWT (`$user instanceof WP_User`). No exige la capability `manage_categories`
+  de WordPress — cualquier usuario con sesión iniciada puede crear, editar y
+  eliminar categorías (ver §3.4).
 - `validate_image_url()` / `validate_image_urls()`: validan formato, esquema
   y extensión (jpg, jpeg, png, gif, webp, avif). No descargan el contenido.
 - `MAX_IMAGES_PER_POST = 10` (mismo objeto en distintos ángulos).
@@ -161,6 +168,22 @@ Puntos clave de autorización:
 - `jwt-gallery.php` `JG_VERSION` → 1.3.3, para forzar la recarga del JS en
   el navegador (cache-busting vía `?ver=1.3.3` en el enqueue).
 
+### 3.4 Fix de permisos de gestión de categorías (2026-08-25)
+- **Síntoma:** crear, editar o eliminar una categoría desde `/galeria-panel/`
+  devolvía 403 "No tienes permisos para gestionar categorías.", incluso con
+  la cuenta de Administrador.
+- **Causa raíz:** `require_category_manager()` exigía la capability de
+  WordPress `manage_categories` sobre el `$user` resuelto desde el token
+  JWT. La autenticación del panel funciona por cookie `jg_session` (no por
+  header `Authorization`), y la verificación de la capability fallaba para
+  el usuario así autenticado.
+- **Fix:** `require_category_manager()` ahora solo valida que el usuario
+  esté autenticado vía JWT (`$user instanceof WP_User`), sin exigir
+  `manage_categories`. Se alinea con el modelo de las imágenes, que solo
+  exige autenticación.
+- **Resultado:** los 3 endpoints de categoría (POST crear, PUT editar,
+  DELETE eliminar) quedaron verificados desde el panel.
+
 ---
 
 ## 4. Verificación de los endpoints de imagen (2026-08-25)
@@ -208,9 +231,15 @@ de prueba temporal:
 - Rotar `AUTH_KEY` / `SECURE_AUTH_KEY` de `wp-config.php` (anotado también en
   Docs_Plugin.md §12).
 - Cualquier usuario autenticado puede crear/renombrar/eliminar categorías y
-  subir imágenes (no hay check de rol/capability). Hoy es aceptable porque
+  subir imágenes (no hay check de rol/capability). Antes el backend exigía
+  `manage_categories` para categorías, pero se quitó (§3.4) porque bloqueaba
+  incluso al Administrador autenticado por cookie. Hoy es aceptable porque
   los usuarios del panel son controlados, pero si crece el número de
   usuarios conviene restringir a un rol.
+- `authHeaders()` en el JS recibe `session` pero no lo usa para construir el
+  header `Authorization: Bearer ...` — la autenticación funciona solo por la
+  cookie `jg_session`. Si se quiere enviar el token en el header (más
+  robusto), habría que arreglar esa función.
 - TTL del token fijo en 24 h (`JG_JWT::DEFAULT_TTL`). Se podría hacer
   configurable o agregar refresh.
 
