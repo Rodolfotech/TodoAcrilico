@@ -348,15 +348,28 @@ class JG_REST {
 		return $post;
 	}
 
+	private static function get_measurements( WP_REST_Request $request ) {
+		$measurements = sanitize_text_field( (string) $request->get_param( 'measurements' ) );
+		if ( mb_strlen( $measurements ) > 20 ) {
+			return new WP_Error( 'jg_measurements_too_long', 'Las medidas pueden tener hasta 20 caracteres.', array( 'status' => 400 ) );
+		}
+
+		return $measurements;
+	}
+
 	public static function upload_image( WP_REST_Request $request ) {
 		$user = self::authenticated_user( $request );
 		if ( is_wp_error( $user ) ) {
 			return $user;
 		}
 
-		$title       = sanitize_text_field( (string) $request->get_param( 'title' ) );
-		$description = sanitize_textarea_field( (string) $request->get_param( 'description' ) );
-		$raw_urls    = $request->get_param( 'image_urls' );
+		$title        = sanitize_text_field( (string) $request->get_param( 'title' ) );
+		$description  = sanitize_textarea_field( (string) $request->get_param( 'description' ) );
+		$measurements = self::get_measurements( $request );
+		if ( is_wp_error( $measurements ) ) {
+			return $measurements;
+		}
+		$raw_urls     = $request->get_param( 'image_urls' );
 		$category_id = (int) $request->get_param( 'category_id' );
 
 		if ( '' === $title ) {
@@ -386,6 +399,9 @@ class JG_REST {
 		foreach ( $urls as $url ) {
 			add_post_meta( $post_id, '_jg_image_url', $url, false );
 		}
+		if ( '' !== $measurements ) {
+			update_post_meta( $post_id, '_jg_measurements', $measurements );
+		}
 		self::assign_category( $post_id, $category_id );
 
 		return rest_ensure_response( self::format_image( get_post( $post_id ) ) );
@@ -402,10 +418,15 @@ class JG_REST {
 			return $post;
 		}
 
-		$title       = sanitize_text_field( (string) $request->get_param( 'title' ) );
-		$description = sanitize_textarea_field( (string) $request->get_param( 'description' ) );
-		$raw_urls    = $request->get_param( 'image_urls' );
-		$category_id = (int) $request->get_param( 'category_id' );
+		$title        = sanitize_text_field( (string) $request->get_param( 'title' ) );
+		$description  = sanitize_textarea_field( (string) $request->get_param( 'description' ) );
+		$measurements = self::get_measurements( $request );
+		$raw_urls     = $request->get_param( 'image_urls' );
+		$category_id  = (int) $request->get_param( 'category_id' );
+
+		if ( is_wp_error( $measurements ) ) {
+			return $measurements;
+		}
 
 		if ( '' === $title ) {
 			return new WP_Error( 'jg_no_title', 'El título es obligatorio.', array( 'status' => 400 ) );
@@ -427,6 +448,11 @@ class JG_REST {
 		delete_post_meta( $post->ID, '_jg_image_url' );
 		foreach ( $urls as $url ) {
 			add_post_meta( $post->ID, '_jg_image_url', $url, false );
+		}
+		if ( '' === $measurements ) {
+			delete_post_meta( $post->ID, '_jg_measurements' );
+		} else {
+			update_post_meta( $post->ID, '_jg_measurements', $measurements );
 		}
 		self::assign_category( $post->ID, $category_id );
 
@@ -513,9 +539,10 @@ class JG_REST {
 
 		$response = array(
 			'id'          => $post->ID,
-			'title'       => get_the_title( $post ),
-			'description' => $post->post_content,
-			'images'      => $urls,
+			'title'        => get_the_title( $post ),
+			'description'  => $post->post_content,
+			'measurements' => get_post_meta( $post->ID, '_jg_measurements', true ),
+			'images'       => $urls,
 			'date'        => get_the_date( 'c', $post ),
 			'author'      => $author,
 			'author_id'   => (int) $post->post_author,

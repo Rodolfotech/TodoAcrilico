@@ -294,13 +294,15 @@ body.admin-bar .ta-header {
 	margin-left: 6px;
 }
 
-.ta-nav-list .ta-nav-cta > a {
+.ta-nav-list li.ta-nav-cta > a,
+.ta-nav-list li.ta-nav-cta.current-menu-item > a {
 	background: var(--ta-ink);
 	color: #fff;
 	border-radius: 6px;
 }
 
-.ta-nav-list .ta-nav-cta > a:hover {
+.ta-nav-list li.ta-nav-cta > a:hover,
+.ta-nav-list li.ta-nav-cta.current-menu-item > a:hover {
 	background: var(--ta-accent-dark);
 	color: #fff;
 }
@@ -1077,6 +1079,74 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	padding: 32px;
 }
 
+.ta-contact-quote {
+	position: relative;
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+	padding: 12px 40px 14px 16px;
+	margin-bottom: 20px;
+	background: var(--ta-bg);
+	border: 1px solid var(--ta-border);
+}
+
+.ta-contact-quote-remove {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 24px;
+	height: 24px;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--ta-muted);
+	font-size: 1.25rem;
+	cursor: pointer;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+
+.ta-contact-quote-remove:hover {
+	background: rgba(0, 0, 0, 0.06);
+	color: var(--ta-ink);
+}
+
+.ta-contact-quote-thumb {
+	flex-shrink: 0;
+	width: 72px;
+	height: 54px;
+	overflow: hidden;
+	background: #eee;
+	border: 1px solid var(--ta-border);
+}
+
+.ta-contact-quote-thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.ta-contact-quote-text {
+	margin: 0;
+	font-size: 0.85rem;
+	color: var(--ta-muted);
+}
+
+.ta-contact-quote-text strong {
+	display: block;
+	margin-bottom: 2px;
+	color: var(--ta-ink);
+}
+
+.ta-contact-quote-text span {
+	display: block;
+}
+
 .ta-contact-form {
 	display: flex;
 	flex-direction: column;
@@ -1105,6 +1175,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-contact-form input[type="text"],
 .ta-contact-form input[type="email"],
+.ta-contact-form input[type="tel"],
 .ta-contact-form textarea {
 	width: 100%;
 	box-sizing: border-box;
@@ -1119,6 +1190,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-contact-form input[type="text"]:focus,
 .ta-contact-form input[type="email"]:focus,
+.ta-contact-form input[type="tel"]:focus,
 .ta-contact-form textarea:focus {
 	outline: 2px solid var(--ta-accent);
 	outline-offset: 1px;
@@ -1128,28 +1200,43 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	resize: vertical;
 }
 
-.ta-contact-file {
-	position: relative;
-	flex-direction: row;
-	align-items: center;
-	justify-content: center;
+.ta-contact-char-limit {
+	align-self: flex-end;
+	font-size: 0.78rem;
+	font-weight: 400;
+	color: var(--ta-muted);
+}
+
+.ta-contact-tel-wrap {
+	display: flex;
 	gap: 8px;
+}
+
+.ta-contact-tel-wrap input[type="tel"] {
+	flex: 1;
+	min-width: 0;
+}
+
+.ta-contact-tel-prefix {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
 	padding: 10px 12px;
 	border: 1px solid var(--ta-border);
 	border-radius: 6px;
-	color: var(--ta-muted);
-	font-weight: 600;
+	background: var(--ta-surface);
+	color: var(--ta-ink);
+	font-weight: 400;
 	font-size: 0.85rem;
-	cursor: pointer;
 }
 
-.ta-contact-file span {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
+.ta-contact-flag {
+	font-size: 1.1rem;
+	line-height: 1;
 }
 
-.ta-contact-file input[type="file"] {
+.ta-contact-files input[type="file"] {
 	position: absolute;
 	width: 1px;
 	height: 1px;
@@ -1159,6 +1246,102 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	clip: rect(0, 0, 0, 0);
 	white-space: nowrap;
 	border: 0;
+}
+
+.ta-contact-file-upload {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 14px;
+	border: 1px dashed var(--ta-border);
+	border-radius: 6px;
+	background: var(--ta-bg);
+	color: var(--ta-muted);
+	font-weight: 600;
+	font-size: 0.85rem;
+	cursor: pointer;
+	text-align: left;
+	transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.ta-contact-file-upload:hover {
+	border-color: var(--ta-accent);
+	color: var(--ta-ink);
+	background: var(--ta-surface);
+}
+
+.ta-contact-file-status {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 10px;
+	padding: 8px 12px;
+	border: 1px solid var(--ta-border);
+	border-radius: 6px;
+	background: var(--ta-bg);
+	color: var(--ta-ink);
+	font-size: 0.85rem;
+}
+
+.ta-contact-file-status[hidden] {
+	display: none;
+}
+
+.ta-contact-file-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+.ta-contact-file-add {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 14px;
+	border: none;
+	border-radius: 6px;
+	background: var(--ta-ink);
+	color: #fff;
+	font-size: 0.8rem;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.ta-contact-file-add:hover {
+	background: var(--ta-accent-dark);
+	color: #fff;
+}
+
+.ta-contact-file-add:disabled {
+	background: var(--ta-muted);
+	color: #fff;
+	cursor: not-allowed;
+	opacity: 0.8;
+}
+
+.ta-contact-file-remove {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 14px;
+	border: none;
+	border-radius: 6px;
+	background: #c0392b;
+	color: #fff;
+	font-size: 0.8rem;
+	font-weight: 600;
+	line-height: 1;
+	cursor: pointer;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+.ta-contact-file-remove:hover {
+	background: #922b21;
+	color: #fff;
 }
 
 .ta-contact-submit {
@@ -1231,16 +1414,71 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin-bottom: 20px;
 }
 
+.ta-filter-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 0 0 32px;
+	border-bottom: 1px solid var(--ta-border);
+	padding-bottom: 16px;
+}
+
+.ta-filter-tabs__tab {
+	padding: 9px 14px;
+	border: 1px solid var(--ta-border);
+	border-radius: 999px;
+	color: var(--ta-ink);
+	font-size: 0.9rem;
+	font-weight: 600;
+	text-decoration: none;
+	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.ta-filter-tabs__tab:hover,
+.ta-filter-tabs__tab:focus-visible {
+	border-color: var(--ta-accent);
+	color: var(--ta-accent);
+}
+
+.ta-filter-tabs__tab.is-active {
+	/* Mismo negro que el botón Cotizar (.ta-button--dark). */
+	background: var(--ta-ink);
+	border-color: var(--ta-ink);
+	color: #fff;
+}
+
 .ta-solutions-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 	gap: 20px;
 }
 
+/* El CSS y la jerarquía .jg-pagination se cargan directamente desde el plugin.
+   Solo definimos aquí sus tokens para no incluir el layout .jg-gallery completo. */
+.ta-catalog-pagination {
+	--jg-border: #dcdcd6;
+	--jg-ink: #1a1c1c;
+	--jg-muted: #6b6b64;
+	--jg-accent: #03854a;
+	--jg-surface-2: #f1f1ee;
+}
+
+.ta-catalog-pagination .jg-pagination-nav {
+	margin-left: auto;
+}
+
+/* Estado activo explícito para que la página actual conserve el verde del panel. */
+.ta-catalog-pagination .jg-pagination-page.is-active,
+.ta-catalog-pagination .jg-pagination-page.is-active:hover,
+.ta-catalog-pagination .jg-pagination-page.is-active:focus-visible {
+	background: var(--jg-accent);
+	color: #fff;
+}
+
 .ta-solution-card {
 	background: var(--ta-surface);
 	border: 1px solid var(--ta-border);
-	border-radius: 10px;
+	border-radius: 0;
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
@@ -1257,6 +1495,19 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+}
+
+.ta-solution-badge {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	padding: 3px 10px;
+	background: var(--ta-bg);
+	color: var(--ta-ink);
+	font-size: 0.72rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	z-index: 1;
 }
 
 /* ---- mini-carrusel: publicaciones con más de una foto ---- */
@@ -1316,6 +1567,8 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-solution-body {
 	padding: 14px 16px 18px;
+	background: var(--ta-bg);
+	flex-grow: 1;
 }
 
 .ta-solution-body h3 {
@@ -1327,6 +1580,48 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin: 0;
 	font-size: 0.9rem;
 	color: var(--ta-muted);
+}
+
+.ta-solution-body .ta-solution-measurements {
+	margin-top: 8px;
+	color: var(--ta-ink);
+}
+
+.ta-solution-quote {
+	margin-top: 14px;
+	justify-content: center;
+	width: 100%;
+	padding: 10px 16px;
+	font-size: 0.85rem;
+	border: 1px solid var(--ta-muted);
+	border-radius: 0;
+	background: var(--ta-bg);
+	color: var(--ta-ink);
+}
+
+.ta-solution-quote:hover {
+	background: var(--ta-accent);
+	color: #fff;
+	border-color: var(--ta-accent-dark);
+}
+
+.ta-solution-quote:hover .ta-solution-quote-icon {
+	background: var(--ta-accent);
+	color: #fff;
+}
+
+.ta-solution-quote-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	border-radius: 50%;
+	background: #fff;
+	color: var(--ta-ink);
+	font-size: 0.85rem;
+	font-weight: 700;
+	line-height: 1;
 }
 
 .ta-empty-state {

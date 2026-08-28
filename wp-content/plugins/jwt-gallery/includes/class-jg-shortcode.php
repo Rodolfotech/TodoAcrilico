@@ -109,6 +109,10 @@ class JG_Shortcode {
 							<label>
 								Descripción
 								<textarea name="description" maxlength="600" rows="3" placeholder="Breve descripción de la pieza…"></textarea>
+								</label>
+								<label>
+									Medidas
+									<input type="text" name="measurements" maxlength="20" placeholder="Ej. 20 × 30 cm">
 							</label>
 							<label>
 								Imágenes (hasta 10, misma pieza en distintos ángulos)

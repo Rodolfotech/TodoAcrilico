@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.14.20' );
+define( 'TA_VERSION', '1.18.5' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -20,6 +20,12 @@ add_action( 'after_setup_theme', 'ta_setup' );
 
 function ta_assets() {
 	wp_enqueue_style( 'ta-style', get_stylesheet_uri(), array(), TA_VERSION );
+
+	// El catálogo reutiliza literalmente los estilos del paginador del panel.
+	if ( is_page( 'nuestras-soluciones' ) && wp_style_is( 'jg-gallery', 'registered' ) ) {
+		wp_enqueue_style( 'jg-gallery' );
+	}
+
 	wp_enqueue_script( 'ta-carousel', get_template_directory_uri() . '/assets/js/ta-carousel.js', array(), TA_VERSION, true );
 	wp_enqueue_script( 'ta-nav', get_template_directory_uri() . '/assets/js/ta-nav.js', array(), TA_VERSION, true );
 }
@@ -337,10 +343,13 @@ function ta_render_cta_section( $title, $description, $button_label, $button_url
  * §1.10). Filtrable con `ta_contact_email` para no tener que tocar código si cambia.
  */
 function ta_get_contact_email() {
-	return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
+	// return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
+	return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
 }
 
-define( 'TA_CONTACT_MAX_FILE_SIZE', 5 * 1024 * 1024 ); // 5 MB.
+
+define( 'TA_CONTACT_MAX_FILE_SIZE', 5 * 1024 * 1024 ); // 5 MB por adjunto.
+define( 'TA_CONTACT_MAX_FILES', 5 ); // Hasta 5 archivos adjuntos.
 
 /**
  * Manejador del formulario de Contacto. Registrado tanto para visitantes sin sesión
@@ -356,7 +365,15 @@ add_action( 'admin_post_ta_contact_submit', 'ta_handle_contact_submit' );
 function ta_handle_contact_submit() {
 	$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/contacto/' );
 
-	$fail = function ( $reason ) use ( $redirect_to ) {
+	$adjunto_paths = array();
+	$attachments    = array();
+
+	$fail = function ( $reason ) use ( $redirect_to, &$adjunto_paths ) {
+		foreach ( $adjunto_paths as $adjunto_path ) {
+			if ( $adjunto_path && file_exists( $adjunto_path ) ) {
+				wp_delete_file( $adjunto_path );
+			}
+		}
 		wp_safe_redirect(
 			add_query_arg(
 				array(
@@ -382,7 +399,16 @@ function ta_handle_contact_submit() {
 
 	$nombre      = isset( $_POST['nombre'] ) ? sanitize_text_field( wp_unslash( $_POST['nombre'] ) ) : '';
 	$email       = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+	$celular     = isset( $_POST['celular'] ) ? sanitize_text_field( wp_unslash( $_POST['celular'] ) ) : '';
 	$descripcion = isset( $_POST['descripcion'] ) ? sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ) ) : '';
+	$adjunto_ref = isset( $_POST['adjunto_referencia'] ) ? esc_url_raw( wp_unslash( $_POST['adjunto_referencia'] ) ) : '';
+	$adjunto_ref = ( $adjunto_ref && wp_http_validate_url( $adjunto_ref ) ) ? $adjunto_ref : '';
+	$adjunto_tit  = isset( $_POST['adjunto_titulo'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_titulo'] ) ) : '';
+	$adjunto_tit  = $adjunto_tit ? wp_strip_all_tags( trim( $adjunto_tit ) ) : '';
+	$adjunto_desc = isset( $_POST['adjunto_descripcion'] ) ? sanitize_textarea_field( wp_unslash( $_POST['adjunto_descripcion'] ) ) : '';
+	$adjunto_desc = $adjunto_desc ? wp_strip_all_tags( trim( $adjunto_desc ) ) : '';
+	$adjunto_med  = isset( $_POST['adjunto_medidas'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_medidas'] ) ) : '';
+	$adjunto_med  = $adjunto_med ? trim( $adjunto_med ) : '';
 
 	if ( '' === $nombre || '' === $descripcion ) {
 		$fail( 'campos' );
@@ -392,24 +418,72 @@ function ta_handle_contact_submit() {
 		$fail( 'email' );
 	}
 
-	$attachments  = array();
-	$adjunto_path = '';
+	// El dominio del correo debe estar dentro de los permitidos: .cl, .com, .net u .org.
+	$email_domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
+	if ( ! preg_match( '/\.(cl|com|net|org)$/', $email_domain ) ) {
+		$fail( 'email' );
+	}
 
-	if ( ! empty( $_FILES['adjunto'] ) && UPLOAD_ERR_NO_FILE !== $_FILES['adjunto']['error'] ) {
-		if ( UPLOAD_ERR_OK !== $_FILES['adjunto']['error'] ) {
+	// Celular chileno obligatorio: ocho dígitos móviles tras el prefijo +56 9.
+	// El campo del formulario entrega 8 dígitos (sin el 9, que va en el prefijo);
+	// por compatibilidad se tolera también el formato con 9 inicial.
+	$celular_digits = preg_replace( '/[^\d]/', '', $celular );
+	$celular_digits = preg_replace( '/^56/', '', $celular_digits );
+	if ( preg_match( '/^9\d{8}$/', $celular_digits ) ) {
+		$celular_digits = substr( $celular_digits, 1 );
+	}
+	if ( ! preg_match( '/^[2-9]\d{7}$/', $celular_digits ) ) {
+		$fail( 'celular' );
+	}
+	$celular = '+56 9 ' . $celular_digits;
+
+	// Adjuntos opcionales (varias imágenes o PDFs). Con el input `multiple`, PHP
+	// recibe $_FILES['adjunto'] como arrays. Se normaliza a una lista de archivos
+	// y se valida cada uno (extensión + contenido real: getimagesize para
+	// imágenes, MIME %PDF para los PDF).
+	$submit_files = array();
+	if ( isset( $_FILES['adjunto'] ) && is_array( $_FILES['adjunto']['name'] ) ) {
+		for ( $i = 0, $n = count( $_FILES['adjunto']['name'] ); $i < $n; $i++ ) {
+			if ( UPLOAD_ERR_NO_FILE === $_FILES['adjunto']['error'][ $i ] ) {
+				continue;
+			}
+			$submit_files[] = array(
+				'name'  => $_FILES['adjunto']['name'][ $i ],
+				'tmp'   => $_FILES['adjunto']['tmp_name'][ $i ],
+				'error' => $_FILES['adjunto']['error'][ $i ],
+				'size'  => $_FILES['adjunto']['size'][ $i ],
+			);
+		}
+	}
+
+	if ( count( $submit_files ) > TA_CONTACT_MAX_FILES ) {
+		$fail( 'archivos_muchos' );
+	}
+
+	$allowed_ext = array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf' );
+
+	foreach ( $submit_files as $f ) {
+		if ( UPLOAD_ERR_OK !== $f['error'] ) {
 			$fail( 'archivo' );
 		}
 
-		if ( $_FILES['adjunto']['size'] > TA_CONTACT_MAX_FILE_SIZE ) {
+		if ( $f['size'] > TA_CONTACT_MAX_FILE_SIZE ) {
 			$fail( 'archivo_grande' );
 		}
 
-		$allowed_ext = array( 'jpg', 'jpeg', 'png', 'gif', 'webp' );
-		$ext         = strtolower( pathinfo( $_FILES['adjunto']['name'], PATHINFO_EXTENSION ) );
+		$ext = strtolower( pathinfo( sanitize_file_name( $f['name'] ), PATHINFO_EXTENSION ) );
 
-		// Extensión Y contenido real (getimagesize falla si no es una imagen de verdad,
-		// aunque alguien le haya puesto extensión .jpg a otra cosa).
-		if ( ! in_array( $ext, $allowed_ext, true ) || ! @getimagesize( $_FILES['adjunto']['tmp_name'] ) ) {
+		if ( ! in_array( $ext, $allowed_ext, true ) ) {
+			$fail( 'archivo_tipo' );
+		}
+
+		// Contenido real: una imagen con getimagesize; un PDF por su cabecera %PDF.
+		if ( 'pdf' === $ext ) {
+			$mime = function_exists( 'mime_content_type' ) ? mime_content_type( $f['tmp'] ) : '';
+			if ( stripos( (string) $mime, 'application/pdf' ) === false ) {
+				$fail( 'archivo_tipo' );
+			}
+		} elseif ( ! @getimagesize( $f['tmp'] ) ) {
 			$fail( 'archivo_tipo' );
 		}
 
@@ -419,33 +493,59 @@ function ta_handle_contact_submit() {
 			wp_mkdir_p( $target_dir );
 		}
 
-		$adjunto_path = $target_dir . wp_unique_filename( $target_dir, sanitize_file_name( $_FILES['adjunto']['name'] ) );
+		$adjunto_path = $target_dir . wp_unique_filename( $target_dir, sanitize_file_name( $f['name'] ) );
 
-		// move_uploaded_file() verifica por su cuenta que el archivo venga de una subida
-		// HTTP real — no acepta rutas arbitrarias aunque alguien falsifique $_FILES.
-		if ( ! move_uploaded_file( $_FILES['adjunto']['tmp_name'], $adjunto_path ) ) {
+		// move_uploaded_file() verifica por su cuenta que el archivo venga de una
+		// subida HTTP real — no acepta rutas arbitrarias aunque alguien falsifique $_FILES.
+		if ( ! move_uploaded_file( $f['tmp'], $adjunto_path ) ) {
 			$fail( 'archivo' );
 		}
 
-		$attachments[] = $adjunto_path;
+		$attachments[]  = $adjunto_path;
+		$adjunto_paths[] = $adjunto_path;
 	}
 
 	$subject = sprintf( 'Nuevo mensaje de contacto — %s', $nombre );
-	$body    = "Nombre: {$nombre}\n" .
-		"Correo: {$email}\n\n" .
-		"Descripción del proyecto:\n{$descripcion}\n";
+
+	// Cuerpo en HTML (text/plain como fallback) para que quien reciba el correo
+	// pueda ver la imagen de la pieza a cotizar incrustada, no solo un enlace.
+	$html_body = '<p><strong>Nombre:</strong> ' . esc_html( $nombre ) . '<br>' .
+		'<strong>Celular:</strong> ' . esc_html( $celular ) . '<br>' .
+		'<strong>Correo:</strong> ' . esc_html( $email ) . '</p>' .
+		'<p><strong>Descripción del proyecto:</strong><br>' . nl2br( esc_html( $descripcion ) ) . '</p>';
+
+	// Información de la pieza a cotizar, pasada automáticamente al hacer clic en
+	// "Cotizar esta pieza" en el catálogo (page-nuestras-soluciones.php).
+	if ( $adjunto_ref || $adjunto_tit || $adjunto_desc || $adjunto_med ) {
+		$html_body .= '<h3 style="margin:18px 0 6px;font-size:14px;">Pieza a cotizar</h3>';
+		if ( $adjunto_tit ) {
+			$html_body .= '<p style="margin:0 0 4px;"><strong>Título:</strong> ' . esc_html( $adjunto_tit ) . '</p>';
+		}
+		if ( $adjunto_desc ) {
+			$html_body .= '<p style="margin:0 0 4px;"><strong>Descripción:</strong> ' . nl2br( esc_html( $adjunto_desc ) ) . '</p>';
+		}
+		if ( $adjunto_med ) {
+			$html_body .= '<p style="margin:0 0 4px;"><strong>Medidas:</strong> ' . esc_html( $adjunto_med ) . '</p>';
+		}
+		if ( $adjunto_ref ) {
+			$html_body .= '<p><img src="' . esc_url( $adjunto_ref ) . '" alt="' . esc_attr( $adjunto_tit ? $adjunto_tit : 'Imagen de la pieza a cotizar' ) . '" style="max-width:100%;height:auto;border:1px solid #e0e4e3;border-radius:6px;"></p>' .
+				'<p>Ver imagen: <a href="' . esc_url( $adjunto_ref ) . '">' . esc_html( $adjunto_ref ) . '</a></p>';
+		}
+	}
 
 	// Sin "From" propio a propósito: dejarlo así es lo que hace que un plugin SMTP
 	// (WP Mail SMTP, etc.) controle el remitente sin que este código le compita.
 	$headers = array(
-		'Content-Type: text/plain; charset=UTF-8',
+		'Content-Type: text/html; charset=UTF-8',
 		'Reply-To: ' . $nombre . ' <' . $email . '>',
 	);
 
-	$sent = wp_mail( ta_get_contact_email(), $subject, $body, $headers, $attachments );
+	$sent = wp_mail( ta_get_contact_email(), $subject, $html_body, $headers, $attachments );
 
-	if ( $adjunto_path && file_exists( $adjunto_path ) ) {
-		wp_delete_file( $adjunto_path );
+	foreach ( $adjunto_paths as $adjunto_path ) {
+		if ( $adjunto_path && file_exists( $adjunto_path ) ) {
+			wp_delete_file( $adjunto_path );
+		}
 	}
 
 	if ( ! $sent ) {
@@ -534,6 +634,72 @@ function ta_get_solutions_by_category() {
 	}
 
 	return $groups;
+}
+
+/**
+ * Pestañas reutilizables para filtrar contenido por URL. Cada pestaña debe incluir
+ * `label` y `value`; `value` se envía en el parámetro indicado y reinicia la página.
+ *
+ * @param array<int, array{label: string, value: string}> $tabs
+ * @param string                                        $active_value
+ * @param string                                        $query_arg
+ */
+function ta_render_filter_tabs( $tabs, $active_value, $query_arg = 'categoria' ) {
+	if ( empty( $tabs ) ) {
+		return;
+	}
+
+	?>
+	<nav class="ta-filter-tabs" aria-label="Filtrar catálogo por categoría">
+		<?php foreach ( $tabs as $tab ) : ?>
+			<?php
+			$url = add_query_arg(
+				array_filter(
+					array(
+						$query_arg => $tab['value'] ?: null,
+						'pagina'   => null,
+					)
+				),
+				get_permalink()
+			);
+			$is_active = $active_value === $tab['value'];
+			?>
+			<a class="ta-filter-tabs__tab<?php echo $is_active ? ' is-active' : ''; ?>" href="<?php echo esc_url( $url ); ?>"<?php echo $is_active ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $tab['label'] ); ?></a>
+		<?php endforeach; ?>
+	</nav>
+	<?php
+}
+
+/**
+ * Renderiza el mismo patrón de páginas que el panel JWT Gallery: todas hasta
+ * siete; después primera, página anterior/siguiente, última y elipsis.
+ *
+ * @return array<int, int|string>
+ */
+function ta_get_pagination_pages( $current, $total ) {
+	$current = max( 1, (int) $current );
+	$total   = max( 1, (int) $total );
+
+	if ( $total <= 7 ) {
+		return range( 1, $total );
+	}
+
+	$pages = array( 1 );
+	$start = max( 2, $current - 1 );
+	$end   = min( $total - 1, $current + 1 );
+
+	if ( $start > 2 ) {
+		$pages[] = '…';
+	}
+	for ( $number = $start; $number <= $end; $number++ ) {
+		$pages[] = $number;
+	}
+	if ( $end < $total - 1 ) {
+		$pages[] = '…';
+	}
+	$pages[] = $total;
+
+	return $pages;
 }
 
 /**

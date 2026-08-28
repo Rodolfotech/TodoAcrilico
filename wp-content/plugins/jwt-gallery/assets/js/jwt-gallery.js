@@ -739,6 +739,7 @@
 			var payload = {
 				title: form.title.value,
 				description: form.description.value,
+				measurements: form.measurements.value,
 				image_urls: imageUrls,
 				category_id: form.category_id.value,
 			};
@@ -969,12 +970,17 @@
 		var desc = document.createElement('p');
 		desc.textContent = item.description || '';
 
+		var measurements = document.createElement('p');
+		measurements.className = 'jg-card-measurements';
+		measurements.textContent = 'Medidas: ' + (item.measurements || '');
+
 		var meta = document.createElement('p');
 		meta.className = 'jg-card-meta';
 		meta.textContent = (item.author || '') + ' · ' + formatDate(item.date);
 
 		body.appendChild(title);
 		if (item.description) body.appendChild(desc);
+		if (item.measurements) body.appendChild(measurements);
 		body.appendChild(meta);
 
 		view.appendChild(figure);
@@ -1010,6 +1016,15 @@
 		descInput.rows = 3;
 		descInput.value = item.description || '';
 		descLabel.appendChild(descInput);
+
+		var measurementsLabel = document.createElement('label');
+		measurementsLabel.textContent = 'Medidas';
+		var measurementsInput = document.createElement('input');
+		measurementsInput.type = 'text';
+		measurementsInput.maxLength = 20;
+		measurementsInput.placeholder = 'Ej. 20 × 30 cm';
+		measurementsInput.value = item.measurements || '';
+		measurementsLabel.appendChild(measurementsInput);
 
 		var imagesLabel = document.createElement('label');
 		imagesLabel.textContent = 'Imágenes (hasta 10)';
@@ -1052,6 +1067,7 @@
 
 		form.appendChild(titleLabel);
 		form.appendChild(descLabel);
+		form.appendChild(measurementsLabel);
 		form.appendChild(imagesLabel);
 		form.appendChild(imagesRepeater);
 		form.appendChild(catLabel);
@@ -1082,6 +1098,7 @@
 			var payload = {
 				title: titleInput.value,
 				description: descInput.value,
+					measurements: measurementsInput.value,
 				image_urls: imageUrls,
 				category_id: catSelect.value,
 			};

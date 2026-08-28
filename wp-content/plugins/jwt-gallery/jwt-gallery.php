@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       TodoAcrílico-Panel
  * Description:       Login por JWT (correo + contraseña) y galería de imágenes por categorías, con edición y borrado. Shortcode [jwt_gallery] para el login y [jwt_gallery_panel] para el panel autenticado.
- * Version:           1.3.3
+ * Version:           1.3.4
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            dev@reparadores.cl
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'JG_VERSION', '1.3.3' );
+define( 'JG_VERSION', '1.3.4' );
 define( 'JG_PATH', plugin_dir_path( __FILE__ ) );
 define( 'JG_URL', plugin_dir_url( __FILE__ ) );
 
