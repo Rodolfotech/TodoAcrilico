@@ -6,6 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 $ta_footer_solutions = get_page_by_path( 'nuestras-soluciones' );
 $ta_footer_cuidados  = get_page_by_path( 'cuidados-del-acrilico' );
 $ta_footer_contacto  = get_page_by_path( 'contacto' );
+$ta_footer_terminos  = get_page_by_path( 'terminos-y-condiciones' );
+$ta_footer_privacidad = get_page_by_path( 'politica-de-privacidad' );
 ?>
 </main>
 
@@ -41,11 +43,27 @@ $ta_footer_contacto  = get_page_by_path( 'contacto' );
 				</li>
 				<li>
 					<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'mail', 18 ); ?></span>
-					<a href="mailto:hola@todoacrilico.cl">hola@todoacrilico.cl</a>
+					<a href="mailto:contacto@todoacrilico.cl">contacto@todoacrilico.cl</a>
 				</li>
 				<li>
 					<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'clock', 18 ); ?></span>
 					Lun a Vie · 9:00 — 18:00
+				</li>
+			</ul>
+		</div>
+
+		<div class="ta-footer-col">
+			<h3 class="ta-footer-heading">Síguenos</h3>
+			<ul class="ta-footer-social">
+				<li>
+					<a href="https://www.instagram.com/todoacrilico_cl/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Todo Acrílico">
+						<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'instagram', 20 ); ?></span>
+					</a>
+				</li>
+				<li>
+					<a href="https://www.linkedin.com/company/todo-acrílico/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn de Todo Acrílico">
+						<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'linkedin', 20 ); ?></span>
+					</a>
 				</li>
 			</ul>
 		</div>
@@ -54,7 +72,8 @@ $ta_footer_contacto  = get_page_by_path( 'contacto' );
 	<div class="ta-footer-bottom">
 		<p class="ta-footer-copy">&copy; <?php echo esc_html( gmdate( 'Y' ) ); ?> TODO Acrílico SpA</p>
 		<div class="ta-footer-legal">
-			<a href="#">Términos y condiciones</a>
+			<a href="<?php echo esc_url( $ta_footer_privacidad ? get_permalink( $ta_footer_privacidad ) : home_url( '/' ) ); ?>">Política de privacidad</a>
+			<a href="<?php echo esc_url( $ta_footer_terminos ? get_permalink( $ta_footer_terminos ) : home_url( '/' ) ); ?>">Términos y condiciones</a>
 			<span>Diseñado con foco en usabilidad</span>
 		</div>
 	</div>

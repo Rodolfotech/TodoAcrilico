@@ -31,6 +31,58 @@ Text Domain:  todo-acrilico
 	box-sizing: border-box;
 }
 
+/* ---- Manrope (tipografía del sitio, self-hosted en /fonts/manrope/) ---- */
+
+@font-face {
+	font-family: "Manrope";
+	font-style: normal;
+	font-weight: 200;
+	font-display: swap;
+	src: url(fonts/manrope/Manrope-200.ttf) format("truetype");
+}
+@font-face {
+	font-family: "Manrope";
+	font-style: normal;
+	font-weight: 300;
+	font-display: swap;
+	src: url(fonts/manrope/Manrope-300.ttf) format("truetype");
+}
+@font-face {
+	font-family: "Manrope";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url(fonts/manrope/Manrope-400.ttf) format("truetype");
+}
+@font-face {
+	font-family: "Manrope";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url(fonts/manrope/Manrope-500.ttf) format("truetype");
+}
+@font-face {
+	font-family: "Manrope";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url(fonts/manrope/Manrope-600.ttf) format("truetype");
+}
+@font-face {
+	font-family: "Manrope";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url(fonts/manrope/Manrope-700.ttf) format("truetype");
+}
+@font-face {
+	font-family: "Manrope";
+	font-style: normal;
+	font-weight: 800;
+	font-display: swap;
+	src: url(fonts/manrope/Manrope-800.ttf) format("truetype");
+}
+
 html {
 	-webkit-text-size-adjust: 100%;
 }
@@ -39,7 +91,7 @@ body {
 	margin: 0;
 	background: var(--ta-bg);
 	color: var(--ta-ink);
-	font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 	font-size: 16px;
 	line-height: 1.6;
 }
@@ -166,8 +218,9 @@ body.admin-bar .ta-header {
 }
 
 /* Desplegable de categorías bajo "Catálogo", armado en cada carga de página
-   desde las categorías reales del plugin (functions.php: TA_Nav_Walker) —
-   se abre con hover/foco, sin JavaScript. */
+   desde las categorías reales del plugin (functions.php: TA_Nav_Walker).
+   Solo se abre con la clase .is-open (click en "Catálogo"/caret, ta-nav.js) —
+   ni hover ni foco lo despliegan (ver ta-nav.js / Docs §1.12, §4.57). */
 /* Estado cerrado por defecto */
 .ta-nav-dropdown {
     position: absolute;
@@ -189,9 +242,7 @@ body.admin-bar .ta-header {
     transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* Estado abierto con hover, foco o clase .is-open */
-.ta-nav-list li:hover > .ta-nav-dropdown,
-.ta-nav-list li:focus-within > .ta-nav-dropdown,
+/* Estado abierto: únicamente con la clase .is-open (click) */
 .ta-nav-list li.is-open > .ta-nav-dropdown {
     opacity: 1;
     visibility: visible;
@@ -228,14 +279,15 @@ body.admin-bar .ta-header {
 	border-radius: 6px;
 	color: var(--ta-ink);
 	text-decoration: none;
-	font-size: 0.94rem;
-	font-weight: 1000;
+	font-size: 16px;
+	font-weight: 400;
 }
 
 .ta-nav-list > li > a:hover,
 .ta-nav-list > li.current-menu-item > a {
 	background: var(--ta-bg);
 	color: var(--ta-accent);
+	font-weight: 700;
 }
 
 /* El link "Catálogo" reserva espacio a la derecha para el botón del caret
@@ -252,9 +304,8 @@ body.admin-bar .ta-header {
    (no solo touch) para que el comportamiento sea idéntico en cualquier
    ancho/dispositivo — nada de detección por media query "hover", que en
    DevTools y ciertos híbridos táctil+mouse da resultados inconsistentes.
-   El botón abre/cierra el desplegable (equivalente a pasar el mouse por
-   encima); el link "Catálogo" en sí siempre navega con un solo click/tap,
-   en desktop y en mobile por igual. */
+   El botón y el link "Catálogo" abren/cierran el desplegable con un click
+   (ta-nav.js) — el listado NO se muestra con hover. */
 .ta-nav-caret-toggle {
 	display: block;
 	position: absolute;
@@ -387,8 +438,7 @@ body.admin-bar .ta-header {
 	}
 
 	/* Muestra el desplegable en modo acordeón únicamente cuando está activo */
-	.ta-nav-list li.is-open > .ta-nav-dropdown,
-	.ta-nav-list li:focus-within > .ta-nav-dropdown {
+	.ta-nav-list li.is-open > .ta-nav-dropdown {
 		display: block;
 	}
 }
@@ -435,19 +485,19 @@ body.admin-bar .ta-header {
 
 .ta-hero-eyebrow {
 	margin: 0 0 16px;
-	font-size: clamp(0.7rem, 1vw, 0.8rem);
-	font-weight: 700;
+	font-size: 12px;
+	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--ta-muted);
 }
 
 .ta-hero h1 {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; /* Asegura una fuente sans-serif limpia */
-    font-size: clamp(2rem, 6vw, 4.2rem); /* Ajuste dinámico de tamaño según la pantalla, sin quedar minúsculo en mobile */
+    font-size: 80px; /* Tamaño fijo del título del banner */
     font-weight: 300; /* Hace la letra delgada y elegante como en la imagen */
-    line-height: 1.1; /* Reduce el espacio vertical entre las dos líneas */
+    line-height: 100px; /* Interlineado fijo de 100px entre las frases */
     letter-spacing: -0.02em; /* Junta sutilmente las letras para mejorar el impacto visual */
+    white-space: nowrap; /* "Soluciones en acrílico," queda en una sola línea */
     color: #1d1d1f; /* Un tono oscuro pero suave */
     margin-bottom: 34px;
 }
@@ -460,9 +510,8 @@ body.admin-bar .ta-header {
 }
 
 .ta-hero p {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: clamp(1rem, 1.6vw, 1.15rem); /* Tamaño ideal para que sea legible y estilizado, escalando con la pantalla */
-    font-weight: 300;         /* Peso tipográfico delgado, igual que el del H1 */
+    font-size: 18px; /* Tamaño fijo del párrafo del banner */
+    font-weight: 400;         /* Peso regular */
     line-height: 1.5;         /* Altura de línea para que respire entre renglones */
     color: #4a5154;           /* Color gris oscuro suave, no negro puro */
     max-width: 100%;
@@ -532,7 +581,8 @@ body.admin-bar .ta-header {
 	border-radius: 6px;
 	border: 1px solid transparent;
 	text-decoration: none;
-	font-weight: 600;
+	font-size: 12px;
+	font-weight: 800;
 }
 
 .ta-button--accent {
@@ -585,26 +635,58 @@ body.admin-bar .ta-header {
 	padding: 64px 24px;
 }
 
+/* Variante blanca (como el nav): usada en page-cuidados-del-acrilico.php para
+   la "Guía de mantenimiento" (ta_render_feature_grid, parámetro $class). */
+.ta-features--white {
+	background: var(--ta-surface);
+}
+
 .ta-features-eyebrow {
 	margin: 0 0 12px;
-	font-size: 0.8rem;
-	font-weight: 700;
+	font-size: 12px;
+	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--ta-muted);
 }
 
+/* En el catálogo el eyebrow "Nuestro Catálogo" va semibold (pedido del usuario). */
+.ta-features--catalog .ta-features-eyebrow {
+	font-weight: 600;
+}
+
+/* En el catálogo el título va 48px light (pedido del usuario). */
+.ta-features--catalog .ta-features-title {
+	font-size: 48px;
+	font-weight: 300; /* light */
+}
+
 .ta-features-title {
-	font-size: clamp(1.6rem, 3vw, 2.1rem);
+	font-size: 32px;
+	font-weight: 400;
 	margin: 0 0 16px;
 	max-width: 34ch;
+}
+
+/* En la página de Cuidados el título de la guía es más grande: 48px regular
+   (pedido del usuario). Se activa con el modifier del <section>. */
+.ta-features--hero-title .ta-features-title {
+	font-size: 48px;
+}
+
+/* En Cuidados los textos bajo los títulos de las cards van a 16px regular
+   (la home mantiene 15px de §4.69). */
+.ta-features--hero-title .ta-feature-card p {
+	font-size: 16px;
+	font-weight: 400;
 }
 
 .ta-features-description {
 	margin: 0 0 40px;
 	max-width: 100%;
 	color: var(--ta-muted);
-	font-size: 0.98rem;
+	font-size: 18px;
+	font-weight: 400;
 	line-height: 1.6;
 }
 
@@ -628,15 +710,21 @@ body.admin-bar .ta-header {
 	margin-bottom: 20px;
 }
 
+.ta-feature-icon svg {
+	width: 40px;
+	height: 40px;
+}
+
 .ta-feature-card h3 {
-	font-size: 1.15rem;
+	font-size: 24px;
+	font-weight: 500; /* medium */
 	margin: 0 0 10px;
 }
 
 .ta-feature-card p {
 	margin: 0 0 18px;
 	color: var(--ta-muted);
-	font-size: 0.92rem;
+	font-size: 15px;
 	line-height: 1.5;
     max-width: 28ch; /* Esto fuerza un ancho máximo de ~28 caracteres, haciendo que salte solo elegantemente */
 }
@@ -645,7 +733,7 @@ body.admin-bar .ta-header {
 
 .ta-showcase {
 	padding: 64px 24px;
-   /* background: var(--ta-surface); */
+   background: var(--ta-surface); /* blanco, igual que el nav (.ta-header) */
 }
 
 .ta-showcase-header {
@@ -657,17 +745,27 @@ body.admin-bar .ta-header {
 	margin-bottom: 40px;
 }
 
+/* "Ver todo el catálogo" (botón text) del encabezado de Destacados: 12px
+   extrabold y en verde de marca, como pide el usuario. Selector compuesto
+   para ganarle la especificidad a .ta-button--text (color ink). */
+.ta-button--text.ta-showcase-cta {
+	font-size: 12px;
+	font-weight: 800;
+	color: var(--ta-accent);
+}
+
 .ta-showcase-eyebrow {
 	margin: 0 0 12px;
-	font-size: 0.8rem;
-	font-weight: 700;
+	font-size: 12px;
+	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--ta-muted);
 }
 
 .ta-showcase-title {
-	font-size: clamp(1.6rem, 3vw, 2.1rem);
+	font-size: 32px;
+	font-weight: 400;
 	margin: 0;
 }
 
@@ -711,14 +809,14 @@ body.admin-bar .ta-header {
 }
 
 .ta-showcase-card h3 {
-	font-size: 1.1rem;
+	font-size: 20px;
 	margin: 0 0 6px;
 }
 
 .ta-showcase-card p {
 	margin: 0;
 	color: var(--ta-muted);
-	font-size: 0.92rem;
+	font-size: 15px;
 	line-height: 1.5;
 }
 
@@ -742,7 +840,32 @@ body.admin-bar .ta-header {
 }
 
 .ta-story--panel {
-	padding: 0 24px;
+	position: relative;
+	padding: 64px 24px;
+	background: var(--ta-surface); /* blanco: el gris es el bloque centrado de abajo */
+}
+
+/* Franja gris centrada con el MISMO ancho del contenido de .ta-container
+   (la franja de las tarjetas de la guía): shell menos 24px por lado,
+   calculado en % para que sea responsive en todos los anchos */
+.ta-story--panel::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: calc(100% - 48px);
+	max-width: calc(var(--ta-shell-width) - 48px);
+	background: var(--ta-bg);
+}
+
+/* El contenido va directo sobre la franja gris (sin tarjeta): ancho cómodo,
+   centrado dentro del bloque gris */
+.ta-story--panel .ta-story-inner {
+	position: relative;
+	margin-inline: auto;
+	max-width: 1100px;
 }
 
 .ta-story--panel .ta-story-inner {
@@ -813,18 +936,26 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	
 }
 
-.ta-story-eyebrow {
+.ta-story-content .ta-story-eyebrow {
 	margin: 0 0 12px;
-	font-size: 0.8rem;
-	font-weight: 700;
+	font-size: 12px;
+	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--ta-muted);
 }
 
+/* En el panel "Consejo final del experto" (Cuidados) el eyebrow va semibold:
+   igual especificidad, definido después para ganarle a la regla de arriba. */
+.ta-story--panel .ta-story-eyebrow {
+	font-weight: 600;
+	font-size: 12px;
+}
+
 .ta-story-title {
-	font-size: clamp(1.8rem, 3.4vw, 2.4rem);
+	font-size: 48px;
 	line-height: 1.2;
+	font-weight: 400;
 	margin: 0 0 24px;
 	max-width: 22ch;
 }
@@ -832,7 +963,8 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-story-content p {
 	margin: 0 0 18px;
 	color: var(--ta-muted);
-	font-size: 1rem;
+	font-size: 18px;
+	font-weight: 400;
 	line-height: 1.6;
 	max-width: 56ch;
 }
@@ -856,15 +988,15 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-story-stat-value {
-	font-size: 1.6rem;
-	font-weight: 700;
+	font-size: 24px;
+	font-weight: 500;
 	color: var(--ta-accent);
 }
 
 .ta-story-stat-label {
-	font-size: 0.85rem;
+	font-size: 12px;
 	color: var(--ta-accent);
-	font-weight: bold;
+	font-weight: 800;
 }
 
 @media (max-width: 860px) {
@@ -901,10 +1033,10 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-story--panel .ta-story-inner {
-    max-width: 1100px;
-    background: var(--ta-surface) !important; /* Asegura el fondo blanco */
-    border-radius: 0 !important;             /* Quita los bordes redondeados del panel */
-    padding: 48px;
+    max-width: 1100px; /* ancho cómodo centrado; el ancho de la franja lo da el ::before */
+    background: transparent !important; /* sin tarjeta: el contenido va directo sobre el gris (§4.67) */
+    border-radius: 0 !important;
+    padding: 64px 48px;
     gap: 40px;
 }
 
@@ -932,6 +1064,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-cta {
 	padding: 72px 24px;
+	background: var(--ta-surface); /* blanco, igual que el nav (.ta-header) */
 }
 
 .ta-cta-inner {
@@ -941,14 +1074,16 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-cta-title {
-	font-size: clamp(1.6rem, 3.2vw, 2.1rem);
+	font-size: 48px;
+	font-weight: 300; /* light */
 	margin: 0 0 16px;
+	white-space: nowrap; /* "¿Tienes una idea en mente?" en una sola línea */
 }
 
 .ta-cta-description {
 	margin: 0 0 32px;
 	color: var(--ta-muted);
-	font-size: 1rem;
+	font-size: 18px;
 	line-height: 1.6;
 }
 
@@ -984,6 +1119,66 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin-top: 1em;
 }
 
+/* ---- contenido de páginas legales / textos largos (page.php) ---- */
+
+.ta-page-content .entry-content h2 {
+	font-size: 1.25rem;
+	font-weight: 600;
+	margin: 28px 0 8px;
+	color: var(--ta-ink);
+}
+
+.ta-page-content .entry-content h2:first-child {
+	margin-top: 0;
+}
+
+.ta-page-content .entry-content p {
+	font-size: 0.9375rem;
+	line-height: 1.7;
+	color: var(--ta-muted);
+	margin: 0;
+}
+
+.ta-page-content .entry-content strong {
+	color: var(--ta-ink);
+	font-weight: 700;
+}
+
+.ta-page-content .entry-content table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 16px 0;
+	font-size: 0.875rem;
+	
+}
+
+.ta-page-content .entry-content th {
+	text-align: left;
+	font-weight: 700;
+	color: var(--ta-ink);
+	background: var(--ta-bg);
+	padding: 10px 12px;
+	border: 1px solid var(--ta-border);
+}
+
+.ta-page-content .entry-content td {
+	padding: 10px 12px;
+	border: 1px solid var(--ta-border);
+	color: var(--ta-muted);
+}
+
+.ta-page-content .entry-content ul {
+	margin: 8px 0 0;
+	padding-left: 24px;
+	color: var(--ta-muted);
+	font-size: 0.9375rem;
+	line-height: 1.7;
+}
+
+.ta-page-content .entry-content li + li {
+	margin-top: 6px;
+}
+
 /* ---- contacto: info + formulario ---- */
 
 .ta-contact {
@@ -1009,15 +1204,31 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-contact-title {
+	position: relative;
 	font-size: clamp(2rem, 3.6vw, 2.6rem);
-	margin: 0 0 16px;
+	margin: 0 0 18px;
+}
+
+/* Línea subrayada debajo de "Cuéntanos": una barra gruesa que llega hasta las
+   letras "Cu". Usa `ch` relativo al tamaño del propio título (hereda su font),
+   así el ancho escala con el clamp() en vez de quedar fijo. El `bottom`
+   (~16px) deja un salto de línea: la barra queda despegada del texto (~8px
+   debajo del descensor de la "u"), no pegada a las letras. */
+.ta-contact-title::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	bottom: -16px;
+	width: 2.2ch;
+	height: 4px;
+	background: var(--ta-ink);
 }
 
 .ta-contact-divider {
 	display: block;
 	width: 40px;
 	height: 2px;
-	background: var(--ta-border);
+	background: transparent;
 	margin: 0 0 24px;
 }
 
@@ -1077,6 +1288,11 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	border: 1px solid var(--ta-border);
 	border-radius: 0px;
 	padding: 32px;
+	max-width: 680px;
+	/* Baja la tarjeta para que el formulario empiece a la misma altura que la
+	   descripción de la columna izquierda ("Escríbenos con la mayor cantidad
+	   de detalles…"): eyebrow + título + divisora de la columna izquierda. */
+	margin-top: 137px;
 }
 
 .ta-contact-quote {
@@ -1205,6 +1421,14 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	font-size: 0.78rem;
 	font-weight: 400;
 	color: var(--ta-muted);
+}
+
+.ta-contact-files-note {
+	margin: 0;
+	font-size: 0.78rem;
+	font-weight: 400;
+	color: var(--ta-muted);
+	line-height: 1.4;
 }
 
 .ta-contact-tel-wrap {
@@ -1344,6 +1568,39 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	color: #fff;
 }
 
+.ta-contact-form .ta-contact-optin {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	gap: 8px;
+	font-weight: 400;
+	cursor: pointer;
+}
+
+.ta-contact-optin input[type="checkbox"] {
+	width: auto;
+	margin-top: 2px;
+	accent-color: var(--ta-accent);
+}
+
+.ta-contact-optin span {
+	line-height: 1.4;
+}
+
+.ta-contact-optin a {
+	color: var(--ta-accent);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.ta-contact-optin a:hover {
+	color: var(--ta-accent-dark);
+}
+
+.ta-contact-form .ta-contact-accept {
+	font-weight: 600;
+}
+
 .ta-contact-submit {
 	justify-content: center;
 	width: 100%;
@@ -1386,9 +1643,34 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	color: #b3261e;
 }
 
+.ta-contact-alert--info {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	background: #f0f6f3;
+	border: 1px solid #d6e6dc;
+	color: var(--ta-ink);
+	font-weight: 400;
+}
+
+.ta-contact-alert--info .ta-alert-icon {
+	flex: 0 0 auto;
+	display: inline-flex;
+	margin-top: 2px;
+	color: var(--ta-accent);
+}
+
+.ta-contact-alert--info .ta-alert-text {
+	margin: 0;
+	line-height: 1.5;
+}
+
 @media (max-width: 860px) {
 	.ta-contact-inner {
 		grid-template-columns: 1fr;
+	}
+	.ta-contact-form-card {
+		margin-top: 0;
 	}
 }
 
@@ -1428,8 +1710,8 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	border: 1px solid var(--ta-border);
 	border-radius: 999px;
 	color: var(--ta-ink);
-	font-size: 0.9rem;
-	font-weight: 600;
+	font-size: 12px;
+	font-weight: 400;
 	text-decoration: none;
 	transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -1639,7 +1921,6 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	background: var(--ta-bg);
 	color: var(--ta-ink);
 	border-top: 1px solid var(--ta-border);
-	margin-top: 64px;
 }
 
 .ta-footer-top {
@@ -1647,7 +1928,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin: 0 auto;
 	padding: 56px 24px 40px;
 	display: grid;
-	grid-template-columns: 1.4fr 1fr 1fr;
+	grid-template-columns: 1.4fr 1fr 1fr 1fr;
 	gap: 40px;
 }
 
@@ -1662,14 +1943,14 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin: 0;
 	max-width: 32ch;
 	color: var(--ta-muted);
-	font-size: 0.92rem;
+	font-size: 15px;
 	line-height: 1.6;
 }
 
 .ta-footer-heading {
 	margin: 0 0 20px;
-	font-size: 0.8rem;
-	font-weight: 700;
+	font-size: 12px;
+	font-weight: 800;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
 }
@@ -1687,7 +1968,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-footer-links a {
 	color: var(--ta-muted);
 	text-decoration: none;
-	font-size: 0.95rem;
+	font-size: 15px;
 }
 
 .ta-footer-links a:hover {
@@ -1699,7 +1980,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	align-items: center;
 	gap: 10px;
 	color: var(--ta-muted);
-	font-size: 0.92rem;
+	font-size: 15px;
 }
 
 .ta-footer-contact-list a {
@@ -1715,6 +1996,38 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	display: inline-flex;
 	flex: none;
 	color: var(--ta-accent);
+}
+
+.ta-footer-social {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.ta-footer-social a {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border: 1px solid var(--ta-border);
+	border-radius: 8px;
+	color: var(--ta-muted);
+	text-decoration: none;
+	transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.ta-footer-social a:hover {
+	color: var(--ta-accent);
+	border-color: var(--ta-accent);
+	background: rgba(3, 133, 74, 0.06);
+}
+
+.ta-footer-social .ta-footer-icon {
+	color: inherit;
 }
 
 .ta-footer-bottom {

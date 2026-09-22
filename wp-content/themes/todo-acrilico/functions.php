@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.18.5' );
+define( 'TA_VERSION', '1.18.55' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -99,8 +99,9 @@ function ta_get_hero_image_url() {
  * Ícono SVG en línea (trazo, sin relleno) para las tarjetas de ta_render_feature_grid(),
  * el footer y la página de Contacto/Cuidados. Nombres disponibles: 'grid', 'eye', 'shield',
  * 'info', 'pane', 'pin', 'mail', 'clock', 'paperclip', 'thermometer', 'prohibited', 'spray',
- * 'circular'. Cualquier otro nombre devuelve un ícono genérico (círculo) para que nunca se
- * quede algo sin ícono. `$size` (default 28) controla el `width`/`height` del SVG devuelto.
+ * 'circular', 'instagram', 'linkedin'. Cualquier otro nombre devuelve un ícono genérico
+ * (círculo) para que nunca se quede algo sin ícono. `$size` (default 28) controla el
+ * `width`/`height` del SVG devuelto.
  */
 function ta_icon( $name, $size = 28 ) {
 	$icons = array(
@@ -117,6 +118,8 @@ function ta_icon( $name, $size = 28 ) {
 		'prohibited' => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>',
 		'spray'      => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="9" width="7" height="12" rx="1"/><path d="M10 9V6a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v3"/><path d="M15 5h3"/><path d="M16 8h3"/><path d="M17 3h2"/></svg>',
 		'circular'   => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3.5 7.1"/><path d="M3 17v-5h5"/></svg>',
+		'instagram'  => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37Z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>',
+		'linkedin'   => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>',
 	);
 
 	$svg = isset( $icons[ $name ] ) ? $icons[ $name ] : '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
@@ -135,10 +138,12 @@ function ta_icon( $name, $size = 28 ) {
  * informativas, ej. la guía de cuidados). $description (opcional) agrega un párrafo entre
  * el título de la sección y la grilla. Usado en front-page.php para las 4 categorías
  * destacadas y en page-cuidados-del-acrilico.php para la guía de mantenimiento.
+ * $class (opcional) agrega una clase al <section> (p. ej. 'ta-features--white').
  */
-function ta_render_feature_grid( $eyebrow, $title, $items, $description = '' ) {
+function ta_render_feature_grid( $eyebrow, $title, $items, $description = '', $class = '' ) {
+    $section_class = 'ta-features' . ( $class ? ' ' . esc_attr( $class ) : '' );
     ?>
-    <section class="ta-features">
+    <section class="<?php echo $section_class; ?>">
         <div class="ta-container">
             <p class="ta-features-eyebrow"><?php echo esc_html( $eyebrow ); ?></p>
             <h2 class="ta-features-title"><?php echo esc_html( $title ); ?></h2>
@@ -397,10 +402,17 @@ function ta_handle_contact_submit() {
 		exit;
 	}
 
+	// Aceptación obligatoria de la Política de Privacidad y los Términos y
+	// condiciones: sin el checkbox marcado no se envía la cotización.
+	if ( empty( $_POST['acepto_terminos'] ) ) {
+		$fail( 'terminos' );
+	}
+
 	$nombre      = isset( $_POST['nombre'] ) ? sanitize_text_field( wp_unslash( $_POST['nombre'] ) ) : '';
 	$email       = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
 	$celular     = isset( $_POST['celular'] ) ? sanitize_text_field( wp_unslash( $_POST['celular'] ) ) : '';
 	$descripcion = isset( $_POST['descripcion'] ) ? sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ) ) : '';
+	$acepta_ofertas = empty( $_POST['acepta_ofertas'] ) ? '0' : '1';
 	$adjunto_ref = isset( $_POST['adjunto_referencia'] ) ? esc_url_raw( wp_unslash( $_POST['adjunto_referencia'] ) ) : '';
 	$adjunto_ref = ( $adjunto_ref && wp_http_validate_url( $adjunto_ref ) ) ? $adjunto_ref : '';
 	$adjunto_tit  = isset( $_POST['adjunto_titulo'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_titulo'] ) ) : '';
@@ -507,31 +519,80 @@ function ta_handle_contact_submit() {
 
 	$subject = sprintf( 'Nuevo mensaje de contacto — %s', $nombre );
 
-	// Cuerpo en HTML (text/plain como fallback) para que quien reciba el correo
-	// pueda ver la imagen de la pieza a cotizar incrustada, no solo un enlace.
-	$html_body = '<p><strong>Nombre:</strong> ' . esc_html( $nombre ) . '<br>' .
-		'<strong>Celular:</strong> ' . esc_html( $celular ) . '<br>' .
-		'<strong>Correo:</strong> ' . esc_html( $email ) . '</p>' .
-		'<p><strong>Descripción del proyecto:</strong><br>' . nl2br( esc_html( $descripcion ) ) . '</p>';
+	// Cuerpo HTML con el estilo de email definido (tablas de 600px, tonos
+	// neutros). Todos los valores dinámicos van escapados (esc_html / esc_url /
+	// esc_attr); la imagen de la pieza a cotizar se incrusta por su URL pública
+	// ya validada con wp_http_validate_url() — más seguro y compatible con
+	// webmail que un CID, y sin datos personales incrustados.
+	$html_body = '<!DOCTYPE html>'
+		. '<html lang="es"><head><meta charset="UTF-8">'
+		. '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+		. '<title>Nuevo mensaje de contacto</title></head>'
+		. '<body style="margin: 0; padding: 20px; background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; color: #333333;">'
+		// Contenedor principal.
+		. '<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">'
+		// Encabezado / título.
+		. '<tr><td style="padding: 24px 24px 16px 24px;">'
+		. '<h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #0f172a;">Nuevo mensaje de contacto — <span style="font-weight: 400;">' . esc_html( $nombre ) . '</span></h2>'
+		. '</td></tr>'
+		// DATOS DEL CLIENTE.
+		. '<tr><td style="padding: 0 24px 20px 24px;">'
+		. '<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">DATOS DEL CLIENTE</p>'
+		. '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; border-top: 1px solid #e2e8f0;">'
+		. '<tr style="border-bottom: 1px solid #f1f5f9;"><td width="28%" style="padding: 10px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">NOMBRE</td>'
+		. '<td style="padding: 10px 0; font-size: 14px; color: #1e293b;">' . esc_html( $nombre ) . '</td></tr>'
+		. '<tr style="border-bottom: 1px solid #f1f5f9;"><td width="28%" style="padding: 10px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">CELULAR</td>'
+		. '<td style="padding: 10px 0; font-size: 14px; color: #1e293b;">' . esc_html( $celular ) . '</td></tr>'
+		. '<tr style="border-bottom: 1px solid #f1f5f9;"><td width="28%" style="padding: 10px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">CORREO</td>'
+		. '<td style="padding: 10px 0; font-size: 14px; color: #1e293b;">' . esc_html( $email ) . '</td></tr>'
+		. '</table>'
+		// Consentimiento: la línea siempre se muestra, con check (aceptó) o cruz
+		// (no aceptó). Verde si aceptó, gris neutro si no.
+		. '<p style="margin: 8px 0 0 0; font-size: 12px; color: ' . ( '1' === $acepta_ofertas ? '#15903e' : '#64748b' ) . ';">'
+		. ( '1' === $acepta_ofertas ? '✓ Aceptó recibir ofertas y comunicaciones comerciales.' : '✗ No aceptó recibir ofertas y comunicaciones comerciales.' )
+		. '</p>'
+		. '</td></tr>'
+		// DESCRIPCIÓN DEL PROYECTO.
+		. '<tr><td style="padding: 0 24px 24px 24px;">'
+		. '<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">DESCRIPCIÓN DEL PROYECTO</p>'
+		. '<div style="font-size: 14px; line-height: 1.5; color: #334155;">' . nl2br( esc_html( $descripcion ) ) . '</div>'
+		. '</td></tr>';
 
 	// Información de la pieza a cotizar, pasada automáticamente al hacer clic en
 	// "Cotizar esta pieza" en el catálogo (page-nuestras-soluciones.php).
 	if ( $adjunto_ref || $adjunto_tit || $adjunto_desc || $adjunto_med ) {
-		$html_body .= '<h3 style="margin:18px 0 6px;font-size:14px;">Pieza a cotizar</h3>';
+		$html_body .= '<tr><td style="padding: 0 24px 24px 24px;">'
+			. '<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">PIEZA A COTIZAR</p>';
 		if ( $adjunto_tit ) {
-			$html_body .= '<p style="margin:0 0 4px;"><strong>Título:</strong> ' . esc_html( $adjunto_tit ) . '</p>';
-		}
-		if ( $adjunto_desc ) {
-			$html_body .= '<p style="margin:0 0 4px;"><strong>Descripción:</strong> ' . nl2br( esc_html( $adjunto_desc ) ) . '</p>';
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Título:</strong> ' . esc_html( $adjunto_tit ) . '</p>';
 		}
 		if ( $adjunto_med ) {
-			$html_body .= '<p style="margin:0 0 4px;"><strong>Medidas:</strong> ' . esc_html( $adjunto_med ) . '</p>';
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Medidas:</strong> ' . esc_html( $adjunto_med ) . '</p>';
+		}
+		if ( $adjunto_desc ) {
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Descripción:</strong> ' . nl2br( esc_html( $adjunto_desc ) ) . '</p>';
 		}
 		if ( $adjunto_ref ) {
-			$html_body .= '<p><img src="' . esc_url( $adjunto_ref ) . '" alt="' . esc_attr( $adjunto_tit ? $adjunto_tit : 'Imagen de la pieza a cotizar' ) . '" style="max-width:100%;height:auto;border:1px solid #e0e4e3;border-radius:6px;"></p>' .
-				'<p>Ver imagen: <a href="' . esc_url( $adjunto_ref ) . '">' . esc_html( $adjunto_ref ) . '</a></p>';
+			$html_body .= '<div style="margin-top: 8px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; background-color: #000000; text-align: center;">'
+				. '<img src="' . esc_url( $adjunto_ref ) . '" alt="' . esc_attr( $adjunto_tit ? $adjunto_tit : 'Imagen de la pieza a cotizar' ) . '" style="display: block; width: 100%; max-width: 100%; height: auto;">'
+				. '<div style="padding: 8px 12px; background-color: #ffffff; text-align: left; font-size: 12px; color: #475569; border-top: 1px solid #e2e8f0;">' . esc_html( $adjunto_tit ? $adjunto_tit : 'Imagen de la pieza a cotizar' ) . '</div>'
+				. '</div>'
+				. '<p style="margin: 8px 0 0; font-size: 12px; color: #64748b;">Ver imagen: <a href="' . esc_url( $adjunto_ref ) . '" style="color: #15903e;">' . esc_html( $adjunto_ref ) . '</a></p>';
 		}
+		$html_body .= '</td></tr>';
 	}
+
+	// Archivos adjuntos del formulario: resumen estilizado (los archivos reales
+	// viajan adjuntos al correo con wp_mail(); no se incrustan en línea).
+	if ( $adjunto_paths ) {
+		$html_body .= '<tr><td style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background-color: #fafbfc;">'
+			. '<p style="margin: 0; font-size: 12px; color: #64748b;">📎 <strong>' . count( $adjunto_paths ) . ( count( $adjunto_paths ) === 1 ? ' archivo adjunto' : ' archivos adjuntos' ) . '</strong> &nbsp;·&nbsp; Analizados automáticamente</p>'
+			. '<p style="margin: 6px 0 0; font-size: 12px; color: #475569;">' . esc_html( implode( ' · ', array_map( 'basename', $adjunto_paths ) ) ) . '</p>'
+			. '</td></tr>';
+	}
+
+	// Cierre del contenedor.
+	$html_body .= '</table></body></html>';
 
 	// Sin "From" propio a propósito: dejarlo así es lo que hace que un plugin SMTP
 	// (WP Mail SMTP, etc.) controle el remitente sin que este código le compita.
@@ -745,13 +806,19 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
             $groups = ta_get_solutions_by_category();
 
             if ( ! empty( $groups ) ) {
+                $catalog_url = get_permalink( $this->get_solutions_page_id() );
+
                 $output .= '<button type="button" class="ta-nav-caret-toggle" aria-expanded="false" aria-label="Mostrar categorías de catálogo"></button>';
                 $output .= '<ul class="ta-nav-dropdown">';
+                $output .= sprintf(
+                    '<li><a href="%1$s">%2$s</a></li>',
+                    esc_url( $catalog_url ),
+                    esc_html__( 'Todas las piezas', 'todo-acrilico' )
+                );
                 foreach ( $groups as $group ) {
                     $output .= sprintf(
-                        '<li><a href="%1$s#categoria-%2$s">%3$s</a></li>',
-                        esc_url( get_permalink( $this->get_solutions_page_id() ) ),
-                        esc_attr( $group['slug'] ),
+                        '<li><a href="%1$s">%2$s</a></li>',
+                        esc_url( add_query_arg( 'categoria', $group['slug'], $catalog_url ) ),
                         esc_html( $group['name'] )
                     );
                 }

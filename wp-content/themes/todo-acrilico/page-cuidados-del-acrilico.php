@@ -35,9 +35,10 @@ ta_render_feature_grid(
             'description' => 'Aplica cera de pulir y frota <br>suavemente en movimientos <br>circulares.',
         ),
     ),
-    'El acrílico es un material noble y duradero que requiere de atenciones específicas para <br> 
-	 conservar su transparencia y brillo original por décadas. Sigue estas recomendaciones <br>
-	 arquitectónicas para su correcta preservación.'
+'El acrílico es un material noble y duradero que requiere de atenciones específicas para <br> 
+ 	 conservar su transparencia y brillo original por décadas. Sigue estas recomendaciones <br>
+ 	 arquitectónicas para su correcta preservación.',
+    'ta-features--white ta-features--hero-title'
 );
 
 ta_render_story_section(

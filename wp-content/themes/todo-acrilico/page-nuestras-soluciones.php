@@ -71,10 +71,10 @@ if ( $active_tab && taxonomy_exists( 'jg_gallery_category' ) ) {
 $products = post_type_exists( 'jg_gallery_image' ) ? new WP_Query( $query_args ) : null;
 ?>
 
-<section class="ta-features">
+<section class="ta-features ta-features--catalog">
 	<div class="ta-container">
 		<p class="ta-features-eyebrow">Nuestro Catálogo</p>
-		<h2 class="ta-features-title">Encuentra la Pieza que Necesitas.</h2>
+		<h2 class="ta-features-title">Encuentra la Pieza que Necesitas</h2>
 		<p class="ta-features-description">Explora nuestra colección de piezas y productos fabricados en acrílico.<br>Diseñados para ofrecer durabilidad, precisión y un acabado de alta calidad para<br>cualquier proyecto.</p>
 
 		<?php ta_render_filter_tabs( $tabs, $active_tab, 'categoria' ); ?>

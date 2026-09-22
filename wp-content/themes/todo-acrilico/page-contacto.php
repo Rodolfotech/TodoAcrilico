@@ -8,6 +8,11 @@ get_header();
 $contacto_page = get_page_by_path( 'contacto' );
 $contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/contacto/' );
 
+$ta_privacy_page = get_page_by_path( 'politica-de-privacidad' );
+$ta_terms_page   = get_page_by_path( 'terminos-y-condiciones' );
+$ta_privacy_url  = $ta_privacy_page ? get_permalink( $ta_privacy_page ) : home_url( '/' );
+$ta_terms_url    = $ta_terms_page ? get_permalink( $ta_terms_page ) : home_url( '/' );
+
 $ta_contact_status = isset( $_GET['ta_contact'] ) ? sanitize_key( $_GET['ta_contact'] ) : '';
 $ta_contact_reason = isset( $_GET['reason'] ) ? sanitize_key( $_GET['reason'] ) : '';
 
@@ -29,6 +34,7 @@ $ta_contact_error_messages = array(
 	'archivo_grande' => 'El archivo adjunto no puede superar los 5 MB.',
 	'archivo_tipo'   => 'El archivo adjunto debe ser una imagen (JPG, PNG, GIF o WEBP) o un PDF.',
 	'archivos_muchos'=> 'Puedes adjuntar hasta 5 archivos.',
+	'terminos'       => 'Debes aceptar la Política de Privacidad y los Términos y condiciones para continuar.',
 	'nonce'          => 'Tu sesión expiró, vuelve a intentarlo.',
 	'envio'          => 'No se pudo enviar el mensaje. Intenta de nuevo más tarde.',
 );
@@ -153,6 +159,19 @@ $ta_contact_error_messages = array(
 						<?php echo ta_icon( 'paperclip', 16 ); ?>Adjuntar imagen, PDF del boceto o producto (opcional)
 					</label>
 					<div id="ta-adjunto-list"></div>
+				</div>
+				<p class="ta-contact-files-note">Nota: Por favor no adjunte documentos con datos personales sensibles o cédula de identidad.</p>
+				<label class="ta-contact-optin ta-contact-accept">
+					<input type="checkbox" name="acepto_terminos" value="1" required>
+					<span>He leído y acepto <a href="<?php echo esc_url( $ta_privacy_url ); ?>">la Política de Privacidad</a> y los <a href="<?php echo esc_url( $ta_terms_url ); ?>">Términos y condiciones</a>.</span>
+				</label>
+				<label class="ta-contact-optin">
+					<input type="checkbox" name="acepta_ofertas" value="1">
+					<span>(Opcional) Acepto recibir ofertas y comunicaciones comerciales.</span>
+				</label>
+				<div class="ta-contact-alert ta-contact-alert--info" role="note">
+					<span class="ta-alert-icon" aria-hidden="true"><?php echo ta_icon( 'shield', 18 ); ?></span>
+					<p class="ta-alert-text">Sus datos serán tratados conforme a la ley 21.719 para gestionar su cotización. Consulte nuestra Política de Privacidad o ejerza sus derechos en contacto@todoacrilico.cl</p>
 				</div>
 				<button type="submit" class="ta-button ta-button--dark ta-contact-submit">
 					Enviar mensaje
