@@ -1731,8 +1731,8 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-solutions-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-	gap: 20px;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 28px;
 }
 
 /* El CSS y la jerarquía .jg-pagination se cargan directamente desde el plugin.
@@ -1757,9 +1757,12 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	color: #fff;
 }
 
+/* Tarjetas del catálogo: misma línea visual que las "Piezas más solicitadas"
+   del inicio (.ta-showcase-card): sin borde ni fondo, imagen flotante sobre
+   fondo claro con 18px bajo la figura (pedido del usuario, §4.97). */
 .ta-solution-card {
-	background: var(--ta-surface);
-	border: 1px solid var(--ta-border);
+	background: transparent;
+	border: none;
 	border-radius: 0;
 	overflow: hidden;
 	display: flex;
@@ -1769,14 +1772,16 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-solution-figure {
 	position: relative;
 	aspect-ratio: 4 / 3;
-	background: #eee;
+	background: var(--ta-bg);
 	overflow: hidden;
+	margin-bottom: 18px;
 }
 
 .ta-solution-figure img {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+	display: block;
 }
 
 .ta-solution-badge {
@@ -1848,19 +1853,21 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-solution-body {
-	padding: 14px 16px 18px;
-	background: var(--ta-bg);
+	padding: 0;
+	background: transparent;
 	flex-grow: 1;
 }
 
 .ta-solution-body h3 {
-	font-size: 1rem;
-	margin-bottom: 6px;
+	font-size: 24px; /* igual que .ta-feature-card h3 ("Cuatro maneras de trabajar") */
+	font-weight: 500;
+	margin: 0 0 10px;
 }
 
 .ta-solution-body p {
 	margin: 0;
-	font-size: 0.9rem;
+	font-size: 0.9375rem; /* 15px, igual que .ta-feature-card p */
+	line-height: 1.5;
 	color: var(--ta-muted);
 }
 

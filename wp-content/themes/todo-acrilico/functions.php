@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.18.55' );
+define( 'TA_VERSION', '1.18.61' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -93,7 +93,18 @@ function ta_get_hero_image_url() {
     // y bajo la que WP realmente guarda el valor (ver theme_mods_todo-acrilico en
     // wp_options). Antes leía 'ta_hero_image' (sin "_url"), una key que nunca se
     // escribe, así que cambiar la imagen desde Personalizar nunca tenía efecto.
-    return get_theme_mod( 'ta_hero_image_url', 'https://i.postimg.cc/TYX3CTrK/home.webp' );
+    $stored = get_theme_mod( 'ta_hero_image_url', '' );
+
+    // Imagen de portada local (pedido del usuario: nada de enlaces externos).
+    // El valor por defecto antiguo apuntaba a un hosting externo (i.postimg.cc);
+    // si está guardado ese mismo, se ignora y se usa la local.
+    $local = get_template_directory_uri() . '/assets/img/home/home.webp';
+
+    if ( '' === $stored || 'https://i.postimg.cc/TYX3CTrK/home.webp' === $stored ) {
+        return $local;
+    }
+
+    return $stored;
 }
 /**
  * Ícono SVG en línea (trazo, sin relleno) para las tarjetas de ta_render_feature_grid(),
@@ -348,8 +359,8 @@ function ta_render_cta_section( $title, $description, $button_label, $button_url
  * §1.10). Filtrable con `ta_contact_email` para no tener que tocar código si cambia.
  */
 function ta_get_contact_email() {
-	// return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
-	return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
+	 return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
+	//return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
 }
 
 
@@ -421,6 +432,8 @@ function ta_handle_contact_submit() {
 	$adjunto_desc = $adjunto_desc ? wp_strip_all_tags( trim( $adjunto_desc ) ) : '';
 	$adjunto_med  = isset( $_POST['adjunto_medidas'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_medidas'] ) ) : '';
 	$adjunto_med  = $adjunto_med ? trim( $adjunto_med ) : '';
+	$adjunto_uso  = isset( $_POST['adjunto_uso'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_uso'] ) ) : '';
+	$adjunto_uso  = $adjunto_uso ? trim( $adjunto_uso ) : '';
 
 	if ( '' === $nombre || '' === $descripcion ) {
 		$fail( 'campos' );
@@ -565,6 +578,9 @@ function ta_handle_contact_submit() {
 			. '<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">PIEZA A COTIZAR</p>';
 		if ( $adjunto_tit ) {
 			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Título:</strong> ' . esc_html( $adjunto_tit ) . '</p>';
+		}
+		if ( $adjunto_uso ) {
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Uso:</strong> ' . esc_html( $adjunto_uso ) . '</p>';
 		}
 		if ( $adjunto_med ) {
 			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Medidas:</strong> ' . esc_html( $adjunto_med ) . '</p>';

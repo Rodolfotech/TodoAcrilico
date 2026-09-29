@@ -24,6 +24,8 @@ $ta_quote_desc    = isset( $_GET['descripcion'] ) ? sanitize_textarea_field( wp_
 $ta_quote_desc    = $ta_quote_desc ? wp_strip_all_tags( trim( $ta_quote_desc ) ) : '';
 $ta_quote_meas    = isset( $_GET['medidas'] ) ? sanitize_text_field( wp_unslash( $_GET['medidas'] ) ) : '';
 $ta_quote_meas    = $ta_quote_meas ? trim( $ta_quote_meas ) : '';
+$ta_quote_uso     = isset( $_GET['uso'] ) ? sanitize_text_field( wp_unslash( $_GET['uso'] ) ) : '';
+$ta_quote_uso     = $ta_quote_uso ? trim( $ta_quote_uso ) : '';
 $ta_has_quote     = (bool) $ta_quote_image;
 
 $ta_contact_error_messages = array(
@@ -98,6 +100,9 @@ $ta_contact_error_messages = array(
 						<?php if ( $ta_quote_desc ) : ?>
 							<span class="ta-contact-quote-desc"><?php echo esc_html( $ta_quote_desc ); ?></span>
 						<?php endif; ?>
+						<?php if ( $ta_quote_uso ) : ?>
+							<span class="ta-contact-quote-uso"><strong>Uso:</strong> <?php echo esc_html( $ta_quote_uso ); ?></span>
+						<?php endif; ?>
 						<?php if ( $ta_quote_meas ) : ?>
 							<span class="ta-contact-quote-medi"><strong>Medidas:</strong> <?php echo esc_html( $ta_quote_meas ); ?></span>
 						<?php endif; ?>
@@ -117,6 +122,9 @@ $ta_contact_error_messages = array(
 					<?php endif; ?>
 					<?php if ( $ta_quote_desc ) : ?>
 						<input type="hidden" name="adjunto_descripcion" value="<?php echo esc_attr( $ta_quote_desc ); ?>">
+					<?php endif; ?>
+					<?php if ( $ta_quote_uso ) : ?>
+						<input type="hidden" name="adjunto_uso" value="<?php echo esc_attr( $ta_quote_uso ); ?>">
 					<?php endif; ?>
 					<?php if ( $ta_quote_meas ) : ?>
 						<input type="hidden" name="adjunto_medidas" value="<?php echo esc_attr( $ta_quote_meas ); ?>">

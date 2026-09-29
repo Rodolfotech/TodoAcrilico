@@ -98,17 +98,17 @@ ta_render_showcase_grid(
 		array(
 			'title'       => 'Buzón',
 			'description' => 'Buzón transparente para sugerencias, votaciones o sorteos.',
-			'image_url'   => 'https://i.postimg.cc/fbkX7YdT/buzon-acrilico-transparente.webp',
+			'image_url'   => get_template_directory_uri() . '/assets/img/home/buzon-acrilico-transparente.webp',
 		),
 		array(
 			'title'       => 'Organizador de escritorio',
 			'description' => 'Compartimentos abiertos para papelería y accesorios.',
-			'image_url'   => 'https://i.postimg.cc/qqcCBwf4/organizador-de-escritorio.webp',
+			'image_url'   => get_template_directory_uri() . '/assets/img/home/organizador-de-escritorio.webp',
 		),
 		array(
 			'title'       => 'Bandeja modular',
 			'description' => 'Bandejas apilables para separar productos o insumos.',
-			'image_url'   => 'https://i.postimg.cc/jjGWzmtK/bandeja-modular.webp',
+			'image_url'   => get_template_directory_uri() . '/assets/img/home/bandeja-modular.webp',
 		),
 	),
 	array(
@@ -135,7 +135,7 @@ ta_render_story_section(
 				'label' => 'Años de experiencia',
 			),
 		),
-		'image_url'  => 'https://i.postimg.cc/t4c7jw1W/equipo-todo-acrilico.webp',
+		'image_url'  => get_template_directory_uri() . '/assets/img/home/equipo-todo-acrilico.webp',
 	)
 );
 

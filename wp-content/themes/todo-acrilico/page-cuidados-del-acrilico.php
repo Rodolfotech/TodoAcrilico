@@ -54,7 +54,7 @@ ta_render_story_section(
 			 permanentemente la superficie.',
         ),
         'stats'           => array(),
-        'image_url'       => 'https://i.postimg.cc/Kj93gzYt/cuidados.webp',
+        'image_url'       => get_template_directory_uri() . '/assets/img/cuidados/cuidados.webp',
         'show_logo_badge' => false,
         'media_position'  => 'right',
         'panel'           => true,

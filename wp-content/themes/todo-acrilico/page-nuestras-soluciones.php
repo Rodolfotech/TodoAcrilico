@@ -8,41 +8,31 @@ get_header();
 $contacto_page = get_page_by_path( 'contacto' );
 $contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/' );
 
-$tab_labels = array(
-	'exhibir'             => 'Exhibir',
-	'informar'            => 'Informar',
-	'organizador'         => 'Organizador',
-	'proteger'            => 'Proteger',
-	'trabajos-especiales' => 'Trabajos Especiales',
-);
-$tabs       = array(
+$tabs = array(
 	array(
 		'label' => 'Todos',
 		'value' => '',
 	),
 );
-$terms_by_name = array();
 
 if ( taxonomy_exists( 'jg_gallery_category' ) ) {
 	$terms = get_terms(
 		array(
 			'taxonomy'   => 'jg_gallery_category',
 			'hide_empty' => false,
+			'orderby'    => 'name',
+			'order'      => 'ASC',
 		)
 	);
 
 	if ( ! is_wp_error( $terms ) ) {
 		foreach ( $terms as $term ) {
-			$terms_by_name[ sanitize_title( $term->name ) ] = $term;
+			$tabs[] = array(
+				'label' => $term->name,
+				'value' => $term->slug,
+			);
 		}
 	}
-}
-
-foreach ( $tab_labels as $tab_key => $tab_label ) {
-	$tabs[] = array(
-		'label' => $tab_label,
-		'value' => isset( $terms_by_name[ $tab_key ] ) ? $terms_by_name[ $tab_key ]->slug : $tab_key,
-	);
 }
 
 $requested_tab = isset( $_GET['categoria'] ) ? sanitize_key( wp_unslash( $_GET['categoria'] ) ) : '';
@@ -99,6 +89,7 @@ $products = post_type_exists( 'jg_gallery_image' ) ? new WP_Query( $query_args )
 						}
 					}
 
+					$usage        = get_post_meta( $product->ID, '_jg_usage', true );
 					$measurements = get_post_meta( $product->ID, '_jg_measurements', true );
 
 					$quote_url = add_query_arg(
@@ -107,6 +98,7 @@ $products = post_type_exists( 'jg_gallery_image' ) ? new WP_Query( $query_args )
 								'imagen'      => ! empty( $urls ) ? $urls[0] : null,
 								'pieza'       => get_the_title( $product ) ?: null,
 								'descripcion' => $product->post_content ? trim( $product->post_content ) : null,
+								'uso'         => $usage ? trim( $usage ) : null,
 								'medidas'     => $measurements ? trim( $measurements ) : null,
 							)
 						),
@@ -142,6 +134,10 @@ $products = post_type_exists( 'jg_gallery_image' ) ? new WP_Query( $query_args )
 								<h3><?php echo esc_html( get_the_title( $product ) ); ?></h3>
 								<?php if ( $product->post_content ) : ?>
 									<p><?php echo esc_html( $product->post_content ); ?></p>
+									<?php endif; ?>
+									<?php $usage = get_post_meta( $product->ID, '_jg_usage', true ); ?>
+									<?php if ( $usage ) : ?>
+										<p class="ta-solution-usage"><strong>Uso:</strong> <?php echo esc_html( $usage ); ?></p>
 									<?php endif; ?>
 									<?php $measurements = get_post_meta( $product->ID, '_jg_measurements', true ); ?>
 									<?php if ( $measurements ) : ?>

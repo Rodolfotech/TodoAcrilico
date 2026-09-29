@@ -5,7 +5,7 @@
 > mejoras propuestas **sin modificar el código existente**. Si una mejora se
 > implementa, se mueve a "Cambios aplicados" y se actualiza este documento.
 >
-> Última revisión: 2026-08-25 · Versión del plugin: **1.3.3**
+> Última revisión: 2026-09-29 · Versión del plugin: **1.4.7**
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 1. Estructura de archivos (estado real, v1.3.3)
+## 1. Estructura de archivos (estado real, v1.4.7)
 
 ```
 jwt-gallery/
@@ -53,7 +53,7 @@ jwt-gallery/
 ## 2. Detalle por archivo
 
 ### 2.1 `jwt-gallery.php` (raíz)
-- Cabecera del plugin, define `JG_VERSION` (1.3.3), `JG_PATH`, `JG_URL`.
+- Cabecera del plugin, define `JG_VERSION` (1.4.7), `JG_PATH`, `JG_URL`.
 - Carga las 5 clases de `includes/` y las inicializa.
 - `register_activation_hook`: genera el secret JWT, registra CPT/taxonomía,
   siembra categorías por defecto y hace `flush_rewrite_rules()`.
@@ -210,8 +210,10 @@ de prueba temporal:
 - Los productos publicados **no necesitan subirse de nuevo**. Viven en la
   base de datos (`wp_posts` tipo `jg_gallery_image`) con las URLs en el meta
   `_jg_image_url` y las categorías como términos de la taxonomía.
-- Los cambios recientes tocaron solo `.htaccess`, `jwt-gallery.js` y el
-  número de versión — nada de la base de datos.
+- Desde 1.4.0 esas URLs apuntan a **archivos locales** en
+  `wp-content/uploads/jg-gallery/` (migración de §8.1): ya no hay hostings
+  externos. El endpoint de subida acepta archivos del dispositivo
+  (`$_FILES`) y guarda en ese directorio.
 - El endpoint `GET /images` lista todo lo `publish`; si una publicación está
   en `draft` o `trash` no aparece (filtro `post_status => 'publish'` en
   `list_images()`, línea 347 de class-jg-rest.php).
@@ -223,9 +225,13 @@ de prueba temporal:
 > Anotadas para revisión futura. Implementar solo con aprobación explícita.
 
 ### 6.1 Documentación
-- `Docs_Plugin.md` (raíz del proyecto) está en 1.2.1; el código real es
-  1.3.3. Convendría sincronizarlo o marcar este `theme.md` como fuente de
-  verdad.
+- `Docs_Plugin.md` (raíz del proyecto) ya está sincronizado con el código
+  real (**1.4.7**, 2026-09-29). Este `theme.md` se mantiene como bitácora
+  de análisis y complemento del `Docs_Plugin.md`.
+- El tema `todo-acrilico` documenta su lado en `Docs_theme.md`
+  (`TA_VERSION` 1.18.61): las pestañas del catálogo se construyen desde la
+  taxonomía `jg_gallery_category` (hide_empty=false) y las piezas son
+  archivos locales.
 
 ### 6.2 Seguridad
 - Rotar `AUTH_KEY` / `SECURE_AUTH_KEY` de `wp-config.php` (anotado también en
@@ -254,12 +260,14 @@ de prueba temporal:
 ### 6.4 Backend
 - `update_image()` valida el título como obligatorio pero permite descripción
   vacía. Consistente con el form.
-- No hay límite de tamaño en la descripción desde el backend (el form JS
-  tiene `maxlength="600"`); se podría replicar con `sanitize_textarea_field`
-  + validación de longitud en el endpoint.
+- Los límites de longitud **ya están implementados** desde 1.4.3–1.4.5:
+  título 43 (`jg_title_too_long`), descripción 120
+  (`jg_description_too_long`) y uso 43 (`jg_usage_too_long`), validados en
+  el backend además del `maxlength` del formulario.
 - `delete_image()` usa `wp_delete_post($post->ID, true)` (borrado definitivo,
-  sin papelera). Hoy es lo esperado para un panel admin; si se quiere
-  deshacer, cambiar el segundo argumento a `false` enviaría a papelera.
+  sin papelera) y, desde 1.4.1, también borra los archivos locales
+  asociados (`delete_local_images()`); `delete_category()` borra además
+  todas las piezas de la categoría (posts + archivos).
 
 ---
 
@@ -271,3 +279,40 @@ de prueba temporal:
 - Antes de editar código, releer el archivo correspondiente de la sección 2
   para respetar la convención existente (vanilla JS, sin framework, helpers
   estáticos, nombres `jg_*`, etc.).
+
+---
+
+## 8. Cambios aplicados v1.4.0 → 1.4.7 (2026-09-20 a 2026-09-29)
+
+> Detalle completo, con verificación e2e, en `Docs_Plugin.md` §12.30–§12.35.
+
+### 8.1 Migración a imágenes locales (2026-09-20)
+- 51/51 piezas del catálogo pasaron de URLs externas a archivos locales en
+  `wp-content/uploads/jg-gallery/`; `_jg_image_url` reescrito a ruta local.
+
+### 8.2 Subida y edición por archivos reales — v1.4.0
+- `buildImagePicker()` reemplaza al repetidor de URLs en el panel.
+- Backend: `prepare_file_params()`, `save_uploaded_image()`,
+  `jg_uploads_dir()`, `delete_local_images()`, `collect_image_sources()`;
+  `MAX_UPLOAD_BYTES` (8 MB) y extensiones permitidas.
+- Edición por **POST + `X-HTTP-Method-Override: PUT`** (multipart no
+  puebla `$_FILES` en PUT).
+
+### 8.3 Eliminar categoría elimina sus piezas — v1.4.1
+- `delete_category()` borra posts + archivos de la categoría y devuelve
+  `pieces_deleted`; el modal del panel avisa y refresca la grilla.
+
+### 8.4 Campo "Uso" y límites — v1.4.2 a 1.4.5
+- Meta `_jg_usage` (máx. 43) en upload/update/format y en la tarjeta/cotización.
+- Límites backend+frontend: título 43, descripción 120, uso 43.
+
+### 8.5 Tipografía Manrope — v1.4.6 y 1.4.7
+- `body.jg-blank-page`, modal y todas las secciones del panel/login con
+  `font-family: "Manrope"`; títulos de sección 24px/500, textos 0.9375rem,
+  alineados con el componente "Cuatro maneras de trabajar el acrílico" del
+  tema (`TA_VERSION` 1.18.61).
+
+### 8.6 Estado verificado (v1.4.7)
+- Login, subida por archivos, edición, borrado, gestión de categorías (con
+  eliminación de piezas) y límites verificados e2e. Pendiente solo la
+  reautorización del SMTP del sitio (`Docs_theme.md` §4.40/§6.2).

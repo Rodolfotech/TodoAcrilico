@@ -100,15 +100,19 @@ class JG_Shortcode {
 				<aside class="jg-sidebar">
 					<div class="jg-panel jg-sidebar-block">
 						<h3>Subir imagen</h3>
-						<p class="jg-sidebar-hint">Publica desde un enlace externo</p>
+						<p class="jg-sidebar-hint">Sube imágenes desde tu dispositivo, se guardan dentro de WordPress</p>
 						<form class="jg-form" data-jg-upload>
 							<label>
 								Título
-								<input type="text" name="title" maxlength="120" placeholder="Ej. Vitrina modular 03" required>
+								<input type="text" name="title" maxlength="43" placeholder="Ej. Vitrina modular 03" required>
 							</label>
 							<label>
 								Descripción
-								<textarea name="description" maxlength="600" rows="3" placeholder="Breve descripción de la pieza…"></textarea>
+								<textarea name="description" maxlength="120" rows="3" placeholder="Breve descripción de la pieza…"></textarea>
+								</label>
+								<label>
+									Uso
+									<input type="text" name="usage" maxlength="43" placeholder="Ej. Exhibición en vitrinas">
 								</label>
 								<label>
 									Medidas
