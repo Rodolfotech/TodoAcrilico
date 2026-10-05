@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.18.61' );
+define( 'TA_VERSION', '1.18.78' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -22,7 +22,9 @@ function ta_assets() {
 	wp_enqueue_style( 'ta-style', get_stylesheet_uri(), array(), TA_VERSION );
 
 	// El catálogo reutiliza literalmente los estilos del paginador del panel.
-	if ( is_page( 'nuestras-soluciones' ) && wp_style_is( 'jg-gallery', 'registered' ) ) {
+	$catalog_page = ta_find_page( array( 'nuestras-soluciones', 'soluciones' ) );
+
+	if ( $catalog_page && is_page( $catalog_page->ID ) && wp_style_is( 'jg-gallery', 'registered' ) ) {
 		wp_enqueue_style( 'jg-gallery' );
 	}
 
@@ -780,6 +782,228 @@ function ta_get_pagination_pages( $current, $total ) {
 }
 
 /**
+ * Normaliza un texto para compararlo sin depender de mayúsculas ni
+ * acentos: "Cuidados del Acrílico" == "cuidados del acrilico".
+ *
+ * @param string $text
+ * @return string
+ */
+function ta_normalize_text( $text ) {
+	return strtolower(
+		strtr(
+			(string) $text,
+			array(
+				'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+				'ñ' => 'n', 'ü' => 'u',
+				'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u',
+				'Ñ' => 'n', 'Ü' => 'u',
+			)
+		)
+	);
+}
+
+/**
+ * Resuelve una página del sitio sin depender de que conserve el slug "de
+ * apariencia". Tras una migración (p. ej. Softaculous) las páginas suelen
+ * conservar su título pero cambiar de slug ("Nuestras soluciones" → services),
+ * lo que dejaba al tema sin enlaces, sin desplegable ni sin plantillas.
+ * Estrategia:
+ *
+ *  1. Coincidencia exacta por slug canónico (`get_page_by_path`).
+ *  2. Entre las páginas publicadas, la primera cuyo título o slug contenga
+ *     (sin mayúsculas ni acentos) alguna de las palabras clave dadas.
+ *
+ * Primero se prueban todos los slugs canónicos y después, por cada palabra
+ * clave, las páginas ordenadas por título. Devuelve `null` si no coincide nada.
+ *
+ * @param string|string[] $needles Slug(s) canónico(s) y/o palabra(s) clave de título.
+ * @return WP_Post|null
+ */
+function ta_find_page( $needles ) {
+	$needles = (array) $needles;
+
+	foreach ( $needles as $slug ) {
+		$page = get_page_by_path( $slug, OBJECT, 'page' );
+		if ( $page && 'page' === $page->post_type ) {
+			return $page;
+		}
+	}
+
+	$haystacks = array();
+	foreach ( get_pages( array( 'post_status' => 'publish', 'sort_column' => 'post_title' ) ) as $page ) {
+		$haystacks[] = (object) array(
+			'page' => $page,
+			'key'  => ta_normalize_text( $page->post_title . ' ' . $page->post_name ),
+		);
+	}
+
+	foreach ( $needles as $needle ) {
+		$needle = ta_normalize_text( $needle );
+		if ( '' === $needle ) {
+			continue;
+		}
+		foreach ( $haystacks as $haystack ) {
+			if ( false !== strpos( $haystack->key, $needle ) ) {
+				return $haystack->page;
+			}
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Asigna la plantilla dedicada de cada página (Catálogo, Cuidados, Contacto)
+ * aunque su slug no sea el "de apariencia". WordPress elige plantilla con la
+ * jerarquía `page-{slug}.php` antes que `page.php`, así que tras una migración
+ * con slugs distintos ("Nuestras soluciones" → services, "Contacto" → contact)
+ * esas páginas caían en la plantilla genérica y se veían como una entrada de
+ * blog vacía en vez del diseño real (pestañas del catálogo, formulario, íconos).
+ *
+ * Este filtro solo interviene cuando WordPress ya resolvió `page.php` — si el
+ * administrador asignó una plantilla a mano, esa gana. La página se identifica
+ * con `ta_find_page()` (misma resolución del nav, §4.101), no por su slug.
+ *
+ * Excepción (versión 1.18.65): también reemplaza las plantillas en blanco de
+ * Elementor ("Elementor Canvas" / "Elementor Header Footer"). Estas no son un
+ * diseño elegido por el usuario para el sitio, sino el valor por defecto que
+ * deja el constructor cuando edita una página, y bloqueaban la plantilla del
+ * tema en /cuidados/. Se puede desactivar con el filtro
+ * `ta_override_elementor_templates` (devolver `false`) si alguna vez se quiere
+ * respetar la de Elementor.
+ */
+function ta_page_template_by_role( $template ) {
+	if ( ! is_page() || is_front_page() ) {
+		return $template;
+	}
+
+	$is_generic   = 'page.php' === basename( $template );
+	$is_elementor = false !== strpos( $template, '/plugins/elementor/' );
+
+	// Cualquier otra plantilla (las del propio tema, las blank-page.php del
+	// plugin de galería, una elegida a mano) se respeta.
+	if ( ! $is_generic && ! ( $is_elementor && apply_filters( 'ta_override_elementor_templates', true ) ) ) {
+		return $template;
+	}
+
+	$current = get_queried_object_id();
+
+	$map = array(
+		array( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ), 'page-nuestras-soluciones.php' ),
+		array( array( 'cuidados-del-acrilico', 'cuidados', 'cuidado' ), 'page-cuidados-del-acrilico.php' ),
+		array( array( 'contacto', 'contact' ), 'page-contacto.php' ),
+	);
+
+	foreach ( $map as $entry ) {
+		$page = ta_find_page( $entry[0] );
+
+		if ( $page && (int) $page->ID === (int) $current ) {
+			return get_template_directory() . '/' . $entry[1];
+		}
+	}
+
+	return $template;
+}
+add_filter( 'template_include', 'ta_page_template_by_role', 20 );
+
+/**
+ * Menú de reserva del header: si en Apariencia → Menús no hay ningún menú
+ * asignado a la ubicación "Menú principal" (lo típico después de una
+ * migración, porque `nav_menu_locations` no siempre se copia), `wp_nav_menu()`
+ * no dibujaría absolutamente nada. Con este fallback el nav muestra SIEMPRE
+ * los cuatro destinos del sitio — Inicio, Catálogo, Cuidados y Cotizar — con
+ * las mismas clases que usa el menú real, incluido el desplegable de
+ * categorías en "Catálogo" (misma lógica que `TA_Nav_Walker`). Las páginas se
+ * resuelven con `ta_find_page()`: da igual cuál sea su slug, basta con que el
+ * título de la página siga mencionando soluciones / cuidados / contacto. Y si
+ * ni siquiera así se encuentra, el ítem se muestra igual apuntando a la
+ * portada — un menú con solo Inicio no debería ocurrir.
+ *
+ * @param array $args Argumentos que entrega `wp_nav_menu()`.
+ */
+function ta_nav_menu_fallback( $args ) {
+	$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : 'ta-nav-list';
+
+	$catalog_page = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+	$care_page    = ta_find_page( array( 'cuidados-del-acrilico', 'cuidados', 'cuidado' ) );
+	$contact_page = ta_find_page( array( 'contacto', 'contact' ) );
+
+	// Los cuatro destinos se muestran SIEMPRE. Si la página no se encuentra
+	// (título y slug muy distintos tras una migración), el ítem apunta a la
+	// portada en vez de desaparecer.
+	$items = array(
+		array(
+			'label'   => esc_html__( 'Inicio', 'todo-acrilico' ),
+			'url'     => home_url( '/' ),
+			'current' => is_front_page(),
+		),
+		array(
+			'label'   => esc_html__( 'Catálogo', 'todo-acrilico' ),
+			'url'     => $catalog_page ? get_permalink( $catalog_page ) : home_url( '/' ),
+			'current' => $catalog_page ? is_page( $catalog_page->ID ) : false,
+			'caret'   => true,
+		),
+		array(
+			'label'   => esc_html__( 'Cuidados', 'todo-acrilico' ),
+			'url'     => $care_page ? get_permalink( $care_page ) : home_url( '/' ),
+			'current' => $care_page ? is_page( $care_page->ID ) : false,
+		),
+		array(
+			'label'   => esc_html__( 'Cotizar', 'todo-acrilico' ),
+			'url'     => $contact_page ? get_permalink( $contact_page ) : home_url( '/' ),
+			'current' => $contact_page ? is_page( $contact_page->ID ) : false,
+			'cta'     => true,
+		),
+	);
+
+	$html = '<ul class="' . esc_attr( $menu_class ) . '">';
+
+	foreach ( $items as $item ) {
+		$classes = array( 'menu-item', 'menu-item-type-post_type', 'menu-item-object-page' );
+
+		if ( ! empty( $item['current'] ) ) {
+			$classes[] = 'current-menu-item';
+			$classes[] = 'current_page_item';
+		}
+
+		$groups = array();
+
+		if ( ! empty( $item['caret'] ) ) {
+			$groups = ta_get_solutions_by_category();
+
+			if ( ! empty( $groups ) ) {
+				$classes[] = 'ta-nav-has-caret';
+			}
+		}
+
+		if ( ! empty( $item['cta'] ) ) {
+			$classes[] = 'ta-nav-cta';
+		}
+
+		$html .= '<li class="' . esc_attr( implode( ' ', $classes ) ) . '">';
+		$html .= '<a href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['label'] ) . '</a>';
+
+		if ( ! empty( $groups ) ) {
+			$html .= '<button type="button" class="ta-nav-caret-toggle" aria-expanded="false" aria-label="' . esc_attr__( 'Mostrar categorías de catálogo', 'todo-acrilico' ) . '"></button>';
+			$html .= '<ul class="ta-nav-dropdown">';
+			$html .= '<li><a href="' . esc_url( $item['url'] ) . '">' . esc_html__( 'Todas las piezas', 'todo-acrilico' ) . '</a></li>';
+
+			foreach ( $groups as $group ) {
+				$html .= '<li><a href="' . esc_url( add_query_arg( 'categoria', $group['slug'], $item['url'] ) ) . '">' . esc_html( $group['name'] ) . '</a></li>';
+			}
+
+			$html .= '</ul>';
+		}
+
+		$html .= '</li>';
+	}
+
+	$html .= '</ul>';
+
+	echo $html;
+}
+
+/**
  * Walker del menú principal: le agrega al ítem "Catálogo" (el que apunta a
  * "Nuestras Soluciones") un desplegable con un link por cada categoría de
  * `ta_get_solutions_by_category()` — las mismas categorías con imágenes
@@ -795,11 +1019,11 @@ function ta_get_pagination_pages( $current, $total ) {
  * `ta_get_solutions_by_category()`.
  */
 class TA_Nav_Walker extends Walker_Nav_Menu {
-    private ?int $solutions_page_id = null;
+    private $solutions_page_id = null;
 
     private function get_solutions_page_id() {
         if ( null === $this->solutions_page_id ) {
-            $page                    = get_page_by_path( 'nuestras-soluciones' );
+            $page                    = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
             $this->solutions_page_id = $page ? $page->ID : 0;
         }
         return $this->solutions_page_id;

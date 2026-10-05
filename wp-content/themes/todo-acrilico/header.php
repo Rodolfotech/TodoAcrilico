@@ -30,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					'theme_location' => 'primary',
 					'container'      => false,
 					'menu_class'     => 'ta-nav-list',
-					'fallback_cb'    => false,
+					'fallback_cb'    => 'ta_nav_menu_fallback',
 					'walker'         => new TA_Nav_Walker(),
 				)
 			);

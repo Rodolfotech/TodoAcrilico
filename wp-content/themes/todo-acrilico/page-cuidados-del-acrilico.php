@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$contacto_page = get_page_by_path( 'contacto' );
+$contacto_page = ta_find_page( array( 'contacto', 'contact' ) );
 $contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/' );
 ?>
 

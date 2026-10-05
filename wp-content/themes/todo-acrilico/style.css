@@ -1,10 +1,10 @@
 /*
 Theme Name:   TodoAcrílico
 Description:  Tema a medida para Todo Acrílico — inicio, nuestras soluciones (categorías e imágenes de la galería), cuidados del acrílico y contacto.
-Author:       dev@reparadores.cl
-Version:      1.14.15
+Author:       TodoAcrilicoTheme
+Version:      1.18.78
 Requires at least: 6.0
-Requires PHP: 7.4
+Requires PHP: 7.2.24
 License:      GPL-2.0-or-later
 Text Domain:  todo-acrilico
 */
@@ -141,9 +141,13 @@ h4 {
 .ta-header {
 	background: var(--ta-surface);
 	border-bottom: 1px solid var(--ta-border);
-	position: sticky;
-	top: 0;
-	z-index: 10;
+position: sticky;
+top: 0;
+/* Por encima del badge del logo de "Nuestra historia" (z-index 10). Con los dos
+   en 10 gana el que va después en el DOM, y el badge está en el contenido, así
+   que se colaba por encima del nav al hacer scroll. El header tiene que ganar
+   siempre. Queda por debajo de la barra de administración, que usa 99999. */
+z-index: 100;
 	/* Promueve el header a su propia capa de composición: en mobile, un
 	   position:sticky que comparte capa con el contenido que scrollea
 	   detrás puede repintarse un frame más tarde que ese contenido y
@@ -184,7 +188,7 @@ body.admin-bar .ta-header {
 .ta-header-inner {
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
-	padding: 36px 24px;
+	padding: 26px 24px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -470,9 +474,12 @@ body.admin-bar .ta-header {
 	width: 100%;
 	/* Mismo ancho/centrado que el resto de las secciones (header, footer,
 	   features…) para que el bloque de texto quede alineado con ellas en
-	   cualquier resolución, en vez de un offset fijo en px. */
+	   cualquier resolución, en vez de un offset fijo en px. El padding
+	   lateral de 24px iguala el que aporta .ta-container en .ta-features
+	   (Categorías), para que el hero arranque a la misma x. */
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
+	padding: 0 24px;
 }
 
 .ta-hero-inner > * {
@@ -493,11 +500,27 @@ body.admin-bar .ta-header {
 }
 
 .ta-hero h1 {
-    font-size: 80px; /* Tamaño fijo del título del banner */
+    /* Tamaño de diseño: 80px. Con clamp() se mantiene ese tamaño en pantallas
+       grandes y baja solo en las pequeñas, donde 80px fijos no caben en el ancho
+       disponible y el título se salía de la tarjeta. */
+    font-size: clamp(30px, 7.2vw, 80px);
     font-weight: 300; /* Hace la letra delgada y elegante como en la imagen */
-    line-height: 100px; /* Interlineado fijo de 100px entre las frases */
+    /* 100px de interlineado era el equivalente a 1.25 sobre la fuente de 80px.
+       Como ratio, no como px: si no, al bajar la fuente en móvil quedaban
+       renglones separados por 100px de aire. */
+    line-height: 1.25;
     letter-spacing: -0.02em; /* Junta sutilmente las letras para mejorar el impacto visual */
-    white-space: nowrap; /* "Soluciones en acrílico," queda en una sola línea */
+    /* `nowrap` impedía partir el título en dos puntos, y a 80px la línea
+       "Soluciones en acrílico," medía más que la columna: el texto se salía
+       de la tarjeta. Ahora puede partir donde tenga que partir. `balance`
+       reparte los renglones parejo en vez de dejar una línea de una palabra. */
+    white-space: normal;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+    /* En pantallas grandes el título necesita algo más de ancho que el párrafo
+       para caber en un solo renglón, como en el diseño. En móvil `min(100%,…)`
+       lo limita al ancho de la tarjeta y por eso nunca desborda. */
+    max-width: min(100%, 1000px);
     color: #1d1d1f; /* Un tono oscuro pero suave */
     margin-bottom: 34px;
 }
@@ -692,7 +715,10 @@ body.admin-bar .ta-header {
 
 .ta-features-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	/* El min() es lo importante: sin él, minmax(220px, 1fr) obliga a la columna
+     a medir 220px aunque el contenedor sea más angosto, y la tarjeta se sale.
+     Con min(220px, 100%) la columna nunca puede ser más ancha que la caja. */
+	grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
 	gap: 20px;
 	margin-top: 40px;
 }
@@ -783,7 +809,7 @@ body.admin-bar .ta-header {
 
 .ta-showcase-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 	gap: 28px;
 }
 
@@ -846,7 +872,8 @@ body.admin-bar .ta-header {
 }
 
 /* Franja gris centrada con el MISMO ancho del contenido de .ta-container
-   (la franja de las tarjetas de la guía): shell menos 24px por lado,
+   (la franja de las tarjetas de la guía): shell menos 48px por lado
+   (24px de padding de sección + 24px de padding de .ta-container),
    calculado en % para que sea responsive en todos los anchos */
 .ta-story--panel::before {
 	content: "";
@@ -855,7 +882,7 @@ body.admin-bar .ta-header {
 	bottom: 0;
 	left: 50%;
 	transform: translateX(-50%);
-	width: calc(100% - 48px);
+	width: calc(100% - 96px);
 	max-width: calc(var(--ta-shell-width) - 48px);
 	background: var(--ta-bg);
 }
@@ -1068,23 +1095,41 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-cta-inner {
-	max-width: 640px;
-	margin: 0 auto;
-	text-align: center;
+    /* 640px no alcanzaba: el título a 48px mide 605px, y con el padding de
+       .ta-container (24px por lado) la caja útil quedaban en 592px. Con
+       `nowrap` eso no se veía como desbordamiento en escritorio, pero el
+       título se salía 13px de la tarjeta. 700px deja el título en un
+       renglón, como pide el diseño. */
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
 }
 
 .ta-cta-title {
-	font-size: 48px;
-	font-weight: 300; /* light */
-	margin: 0 0 16px;
-	white-space: nowrap; /* "¿Tienes una idea en mente?" en una sola línea */
+    /* Tamaño de diseño: 48px. Con clamp() se mantiene en pantallas grandes y baja
+       solo en las pequeñas, donde 48px fijos no caben en el ancho disponible. */
+    font-size: clamp(28px, 5.2vw, 48px);
+    font-weight: 300; /* light */
+    line-height: 1.2;
+    margin: 0 0 16px;
+    /* `nowrap` impedía partir el título y a 48px la frase medía más que el
+       contenedor (.ta-cta-inner, 640px), así que "¿Tienes una idea en mente?"
+       se salía de la tarjeta. Ahora puede partir donde tenga que partir, y
+       `balance` reparte los renglones parejo. */
+    white-space: normal;
+    text-wrap: balance;
+    overflow-wrap: break-word;
 }
 
 .ta-cta-description {
-	margin: 0 0 32px;
-	color: var(--ta-muted);
-	font-size: 18px;
-	line-height: 1.6;
+    /* El contenedor se abrió a 700px para que el título quepa en un renglón, pero
+       una línea de 700px a 18px es larga de leer. El párrafo se mantiene en una
+       medida cómoda y centrado. */
+    max-width: 620px;
+    margin: 0 auto 32px;
+    color: var(--ta-muted);
+    font-size: 18px;
+    line-height: 1.6;
 }
 
 .ta-section {
@@ -1731,8 +1776,17 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-solutions-grid {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 	gap: 28px;
+}
+
+/* Mismo ancho de card que "Piezas más solicitadas" del inicio: 3 columnas
+   desde 961px (el punto exacto en que el auto-fit del inicio baja a 2).
+   Por debajo se queda la fórmula del inicio, sin cambios. */
+@media (min-width: 961px) {
+	.ta-solutions-grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
 }
 
 /* El CSS y la jerarquía .jg-pagination se cargan directamente desde el plugin.
@@ -2087,5 +2141,38 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	.ta-footer-bottom {
 		flex-direction: column;
 		align-items: flex-start;
+	}
+}
+
+/* Desktop: +30% en el padding lateral de todos los componentes (24px → 31.2px).
+   Solo aplica desde 861px (móvil/tablet conservan su padding). No toca el
+   padding vertical: cada componente mantiene su alto. */
+@media (min-width: 861px) {
+	.ta-container,
+	.ta-header-inner,
+	.ta-hero,
+	.ta-hero-inner,
+	.ta-features,
+	.ta-feature-card,
+	.ta-showcase,
+	.ta-story,
+	.ta-story--panel,
+	.ta-cta,
+	.ta-section,
+	.ta-page-content,
+	.ta-contact,
+	.ta-footer-top,
+	.ta-footer-bottom {
+		padding-left: 31.2px;
+		padding-right: 31.2px;
+	}
+
+	/* La franja gris de .ta-story--panel debe seguir el ancho del contenido
+	   de la Guía: al 100% se le descuentan los 62.4px por lado (31.2 de la
+	   sección + 31.2 de .ta-container); el tope (max-width) solo descuenta
+	   el padding del contenedor, porque el shell no se estrecha. */
+	.ta-story--panel::before {
+		width: calc(100% - 124.8px);
+		max-width: calc(var(--ta-shell-width) - 62.4px);
 	}
 }

@@ -5,11 +5,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$contacto_page = get_page_by_path( 'contacto' );
+$contacto_page = ta_find_page( array( 'contacto', 'contact' ) );
 $contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/contacto/' );
 
-$ta_privacy_page = get_page_by_path( 'politica-de-privacidad' );
-$ta_terms_page   = get_page_by_path( 'terminos-y-condiciones' );
+$ta_privacy_page = ta_find_page( array( 'politica-de-privacidad', 'privacidad' ) );
+$ta_terms_page   = ta_find_page( array( 'terminos-y-condiciones', 'termino' ) );
 $ta_privacy_url  = $ta_privacy_page ? get_permalink( $ta_privacy_page ) : home_url( '/' );
 $ta_terms_url    = $ta_terms_page ? get_permalink( $ta_terms_page ) : home_url( '/' );
 
@@ -171,7 +171,7 @@ $ta_contact_error_messages = array(
 				<p class="ta-contact-files-note">Nota: Por favor no adjunte documentos con datos personales sensibles o cédula de identidad.</p>
 				<label class="ta-contact-optin ta-contact-accept">
 					<input type="checkbox" name="acepto_terminos" value="1" required>
-					<span>He leído y acepto <a href="<?php echo esc_url( $ta_privacy_url ); ?>">la Política de Privacidad</a> y los <a href="<?php echo esc_url( $ta_terms_url ); ?>">Términos y condiciones</a>.</span>
+					<span>He leído y acepto <a href="<?php echo esc_url( $ta_privacy_url ); ?>" target="_blank" rel="noopener noreferrer">la Política de Privacidad</a> y los <a href="<?php echo esc_url( $ta_terms_url ); ?>" target="_blank" rel="noopener noreferrer">Términos y condiciones</a>.</span>
 				</label>
 				<label class="ta-contact-optin">
 					<input type="checkbox" name="acepta_ofertas" value="1">

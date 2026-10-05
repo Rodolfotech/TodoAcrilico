@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$contacto_page = get_page_by_path( 'contacto' );
+$contacto_page = ta_find_page( array( 'contacto', 'contact' ) );
 $contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/' );
 
 $tabs = array(
@@ -195,7 +195,7 @@ $products = post_type_exists( 'jg_gallery_image' ) ? new WP_Query( $query_args )
 </section>
 
 <?php
-$contacto_page = get_page_by_path( 'contacto' );
+$contacto_page = ta_find_page( array( 'contacto', 'contact' ) );
 $contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/' );
 
 ta_render_cta_section(
