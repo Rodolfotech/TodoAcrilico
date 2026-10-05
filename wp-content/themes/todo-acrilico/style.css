@@ -2,7 +2,7 @@
 Theme Name:   TodoAcrílico
 Description:  Tema a medida para Todo Acrílico — inicio, nuestras soluciones (categorías e imágenes de la galería), cuidados del acrílico y contacto.
 Author:       TodoAcrilicoTheme
-Version:      1.18.78
+Version:      1.18.74
 Requires at least: 6.0
 Requires PHP: 7.2.24
 License:      GPL-2.0-or-later
@@ -1778,15 +1778,6 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 	gap: 28px;
-}
-
-/* Mismo ancho de card que "Piezas más solicitadas" del inicio: 3 columnas
-   desde 961px (el punto exacto en que el auto-fit del inicio baja a 2).
-   Por debajo se queda la fórmula del inicio, sin cambios. */
-@media (min-width: 961px) {
-	.ta-solutions-grid {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
 }
 
 /* El CSS y la jerarquía .jg-pagination se cargan directamente desde el plugin.
