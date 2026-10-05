@@ -1008,8 +1008,6 @@
 				});
 			});
 
-				});
-			});
 
 			icons.appendChild(editBtn);
 			icons.appendChild(delBtn);
