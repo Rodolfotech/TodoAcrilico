@@ -983,7 +983,7 @@
 				e.stopPropagation();
 
 				showConfirmModal("Esta acción no se puede deshacer.", {
-					title: "Eliminar imagen "" + item.title + """,
+					title: "Eliminar imagen \""+ item.title + "\"",
 					confirmLabel: "Eliminar",
 					danger: true,
 				}).then(function (confirmed) {
