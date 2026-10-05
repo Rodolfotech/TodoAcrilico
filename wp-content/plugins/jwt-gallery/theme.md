@@ -5,7 +5,7 @@
 > mejoras propuestas **sin modificar el código existente**. Si una mejora se
 > implementa, se mueve a "Cambios aplicados" y se actualiza este documento.
 >
-> Última revisión: 2026-09-29 · Versión del plugin: **1.4.7**
+> Última revisión: 2026-09-29 · Versión del plugin: **1.4.8**
 
 ---
 
@@ -27,7 +27,7 @@
 
 ---
 
-## 1. Estructura de archivos (estado real, v1.4.7)
+## 1. Estructura de archivos (estado real, v1.4.8)
 
 ```
 jwt-gallery/
@@ -53,7 +53,7 @@ jwt-gallery/
 ## 2. Detalle por archivo
 
 ### 2.1 `jwt-gallery.php` (raíz)
-- Cabecera del plugin, define `JG_VERSION` (1.4.7), `JG_PATH`, `JG_URL`.
+- Cabecera del plugin, define `JG_VERSION` (1.4.8), `JG_PATH`, `JG_URL`.
 - Carga las 5 clases de `includes/` y las inicializa.
 - `register_activation_hook`: genera el secret JWT, registra CPT/taxonomía,
   siembra categorías por defecto y hace `flush_rewrite_rules()`.
@@ -282,9 +282,9 @@ de prueba temporal:
 
 ---
 
-## 8. Cambios aplicados v1.4.0 → 1.4.7 (2026-09-20 a 2026-09-29)
+## 8. Cambios aplicados v1.4.0 → 1.4.8 (2026-09-20 a 2026-09-29)
 
-> Detalle completo, con verificación e2e, en `Docs_Plugin.md` §12.30–§12.35.
+> Detalle completo, con verificación e2e, en `Docs_Plugin.md` §12.30–§12.36.
 
 ### 8.1 Migración a imágenes locales (2026-09-20)
 - 51/51 piezas del catálogo pasaron de URLs externas a archivos locales en
@@ -312,7 +312,91 @@ de prueba temporal:
   alineados con el componente "Cuatro maneras de trabajar el acrílico" del
   tema (`TA_VERSION` 1.18.61).
 
-### 8.6 Estado verificado (v1.4.7)
+### 8.6 Compatibilidad con PHP 7.2.24 y sin `mbstring` — v1.4.8
+- El servidor de producción corre WordPress 6.9.9 (mínimo oficial PHP 7.2.24) y no
+  se puede actualizar; `Requires PHP` bajó de 7.4 a 7.2.24.
+- Nuevo helper `JG_REST::char_length()`: los 6 `mb_strlen()` (límites de título 43,
+  descripción 120, uso 43 y medidas 20) ya no dependan de la extensión `mbstring`;
+  sin ella caían a `preg_match_all( '/./us' )`. Antes era un fatal al subir/editar.
+- El "error crítico" de la portada venía del tema (`private ?int` en `functions.php`,
+  sintaxis de PHP 7.4), no del plugin — ver `Docs_theme.md` §4.99.
+
+### 8.7 Estado verificado (v1.4.8)
 - Login, subida por archivos, edición, borrado, gestión de categorías (con
   eliminación de piezas) y límites verificados e2e. Pendiente solo la
   reautorización del SMTP del sitio (`Docs_theme.md` §4.40/§6.2).
+
+### 8.8 Autor del plugin y límite de intentos — v1.4.9 y 1.5.0
+- **1.4.9:** `Author` del docblock: `dev@reparadores.cl` → `TodoAcrilicoPanel`.
+- **1.5.0:** el límite de intentos del login se contaba por IP sola, y detrás
+  del proxy del hosting todas las peticiones comparten `REMOTE_ADDR`, así que
+  5 intentos fallidos de cualquiera bloqueaban el login de todo el sitio
+  (HTTP 429 incluso con la contraseña correcta). Ahora se cuentan dos claves
+  separadas: **por cuenta** (`md5` del correo normalizado, 5 intentos / 5 min) y
+  **por IP real** (25 / 5 min). Los dos contadores se borran al entrar bien.
+- `client_ip()` ya no confía a ciegas en `X-Forwarded-For` (se podía falsificar
+  para rotar el límite). Solo la usa si `REMOTE_ADDR` está en la lista de proxies
+  de confianza — opción `jg_trusted_proxy_ips` o filtro `jg_trusted_proxy_ips` —
+  y en ese caso toma la primera entrada no confiable de la cadena, que es el
+  cliente real.
+- El límite se comprueba **después** de validar los campos: una petición vacía
+  devuelve 400 y no consume intento.
+- 19 pruebas del flujo real de `JG_REST::login()` bajo PHP 7.3, todas en verde.
+  Detalle en `Docs_Plugin.md` §12.37.
+
+### 8.9 El panel exige permiso para editar contenido — v1.6.0
+- Antes, el login solo comprobaba que la contraseña fuera correcta: **cualquier
+  usuario de WordPress** (suscriptor, comentarista) que se autenticara podía
+  subir, editar y borrar imágenes del catálogo. El token no llevaba permisos y
+  ninguna ruta usaba `current_user_can`.
+- Ahora `authenticated_user()` valida `edit_posts` por defecto (admin y editor
+  entran; autor, colaborador y suscriptor no) y responde `jg_forbidden` (403).
+  Todas las rutas de escritura pasan por ahí, así que la puerta es una sola.
+- `login()` hace la misma comprobación y devuelve 403 sin emitir token ni
+  consumir un intento fallido: la contraseña era correcta, faltaba el rol.
+- Configurable con el filtro `jg_required_capabilities` (acepta string o array;
+  se exigen **todas** las capacidades). Si el filtro devuelve una lista vacía se
+  vuelve a `edit_posts`, para que "sin capacidades" nunca abra el panel.
+- El frontend no necesitó cambios: el JS ya pintaba `message`, así que el 403
+  se lee "Tu cuenta no tiene permiso para usar este panel".
+- Banco de pruebas ampliado a 30 aserciones (`tests-login-rate.php`), las 10
+  últimas del control de permisos. Detalle en `Docs_Plugin.md` §12.38.
+
+### 8.10 Pantalla "Credenciales del panel" — v1.7.0
+- El login busca la cuenta en `wp_users`/`wp_usermeta` de **la misma base de
+  datos de la instalación**, así que en producción hay que crearla ahí: local y
+  producción no comparten usuarios.
+- Los tres fallos típicos en un hosting recién instalado son: la cuenta no
+  existe, tiene el **correo electrónico vacío**, o existe con un rol que no
+  alcanza. Los tres se ven de un vistazo en la pantalla.
+- Nueva pantalla **Ajustes → Credenciales del panel** (`class-jg-settings.php`),
+  solo para `manage_options`, con `check_admin_referer()` y el handler repetiendo
+  la comprobación de permiso. Escribe correo + contraseña: si la cuenta existe
+  le cambia el clave, si no, la crea con rol `administrator` (filtrable con
+  `jg_panel_role`).
+- Tabla con todas las cuentas, sus roles y si pueden usar el panel: ese es el
+  diagnóstico directo del 401/403.
+- Ninguna contraseña en el código; se escribe en el navegador y se guarda
+  cifrada. `submit_button()` tiene fallback para no dar error fatal si la
+  pantalla se renderiza fuera del admin.
+- 16 aserciones con WordPress 7.1 real (`tests-settings-credentials.php`), todas
+  en verde, incluida la de que un suscriptor no puede crear ni cambiar
+  credenciales. Detalle en `Docs_Plugin.md` §12.39.
+
+### 8.11 La contraseña correcta ya no espera — v1.8.0
+- Probando el login real en Chrome headless, con la contraseña **correcta** la
+  respuesta fue 429: el bloqueo por intentos se evaluaba antes de comprobar la
+  contraseña. Cinco errores de tecleo costaban cinco minutos de espera, y la
+  espera se alargaba con cada intento nuevo.
+- Ahora el orden es: validar campos → verificar contraseña → y **solo si es
+  incorrecta** mirar el límite de fallos (5 por cuenta, 25 por IP). Con la
+  contraseña correcta se entra siempre, sin esperas.
+- El contador se consulta antes de sumarse, para que un atacante no pueda
+  renovar el bloqueo indefinidamente.
+- El cortafuegos antiabuso por número de peticiones queda **desactivado por
+  defecto**: detrás del proxy del hosting todas las peticiones comparten IP, y
+  un tope por IP volvería a bloquear a todo el mundo (el bug de la 1.5.0). Se
+  puede activar con `jg_max_requests_per_ip`.
+- Verificado en navegador real: cuenta bloqueada + contraseña correcta → 200,
+  redirección a `/galeria-panel/`, sin mensajes y con el catálogo cargado.
+- Banco ampliado a 38 aserciones. Detalle en `Docs_Plugin.md` §12.40.

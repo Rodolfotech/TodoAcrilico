@@ -2,10 +2,10 @@
 /**
  * Plugin Name:       TodoAcrílico-Panel
  * Description:       Login por JWT (correo + contraseña) y galería de imágenes por categorías, con edición y borrado. Shortcode [jwt_gallery] para el login y [jwt_gallery_panel] para el panel autenticado.
- * Version:           1.4.7
+ * Version:           1.9.0
  * Requires at least: 6.0
- * Requires PHP:      7.4
- * Author:            dev@reparadores.cl
+ * Requires PHP:      7.2.24
+ * Author:            TodoAcrilicoPanel
  * License:           GPL-2.0-or-later
  * Text Domain:       jwt-gallery
  */
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'JG_VERSION', '1.4.7' );
+define( 'JG_VERSION', '1.9.0' );
 define( 'JG_PATH', plugin_dir_path( __FILE__ ) );
 define( 'JG_URL', plugin_dir_url( __FILE__ ) );
 
@@ -23,11 +23,17 @@ require_once JG_PATH . 'includes/class-jg-rest.php';
 require_once JG_PATH . 'includes/class-jg-cpt.php';
 require_once JG_PATH . 'includes/class-jg-shortcode.php';
 require_once JG_PATH . 'includes/class-jg-template.php';
+require_once JG_PATH . 'includes/class-jg-settings.php';
 
 JG_CPT::init();
 JG_REST::init();
 JG_Shortcode::init();
 JG_Template::init();
+
+// Pantalla de ajustes solo en el wp-admin (no altera el frontend).
+if ( is_admin() ) {
+	JG_Settings::register();
+}
 
 /**
  * Seguridad: deshabilitar XML-RPC.

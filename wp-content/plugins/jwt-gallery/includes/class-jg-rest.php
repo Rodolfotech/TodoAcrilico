@@ -15,9 +15,28 @@ class JG_REST {
 
 	const LOGIN_MAX_ATTEMPTS = 5;
 
+	const LOGIN_MAX_ATTEMPTS_PER_IP = 25;
+
 	const LOGIN_WINDOW_SECONDS = 300;
 
+	/**
+	 * Peticiones al login admitidas por IP en la ventana. 0 = desactivado.
+	 *
+	 * Es un cortafuegos opcional contra el abuso que consiste en pedir verificaciones
+	 * de contraseña sin parar (bcrypt es lento a propósito, así que eso consume CPU
+	 * del servidor). Va antes de comprobar la contraseña, y por eso **no se activa
+	 * por defecto**: en producción el sitio está detrás del proxy del hosting y todas
+	 * las peticiones comparten la misma IP, de modo que un tope por IP puede acabar
+	 * bloqueando a todo el mundo a la vez, que es justo el problema que se corrigió
+	 * en la 1.5.0.
+	 *
+	 * Quien quiera ese límite puede activarlo con el filtro `jg_max_requests_per_ip`.
+	 */
+	const LOGIN_MAX_REQUESTS_PER_IP = 0;
+
 	const COOKIE_NAME = 'jg_session';
+
+	const OPTION_TRUSTED_PROXY_IPS = 'jg_trusted_proxy_ips';
 
 	public static function init() {
 		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
@@ -137,7 +156,75 @@ class JG_REST {
 			return new WP_Error( 'jg_unknown_user', 'El usuario del token ya no existe.', array( 'status' => 401 ) );
 		}
 
+		if ( ! self::can_manage_gallery( $user ) ) {
+			return new WP_Error(
+				'jg_forbidden',
+				'Tu cuenta no tiene permiso para usar este panel.',
+				array( 'status' => 403 )
+			);
+		}
+
 		return $user;
+	}
+
+	/**
+	 * Capacidades que hay que tener para usar el panel.
+	 *
+	 * El token JWT demuestra que el login fue correcto, pero no dice nada de
+	 * qué papel tiene el usuario: sin esta comprobación, cualquier cuenta de
+	 * WordPress —un suscriptor, alguien que se registrou para comentar— podría
+	 * subir, editar y borrar las imágenes del catálogo. Por defecto se exige
+	 * `edit_posts`, que tienen administradores y editores, y no los demás.
+	 *
+	 * Se pueden cambiar con el filtro `jg_required_capabilities` (string o
+	 * array). Todas las capacidades de la lista deben cumplirse:
+	 *
+	 *     add_filter( 'jg_required_capabilities', function () {
+	 *         return array( 'manage_options' ); // solo administradores
+	 *     } );
+	 *
+	 * @return array
+	 */
+	private static function required_capabilities() {
+		$caps = apply_filters( 'jg_required_capabilities', array( 'edit_posts' ) );
+
+		if ( is_string( $caps ) ) {
+			$caps = preg_split( '/[\s,;]+/', $caps );
+		}
+
+		$clean = array();
+		if ( is_array( $caps ) ) {
+			foreach ( $caps as $cap ) {
+				$cap = trim( (string) $cap );
+				if ( '' !== $cap ) {
+					$clean[] = $cap;
+				}
+			}
+		}
+
+		// Si alguien filtra la lista y la deja vacía, se vuelve al valor por
+		// defecto: "sin capacidades" nunca debe significar "sin restricciones".
+		return $clean ? $clean : array( 'edit_posts' );
+	}
+
+	/**
+	 * ¿Este usuario puede administrar la galería?
+	 *
+	 * @param WP_User|false $user Usuario a comprobar.
+	 * @return bool
+	 */
+	private static function can_manage_gallery( $user ) {
+		if ( ! $user || ! isset( $user->ID ) ) {
+			return false;
+		}
+
+		foreach ( self::required_capabilities() as $cap ) {
+			if ( ! user_can( $user, $cap ) ) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	public static function require_auth( WP_REST_Request $request ) {
@@ -148,23 +235,57 @@ class JG_REST {
 		$email    = sanitize_email( (string) $request->get_param( 'email' ) );
 		$password = (string) $request->get_param( 'password' );
 
-		$limit = self::check_login_rate_limit();
-		if ( is_wp_error( $limit ) ) {
-			return $limit;
-		}
-
+		// Primero se validan los campos: una petición vacía no debe contar como
+		// intento ni consumir una de las cinco oportunidades de una cuenta real.
 		if ( ! $email || ! is_email( $email ) || '' === $password ) {
 			return new WP_Error( 'jg_bad_request', 'Correo y contraseña son obligatorios.', array( 'status' => 400 ) );
 		}
 
+		// Cortafuegos antiabuso opcional, si alguien lo activó por filtro. Con
+		// contraseña correcta nunca debe activar: es un tope de peticiones, no de
+		// credenciales (ver LOGIN_MAX_REQUESTS_PER_IP).
+		$abuso = self::check_login_abuse();
+		if ( is_wp_error( $abuso ) ) {
+			return $abuso;
+		}
+
+		// Las credenciales se verifican ANTES del bloqueo por intentos.
+		//
+		// Antes el orden era el inverso, y eso significaba que un usuario con la
+		// contraseña correcta podía quedarse esperando cinco minutos si antes se
+		// había equivocado cinco veces: el bloqueo se aplicaba sin saber si la
+		// contraseña era buena. Ahora una contraseña correcta entra siempre de
+		// inmediato; lo que se frena son los intentos fallidos, que es lo que
+		// de verdad pretende un límite de intentos.
 		$user = get_user_by( 'email', $email );
 
 		if ( ! $user || ! wp_check_password( $password, $user->user_pass, $user->ID ) ) {
-			self::register_login_attempt();
+			// Se comprueba el límite antes de sumar, para que un bloqueo ya
+			// iniciado no siga renovándose: si no, un atacante podría dejar a la
+			// cuenta bloqueada indefinidamente y el dueño del panel sin poder
+			// entrar nunca.
+			$limit = self::check_login_rate_limit( $email );
+			if ( is_wp_error( $limit ) ) {
+				return $limit;
+			}
+
+			self::register_login_attempt( $email );
+
 			return new WP_Error( 'jg_invalid_credentials', 'Correo o contraseña incorrectos.', array( 'status' => 401 ) );
 		}
 
-		self::clear_login_rate_limit();
+		self::clear_login_rate_limit( $email );
+
+		// La contraseña es correcta pero la cuenta no sirve para el panel. Se
+		// responde 403 sin emitir token ni dejar una sesión abierta. No cuenta
+		// como intento fallido: las credenciales eran válidas.
+		if ( ! self::can_manage_gallery( $user ) ) {
+			return new WP_Error(
+				'jg_forbidden',
+				'Tu cuenta no tiene permiso para usar este panel.',
+				array( 'status' => 403 )
+			);
+		}
 
 		$ttl   = JG_JWT::DEFAULT_TTL;
 		$token = JG_JWT::issue(
@@ -231,28 +352,264 @@ class JG_REST {
 		);
 	}
 
-	private static function login_client_id() {
-		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '0.0.0.0';
+	/**
+	 * Direcciones de proxy en las que sí se cree en las cabeceras de reenvío.
+	 *
+	 * Vacío por defecto: si no se declara ninguna, `X-Forwarded-For` se ignora
+	 * porque cualquier visitante puede mandarla y así cambiar de clave para
+	 * saltarse el límite. Configúrala con la opción `jg_trusted_proxy_ips`
+	 * (IPs o CIDR separados por comas) o con el filtro `jg_trusted_proxy_ips`
+	 * en un mu-plugin:
+	 *
+	 *     add_filter( 'jg_trusted_proxy_ips', function () {
+	 *         return array( '173.245.48.0/20', '10.0.0.0/8' );
+	 *     } );
+	 *
+	 * @return array
+	 */
+	private static function trusted_proxy_ips() {
+		$raw = get_option( self::OPTION_TRUSTED_PROXY_IPS, '' );
 
-		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$parts = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-			$first = trim( $parts[0] );
-			if ( filter_var( $first, FILTER_VALIDATE_IP ) ) {
-				$ip = $first;
+		if ( is_string( $raw ) ) {
+			$raw = preg_split( '/[\s,;]+/', $raw );
+		}
+
+		$ips = array();
+		if ( is_array( $raw ) ) {
+			foreach ( $raw as $candidate ) {
+				$candidate = trim( (string) $candidate );
+				if ( '' !== $candidate ) {
+					$ips[] = $candidate;
+				}
 			}
 		}
 
-		return 'jg_login_' . md5( $ip );
+		$ips = apply_filters( 'jg_trusted_proxy_ips', $ips );
+
+		return is_array( $ips ) ? array_values( $ips ) : array();
 	}
 
-	private static function check_login_rate_limit() {
-		$transient = self::login_client_id();
-		$attempts  = (int) get_transient( $transient );
+	/**
+	 * Comprueba si una IP coincide con una entrada de la lista (exacta o CIDR).
+	 *
+	 * @param string $ip       IP a comprobar.
+	 * @param array  $candidatos IPs o CIDR de confianza.
+	 * @return bool
+	 */
+	private static function ip_in_list( $ip, $candidatos ) {
+		foreach ( $candidatos as $candidate ) {
+			if ( $ip === $candidate ) {
+				return true;
+			}
 
-		if ( $attempts >= self::LOGIN_MAX_ATTEMPTS ) {
+			if ( false !== strpos( $candidate, '/' ) && self::ip_in_cidr( $ip, $candidate ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * ¿La IP cae dentro del prefijo CIDR indicado?
+	 *
+	 * @param string $ip    IP a comprobar.
+	 * @param string $cidr  Prefijo, por ejemplo 173.245.48.0/20.
+	 * @return bool
+	 */
+	private static function ip_in_cidr( $ip, $cidr ) {
+		$parts = explode( '/', $cidr, 2 );
+		$subnet = $parts[0];
+		$bits   = isset( $parts[1] ) ? trim( $parts[1] ) : '';
+
+		$ip_bin    = @inet_pton( $ip );
+		$subnet_bin = @inet_pton( $subnet );
+
+		if ( false === $ip_bin || false === $subnet_bin || strlen( $ip_bin ) !== strlen( $subnet_bin ) ) {
+			return false;
+		}
+
+		if ( '' === $bits ) {
+			return 0 === strcmp( $ip_bin, $subnet_bin );
+		}
+
+		$bits = (int) $bits;
+		$max  = strlen( $ip_bin ) * 8;
+
+		if ( $bits < 0 || $bits > $max ) {
+			return false;
+		}
+
+		$bytes = intdiv( $bits, 8 );
+		$rest  = $bits % 8;
+
+		if ( $bytes > 0 && 0 !== strncmp( $ip_bin, $subnet_bin, $bytes ) ) {
+			return false;
+		}
+
+		if ( 0 === $rest ) {
+			return true;
+		}
+
+		$mask = chr( 0xFF << ( 8 - $rest ) & 0xFF );
+
+		return ( $ip_bin[ $bytes ] & $mask ) === ( $subnet_bin[ $bytes ] & $mask );
+	}
+
+	/**
+	 * IP real del cliente.
+	 *
+	 * Sin proxies declarados devuelve `REMOTE_ADDR`, que no se puede falsificar.
+	 * Si `REMOTE_ADDR` es un proxy de confianza, recorre la cadena
+	 * `X-Forwarded-For` de derecha a izquierda y se queda con la primera
+	 * entrada que no sea otro proxy conocido: ese es el cliente real.
+	 *
+	 * @return string
+	 */
+	private static function client_ip() {
+		$remote = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+		$remote = filter_var( $remote, FILTER_VALIDATE_IP ) ? $remote : '0.0.0.0';
+
+		$trusted = self::trusted_proxy_ips();
+
+		if ( ! $trusted || ! self::ip_in_list( $remote, $trusted ) ) {
+			return $remote;
+		}
+
+		$headers = array( 'HTTP_X_FORWARDED_FOR', 'HTTP_X_REAL_IP', 'HTTP_CF_CONNECTING_IP' );
+
+		foreach ( $headers as $header ) {
+			if ( empty( $_SERVER[ $header ] ) ) {
+				continue;
+			}
+
+			$raw   = sanitize_text_field( wp_unslash( $_SERVER[ $header ] ) );
+			$chain = array_reverse( array_filter( array_map( 'trim', explode( ',', $raw ) ), 'strlen' ) );
+
+			foreach ( $chain as $candidate ) {
+				if ( ! filter_var( $candidate, FILTER_VALIDATE_IP ) ) {
+					continue;
+				}
+
+				if ( self::ip_in_list( $candidate, $trusted ) ) {
+					continue;
+				}
+
+				return $candidate;
+			}
+		}
+
+		return $remote;
+	}
+
+	/**
+	 * Clave del contador de intentos de una cuenta.
+	 *
+	 * Se guarda el md5 del correo normalizado, nunca el correo en claro: el
+	 * nombre del transient vive en la tabla de options.
+	 *
+	 * @param string $email Correo con el que se intenta entrar.
+	 * @return string
+	 */
+	private static function account_key( $email ) {
+		return 'jg_login_acc_' . md5( strtolower( trim( $email ) ) );
+	}
+
+	/**
+	 * Clave del contador de intentos de un cliente.
+	 *
+	 * @return string
+	 */
+	private static function ip_key() {
+		return 'jg_login_ip_' . md5( self::client_ip() );
+	}
+
+	/**
+	 * ¿Alguno de los dos contadores (cuenta o IP) alcanzó su tope?
+	 *
+	 * Se cuentan los dos por separado a propósito: la cuenta frena el ataque
+	 * dirigido a un usuario desde muchas IP distintas, y la IP frena el
+	 * barrido que prueba muchas cuentas distintas desde una sola máquina. Sin
+	 * el límite por cuenta, un atacante con botnet pasa los 25 por IP; sin el
+	 * límite por IP, uno solo prueba todas las cuentas.
+	 *
+	 * @param string $email Correo con el que se intenta entrar.
+	 * @return WP_Error|null
+	 */
+	private static function check_login_rate_limit( $email ) {
+		$limits = array(
+			self::account_key( $email ) => self::LOGIN_MAX_ATTEMPTS,
+			self::ip_key()             => self::LOGIN_MAX_ATTEMPTS_PER_IP,
+		);
+
+		foreach ( $limits as $key => $max ) {
+			if ( (int) get_transient( $key ) >= $max ) {
+				return new WP_Error(
+					'jg_too_many_attempts',
+					'Demasiados intentos. Inténtalo de nuevo en unos minutos.',
+					array( 'status' => 429 )
+				);
+			}
+		}
+
+		return null;
+	}
+
+	private static function register_login_attempt( $email ) {
+		foreach ( array( self::account_key( $email ), self::ip_key() ) as $key ) {
+			set_transient( $key, (int) get_transient( $key ) + 1, self::LOGIN_WINDOW_SECONDS );
+		}
+	}
+
+	/**
+	 * Clave del contador de peticiones (no de fallos) de esta IP.
+	 *
+	 * @return string
+	 */
+	private static function request_key() {
+		return 'jg_login_req_' . md5( self::client_ip() );
+	}
+
+	/**
+	 * Tope de peticiones por IP, 0 si está desactivado.
+	 *
+	 * @return int
+	 */
+	private static function max_requests_per_ip() {
+		/**
+		 * Filtra el tope de peticiones al login por IP en la ventana de cinco
+		 * minutos. 0 lo desactiva.
+		 *
+		 * @param int $max Número máximo de peticiones. Por defecto 0.
+		 */
+		$max = (int) apply_filters( 'jg_max_requests_per_ip', self::LOGIN_MAX_REQUESTS_PER_IP );
+
+		return $max > 0 ? $max : 0;
+	}
+
+	/**
+	 * Cortafuegos antiabuso por IP, si está activado.
+	 *
+	 * No tiene nada que ver con las credenciales: solo evita que se pida al
+	 * servidor una cantidad indefinida de verificaciones de contraseña en cinco
+	 * minutos. Desactivado por defecto (ver LOGIN_MAX_REQUESTS_PER_IP).
+	 *
+	 * @return WP_Error|null
+	 */
+	private static function check_login_abuse() {
+		$max = self::max_requests_per_ip();
+		if ( 0 === $max ) {
+			return null;
+		}
+
+		$key = self::request_key();
+		$veces = (int) get_transient( $key );
+		set_transient( $key, $veces + 1, self::LOGIN_WINDOW_SECONDS );
+
+		if ( $veces + 1 > $max ) {
 			return new WP_Error(
-				'jg_too_many_attempts',
-				'Demasiados intentos. Inténtalo de nuevo en unos minutos.',
+				'jg_too_many_requests',
+				'Demasiadas peticiones seguidas. Espera unos minutos.',
 				array( 'status' => 429 )
 			);
 		}
@@ -260,15 +617,9 @@ class JG_REST {
 		return null;
 	}
 
-	private static function register_login_attempt() {
-		$transient = self::login_client_id();
-		$attempts  = (int) get_transient( $transient );
-
-		set_transient( $transient, $attempts + 1, self::LOGIN_WINDOW_SECONDS );
-	}
-
-	private static function clear_login_rate_limit() {
-		delete_transient( self::login_client_id() );
+	private static function clear_login_rate_limit( $email ) {
+		delete_transient( self::account_key( $email ) );
+		delete_transient( self::ip_key() );
 	}
 
 	private static function validate_image_url( $raw_url ) {
@@ -513,9 +864,26 @@ class JG_REST {
 		return $post;
 	}
 
+	/**
+	 * Longitud en caracteres UTF-8 sin depender de la extensión mbstring, que
+	 * falta en algunos hostings mínimos y provocaba un fatal
+	 * ("Call to undefined function mb_strlen()") al subir o editar imágenes.
+	 */
+	private static function char_length( $value ) {
+		$value = (string) $value;
+
+		if ( function_exists( 'mb_strlen' ) ) {
+			return mb_strlen( $value, 'UTF-8' );
+		}
+
+		$count = preg_match_all( '/./us', $value );
+
+		return false === $count ? strlen( $value ) : $count;
+	}
+
 	private static function get_measurements( WP_REST_Request $request ) {
 		$measurements = sanitize_text_field( (string) $request->get_param( 'measurements' ) );
-		if ( mb_strlen( $measurements ) > 20 ) {
+		if ( self::char_length( $measurements ) > 20 ) {
 			return new WP_Error( 'jg_measurements_too_long', 'Las medidas pueden tener hasta 20 caracteres.', array( 'status' => 400 ) );
 		}
 
@@ -524,7 +892,7 @@ class JG_REST {
 
 	private static function get_usage( WP_REST_Request $request ) {
 		$usage = sanitize_text_field( (string) $request->get_param( 'usage' ) );
-		if ( mb_strlen( $usage ) > 43 ) {
+		if ( self::char_length( $usage ) > 43 ) {
 			return new WP_Error( 'jg_usage_too_long', 'El uso puede tener hasta 43 caracteres.', array( 'status' => 400 ) );
 		}
 
@@ -552,10 +920,10 @@ class JG_REST {
 		if ( '' === $title ) {
 			return new WP_Error( 'jg_no_title', 'El título es obligatorio.', array( 'status' => 400 ) );
 		}
-		if ( mb_strlen( $title ) > 43 ) {
+		if ( self::char_length( $title ) > 43 ) {
 			return new WP_Error( 'jg_title_too_long', 'El título puede tener hasta 43 caracteres.', array( 'status' => 400 ) );
 		}
-		if ( mb_strlen( $description ) > 120 ) {
+		if ( self::char_length( $description ) > 120 ) {
 			return new WP_Error( 'jg_description_too_long', 'La descripción puede tener hasta 120 caracteres.', array( 'status' => 400 ) );
 		}
 
@@ -624,10 +992,10 @@ class JG_REST {
 			return new WP_Error( 'jg_no_title', 'El título es obligatorio.', array( 'status' => 400 ) );
 		}
 
-		if ( mb_strlen( $title ) > 43 ) {
+		if ( self::char_length( $title ) > 43 ) {
 			return new WP_Error( 'jg_title_too_long', 'El título puede tener hasta 43 caracteres.', array( 'status' => 400 ) );
 		}
-		if ( mb_strlen( $description ) > 120 ) {
+		if ( self::char_length( $description ) > 120 ) {
 			return new WP_Error( 'jg_description_too_long', 'La descripción puede tener hasta 120 caracteres.', array( 'status' => 400 ) );
 		}
 
