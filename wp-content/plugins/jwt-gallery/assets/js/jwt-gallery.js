@@ -979,12 +979,12 @@
 				editForm.hidden = false;
 			});
 
-			delBtn.addEventListener('click', function (e) {
+			delBtn.addEventListener("click", function (e) {
 				e.stopPropagation();
 
-				showConfirmModal('Esta acción no se puede deshacer.', {
-					title: 'Eliminar imagen "' + item.title + '"',
-					confirmLabel: 'Eliminar',
+				showConfirmModal("Esta acción no se puede deshacer.", {
+					title: "Eliminar imagen "" + item.title + """,
+					confirmLabel: "Eliminar",
 					danger: true,
 				}).then(function (confirmed) {
 					if (!confirmed) return;
@@ -995,16 +995,19 @@
 						return;
 					}
 
-					apiFetch('/images/' + item.id, {
-						method: 'DELETE',
+					apiFetch("/images/" + item.id, {
+						method: "DELETE",
 						headers: authHeaders(currentSession),
 					}).then(function (result) {
 						if (!result.ok) {
-							window.alert(result.data.message || 'No se pudo eliminar la imagen.');
+							window.alert(result.data.message || "No se pudo eliminar la imagen.");
 							return;
 						}
 						refreshAfterMutation(root, state);
 					});
+				});
+			});
+
 				});
 			});
 
