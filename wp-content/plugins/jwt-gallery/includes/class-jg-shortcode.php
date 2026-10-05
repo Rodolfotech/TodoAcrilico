@@ -124,7 +124,7 @@ class JG_Shortcode {
 							<div data-jg-upload-images-mount></div>
 							<label>
 								Categoría
-								<select name="category_id" data-jg-category-select>
+								<select name="category_id" data-jg-category-select >
 									<option value="">Sin categoría</option>
 								</select>
 							</label>

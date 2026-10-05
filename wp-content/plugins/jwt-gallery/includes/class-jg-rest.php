@@ -851,6 +851,7 @@ class JG_REST {
 		}
 	}
 
+
 	private static function owned_post_or_error( $post_id, $user ) {
 		$post = get_post( $post_id );
 		if ( ! $post || 'jg_gallery_image' !== $post->post_type ) {
@@ -916,6 +917,7 @@ class JG_REST {
 			return $measurements;
 		}
 		$category_id = (int) $request->get_param( 'category_id' );
+		
 
 		if ( '' === $title ) {
 			return new WP_Error( 'jg_no_title', 'El título es obligatorio.', array( 'status' => 400 ) );
@@ -987,6 +989,7 @@ class JG_REST {
 		if ( is_wp_error( $measurements ) ) {
 			return $measurements;
 		}
+		
 
 		if ( '' === $title ) {
 			return new WP_Error( 'jg_no_title', 'El título es obligatorio.', array( 'status' => 400 ) );

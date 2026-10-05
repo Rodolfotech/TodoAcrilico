@@ -538,10 +538,11 @@
 			});
 
 			if (current) select.value = current;
+			
 		});
 	}
 
-	function initCategoryManager(root, state) {
+		function initCategoryManager(root, state) {
 		var addForm = root.querySelector('[data-jg-category-add]');
 		var errorEl = root.querySelector('[data-jg-category-error]');
 
@@ -749,6 +750,7 @@
 				state.selectedCategory = tab.key;
 				state.page = 1;
 				renderCategoryTabs(root, state);
+				
 				loadImages(root, state);
 			});
 
