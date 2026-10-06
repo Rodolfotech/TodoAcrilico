@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.18.79' );
+define( 'TA_VERSION', '1.18.78' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -381,7 +381,7 @@ add_action( 'admin_post_nopriv_ta_contact_submit', 'ta_handle_contact_submit' );
 add_action( 'admin_post_ta_contact_submit', 'ta_handle_contact_submit' );
 
 function ta_handle_contact_submit() {
-	$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/cotizar/' );
+	$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/contacto/' );
 
 	$adjunto_paths = array();
 	$attachments    = array();
