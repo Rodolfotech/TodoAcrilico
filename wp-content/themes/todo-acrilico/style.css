@@ -1133,7 +1133,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-section {
-	padding: 56px 24px;
+	padding: 56px 60px;
 }
 
 .ta-section h2 {
@@ -1152,7 +1152,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-page-content {
 	max-width: 720px;
 	margin: 0 auto;
-	padding: 56px 24px;
+	padding: 56px 60px;
 }
 
 .ta-page-content h1 {
@@ -2158,10 +2158,11 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	.ta-section,
 	.ta-page-content,
 	.ta-contact,
+	.ta-header-inner,
 	.ta-footer-top,
 	.ta-footer-bottom {
-		padding-left: 46.8px;
-		padding-right: 46.8px;
+		padding-left: 60px;
+		padding-right: 60px;
 	}
 
 	/* La franja gris de .ta-story--panel debe seguir el ancho del contenido
