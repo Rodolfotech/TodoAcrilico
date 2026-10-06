@@ -22,7 +22,7 @@ Text Domain:  todo-acrilico
 	--ta-accent-ink: #ffffff;
 	/* Ancho compartido por el navbar y las 2 franjas del footer, para que
 	   siempre queden alineados — cambiar solo este valor los mueve a los 3. */
-	--ta-shell-width: 1850px; // se modifica el ancho del navbar y footer
+	--ta-shell-width: 2405px; // se modifica el ancho del navbar y footer
 }
 
 *,
