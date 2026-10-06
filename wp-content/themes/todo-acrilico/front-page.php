@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$solutions_page  = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+$solutions_page  = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
 $solutions_url   = $solutions_page ? get_permalink( $solutions_page ) : home_url( '/' );
 $contacto_page   = ta_find_page( array( 'contacto', 'contact' ) );
 $contacto_url    = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/' );
