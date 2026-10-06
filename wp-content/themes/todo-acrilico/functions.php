@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.18.80' );
+define( 'TA_VERSION', '1.18.79' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -22,7 +22,7 @@ function ta_assets() {
 	wp_enqueue_style( 'ta-style', get_stylesheet_uri(), array(), TA_VERSION );
 
 	// El catálogo reutiliza literalmente los estilos del paginador del panel.
-	$catalog_page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones' ) );
+	$catalog_page = ta_find_page( array( 'nuestras-soluciones', 'soluciones' ) );
 
 	if ( $catalog_page && is_page( $catalog_page->ID ) && wp_style_is( 'jg-gallery', 'registered' ) ) {
 		wp_enqueue_style( 'jg-gallery' );
@@ -889,8 +889,8 @@ function ta_page_template_by_role( $template ) {
 	$current = get_queried_object_id();
 
 	$map = array(
-		array( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ), 'page-nuestras-soluciones.php' ),
-		array( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ), 'page-cuidados-del-acrilico.php' ),
+		array( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ), 'page-nuestras-soluciones.php' ),
+		array( array( 'cuidados-del-acrilico', 'cuidados', 'cuidado' ), 'page-cuidados-del-acrilico.php' ),
 		array( array( 'contacto', 'contact' ), 'page-contacto.php' ),
 	);
 
@@ -924,8 +924,8 @@ add_filter( 'template_include', 'ta_page_template_by_role', 20 );
 function ta_nav_menu_fallback( $args ) {
 	$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : 'ta-nav-list';
 
-	$catalog_page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
-	$care_page    = ta_find_page( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ) );
+	$catalog_page = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+	$care_page    = ta_find_page( array( 'cuidados-del-acrilico', 'cuidados', 'cuidado' ) );
 	$contact_page = ta_find_page( array( 'contacto', 'contact' ) );
 
 	// Los cuatro destinos se muestran SIEMPRE. Si la página no se encuentra
@@ -1023,7 +1023,7 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
 
     private function get_solutions_page_id() {
         if ( null === $this->solutions_page_id ) {
-            $page                    = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+            $page                    = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
             $this->solutions_page_id = $page ? $page->ID : 0;
         }
         return $this->solutions_page_id;
