@@ -882,12 +882,9 @@ body.admin-bar .ta-header {
 	bottom: 0;
 	left: 50%;
 	transform: translateX(-50%);
-	width: 977px;
+	width: min(calc(100% - 120px), calc(var(--ta-shell-width) - 120px));
 	max-width: none;
-	height: 670.16px;
-	top: 50%;
-	bottom: auto;
-	transform: translate(-50%, -50%);
+	background: var(--ta-bg);
 }
 
 /* El contenido va directo sobre la franja gris (sin tarjeta): ancho cómodo,
