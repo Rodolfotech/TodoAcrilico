@@ -2169,7 +2169,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	   sección + 31.2 de .ta-container); el tope (max-width) solo descuenta
 	   el padding del contenedor, porque el shell no se estrecha. */
 	.ta-story--panel::before {
-		width: calc(100% - 124.8px);
-		max-width: calc(var(--ta-shell-width) - 62.4px);
+		width: calc(100% - 187.2px);
+		max-width: calc(var(--ta-shell-width) - 93.6px);
 	}
 }
