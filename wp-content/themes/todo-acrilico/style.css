@@ -132,7 +132,7 @@ h4 {
 .ta-container {
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
-	padding: 0 24px;
+	padding: 0 31.2px;
 	
 }
 
@@ -188,7 +188,7 @@ body.admin-bar .ta-header {
 .ta-header-inner {
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
-	padding: 26px 24px;
+	padding: 26px 31.2px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -479,7 +479,7 @@ body.admin-bar .ta-header {
 	   (Categorías), para que el hero arranque a la misma x. */
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
-	padding: 0 24px;
+	padding: 0 31.2px;
 }
 
 .ta-hero-inner > * {
@@ -1984,7 +1984,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-footer-top {
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
-	padding: 56px 24px 40px;
+	padding: 56px 31.2px 40px;
 	display: grid;
 	grid-template-columns: 1.4fr 1fr 1fr 1fr;
 	gap: 40px;
