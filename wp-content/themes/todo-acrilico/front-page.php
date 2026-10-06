@@ -140,7 +140,7 @@ ta_render_story_section(
 			),
 		),
 		'image_url'       => get_template_directory_uri() . '/assets/img/nuestra-historia.webp',
-		'show_logo_badge' => false,
+		'show_logo_badge' => true,
 	)
 );
 
