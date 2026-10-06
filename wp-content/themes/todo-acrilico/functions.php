@@ -34,6 +34,25 @@ function ta_assets() {
 add_action( 'wp_enqueue_scripts', 'ta_assets' );
 
 /**
+ * Título del documento para la página de Cotizar.
+ *
+ * El tema usa add_theme_support( 'title-tag' ), así que WordPress imprime el
+ * <title> desde wp_head() (§header.php). Para cambiarlo no se edita el header
+ * sino este filtro: en la página con slug "cotizar" se muestra exactamente
+ * "TODO acrílico"; en cualquier otra página se deja el título normal.
+ */
+function ta_document_title( $title ) {
+	$cotizar_page = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
+
+	if ( $cotizar_page && is_page( $cotizar_page->ID ) ) {
+		return 'TODO acrílico';
+	}
+
+	return $title;
+}
+add_filter( 'pre_get_document_title', 'ta_document_title' );
+
+/**
  * Botón reutilizable (CTA). Variantes: 'accent' (teal, la de siempre), 'dark' (relleno oscuro)
  * y 'outline' (contorno). $args['icon'] agrega una flecha "→" al final.
  */
