@@ -119,27 +119,23 @@ ta_render_showcase_grid(
 
 ta_render_story_section(
 	array(
-		'eyebrow'         => 'Nuestra historia',
-		'title'           => 'Más de 20 años trabajando el acrílico a medida.',
-		'paragraphs'      => array(
+		'eyebrow'    => 'Nuestra historia',
+		'title'      => 'Más de 20 años trabajando el acrílico a medida.',
+		'paragraphs' => array(
 			'Nacimos como un taller pequeño con una idea simple: el acrílico bien trabajado ordena, muestra y protege sin estorbar. Hoy seguimos fabricando cada pieza a mano en Santiago, combinando tecnología de corte láser con el acabado manual que solo los años de experiencia permiten.',
-			'Trabajamos con marcas, arquitectos, museos y personas que necesitan piezas precisas y duraderas. Cada proyecto parte de una idea y termina con una solución hecha a medida, pensada para durar en el tiempo.',
+			'Trabajamos con marcas, arquitectos, museos y personas que buscan una solución concreta. Si no está en el catálogo, lo diseñamos para ti desde cero, asegurando calidad en todo lo que realizamos.',
 		),
-		'stats'           => array(
+		'stats'      => array(
 			array(
-				'value' => '+5k',
+				'value' => '5k+',
 				'label' => 'Proyectos realizados',
 			),
 			array(
-				'value' => '+20',
+				'value' => '20+',
 				'label' => 'Años de experiencia',
 			),
-			array(
-				'value' => '100%',
-				'label' => 'Hecho a medida',
-			),
 		),
-		'image_url'       => get_template_directory_uri() . '/assets/img/nuestra-historia.webp',
+		'image_url'  => get_template_directory_uri() . '/assets/img/home/equipo-todo-acrilico.webp',
 		'show_logo_badge' => false,
 	)
 );
