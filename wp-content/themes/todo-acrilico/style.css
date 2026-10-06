@@ -882,8 +882,8 @@ body.admin-bar .ta-header {
 	bottom: 0;
 	left: 50%;
 	transform: translateX(-50%);
-	width: calc(100% - 96px);
-	max-width: calc(var(--ta-shell-width) - 48px);
+	width: calc(100% - (46.8px * 2));
+	max-width: calc(var(--ta-shell-width) - (46.8px * 2));
 	background: var(--ta-bg);
 }
 
