@@ -5,8 +5,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$contacto_page = ta_find_page( array( 'contacto', 'contact' ) );
-$contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/contacto/' );
+$contacto_page = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
+$contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/cotizar/' );
 
 $ta_privacy_page = ta_find_page( array( 'politica-de-privacidad', 'privacidad' ) );
 $ta_terms_page   = ta_find_page( array( 'terminos-y-condiciones', 'termino' ) );

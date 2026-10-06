@@ -3,9 +3,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$ta_footer_solutions = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
-$ta_footer_cuidados  = ta_find_page( array( 'cuidados-del-acrilico', 'cuidados', 'cuidado' ) );
-$ta_footer_contacto  = ta_find_page( array( 'contacto', 'contact' ) );
+$ta_footer_solutions = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+$ta_footer_cuidados  = ta_find_page( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ) );
+$ta_footer_contacto  = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
 $ta_footer_terminos  = ta_find_page( array( 'terminos-y-condiciones', 'termino' ) );
 $ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacidad' ) );
 ?>

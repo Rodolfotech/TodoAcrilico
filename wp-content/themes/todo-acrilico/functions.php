@@ -22,7 +22,7 @@ function ta_assets() {
 	wp_enqueue_style( 'ta-style', get_stylesheet_uri(), array(), TA_VERSION );
 
 	// El catálogo reutiliza literalmente los estilos del paginador del panel.
-	$catalog_page = ta_find_page( array( 'nuestras-soluciones', 'soluciones' ) );
+	$catalog_page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones' ) );
 
 	if ( $catalog_page && is_page( $catalog_page->ID ) && wp_style_is( 'jg-gallery', 'registered' ) ) {
 		wp_enqueue_style( 'jg-gallery' );
@@ -381,7 +381,7 @@ add_action( 'admin_post_nopriv_ta_contact_submit', 'ta_handle_contact_submit' );
 add_action( 'admin_post_ta_contact_submit', 'ta_handle_contact_submit' );
 
 function ta_handle_contact_submit() {
-	$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/contacto/' );
+	$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/cotizar/' );
 
 	$adjunto_paths = array();
 	$attachments    = array();
@@ -889,9 +889,9 @@ function ta_page_template_by_role( $template ) {
 	$current = get_queried_object_id();
 
 	$map = array(
-		array( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ), 'page-nuestras-soluciones.php' ),
-		array( array( 'cuidados-del-acrilico', 'cuidados', 'cuidado' ), 'page-cuidados-del-acrilico.php' ),
-		array( array( 'contacto', 'contact' ), 'page-contacto.php' ),
+		array( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ), 'page-nuestras-soluciones.php' ),
+		array( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ), 'page-cuidados-del-acrilico.php' ),
+		array( array( 'cotizar', 'contacto', 'contact' ), 'page-contacto.php' ),
 	);
 
 	foreach ( $map as $entry ) {
@@ -924,9 +924,9 @@ add_filter( 'template_include', 'ta_page_template_by_role', 20 );
 function ta_nav_menu_fallback( $args ) {
 	$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : 'ta-nav-list';
 
-	$catalog_page = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
-	$care_page    = ta_find_page( array( 'cuidados-del-acrilico', 'cuidados', 'cuidado' ) );
-	$contact_page = ta_find_page( array( 'contacto', 'contact' ) );
+	$catalog_page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+	$care_page    = ta_find_page( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ) );
+	$contact_page = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
 
 	// Los cuatro destinos se muestran SIEMPRE. Si la página no se encuentra
 	// (título y slug muy distintos tras una migración), el ítem apunta a la
@@ -1023,7 +1023,7 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
 
     private function get_solutions_page_id() {
         if ( null === $this->solutions_page_id ) {
-            $page                    = ta_find_page( array( 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+            $page                    = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
             $this->solutions_page_id = $page ? $page->ID : 0;
         }
         return $this->solutions_page_id;
