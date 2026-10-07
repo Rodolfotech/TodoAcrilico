@@ -30,7 +30,7 @@ $ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacid
 				<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Inicio</a></li>
 				<li><a href="<?php echo esc_url( $ta_footer_solutions ? get_permalink( $ta_footer_solutions ) : home_url( '/' ) ); ?>">Catálogo</a></li>
 				<li><a href="<?php echo esc_url( $ta_footer_cuidados ? get_permalink( $ta_footer_cuidados ) : home_url( '/' ) ); ?>">Cuidados</a></li>
-				<li><a href="<?php echo esc_url( $ta_footer_contacto ? get_permalink( $ta_footer_contacto ) : home_url( '/' ) ); ?>">Contacto</a></li>
+				<li><a href="<?php echo esc_url( $ta_footer_contacto ? get_permalink( $ta_footer_contacto ) : home_url( '/' ) ); ?>">Cotizar</a></li>
 			</ul>
 		</div>
 
