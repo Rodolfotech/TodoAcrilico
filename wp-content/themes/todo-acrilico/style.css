@@ -2,7 +2,7 @@
 Theme Name:   TodoAcrílico
 Description:  Tema a medida para Todo Acrílico — inicio, nuestras soluciones (categorías e imágenes de la galería), cuidados del acrílico y contacto.
 Author:       TodoAcrilicoTheme
-Version:      1.19.2
+Version:      1.19.3
 Requires at least: 6.0
 Requires PHP: 7.2.24
 License:      GPL-2.0-or-later
@@ -188,7 +188,8 @@ body.admin-bar .ta-header {
 .ta-header-inner {
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
-	padding: 26px 46.8px;
+	padding-top: 26px;
+	padding-bottom: 26px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -364,10 +365,11 @@ body.admin-bar .ta-header {
 
 /* ---- Media Queries: Navegación Responsive ---- */
 
-/* Tablet y Pantallas Medianas (<= 860px) */
-@media (max-width: 860px) {
+/* Tablet y Pantallas Medianas (<= 861px) */
+@media (max-width: 861px) {
 	.ta-header-inner {
-		padding: 16px 20px;
+		padding-top: 16px;
+		padding-bottom: 16px;
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 16px;
@@ -2091,7 +2093,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-footer-bottom {
 	max-width: var(--ta-shell-width);
 	margin: 0 auto;
-	padding: 24px 24px 32px;
+	padding: 24px 46.8px 32px;
 	border-top: 1px solid var(--ta-border);
 	display: flex;
 	align-items: center;
@@ -2125,7 +2127,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	color: var(--ta-ink);
 }
 
-@media (max-width: 860px) {
+@media (max-width: 861px) {
 	.ta-footer-top {
 		grid-template-columns: 1fr;
 	}
@@ -2172,5 +2174,30 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	.ta-story--panel::before {
 	width: min(calc(100% - 240px), calc(var(--ta-shell-width) - 120px));
 	max-width: none;
+	}
+}
+
+
+
+
+/* Nav y footer: misma caja de contenido que las secciones del body
+   (padding de sección + padding de .ta-container), para que el logo y el
+   botón Cotizar queden alineados con el borde de las cards en cualquier
+   ancho. Antes el body sumaba 24+46.8px (o 60+60px en desktop) y el nav
+   solo uno, por eso el nav se veía más ancho al achicar la pantalla. */
+.ta-header-inner,
+.ta-footer-top,
+.ta-footer-bottom {
+	max-width: var(--ta-shell-width) !important;
+	padding-left: 70.8px !important;
+	padding-right: 70.8px !important;
+}
+
+@media (min-width: 861px) {
+	.ta-header-inner,
+	.ta-footer-top,
+	.ta-footer-bottom {
+		padding-left: 120px !important;
+		padding-right: 120px !important;
 	}
 }

@@ -12,7 +12,7 @@ $ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacid
 </main>
 
 <footer class="ta-footer">
-	<div class="ta-footer-top">
+	<div class="ta-container ta-footer-top">
 		<div class="ta-footer-col ta-footer-brand">
 			<img
 				src="<?php echo esc_url( get_template_directory_uri() . '/assets/img/logo.webp' ); ?>"
@@ -69,7 +69,7 @@ $ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacid
 		</div>
 	</div>
 
-	<div class="ta-footer-bottom">
+	<div class="ta-container ta-footer-bottom">
 		<p class="ta-footer-copy">&copy; <?php echo esc_html( gmdate( 'Y' ) ); ?> TODO Acrílico SpA</p>
 		<div class="ta-footer-legal">
 			<a href="<?php echo esc_url( $ta_footer_privacidad ? get_permalink( $ta_footer_privacidad ) : home_url( '/' ) ); ?>">Política de privacidad</a>

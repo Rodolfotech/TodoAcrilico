@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <?php wp_body_open(); ?>
 
 <header class="ta-header">
-	<div class="ta-header-inner">
+	<div class="ta-container ta-header-inner">
 		<a class="ta-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>">
 			<img
 				src="<?php echo esc_url( get_template_directory_uri() . '/assets/img/logo.webp' ); ?>"

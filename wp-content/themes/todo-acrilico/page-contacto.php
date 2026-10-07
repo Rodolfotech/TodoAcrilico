@@ -171,7 +171,7 @@ $ta_contact_error_messages = array(
 				<p class="ta-contact-files-note">Nota: Por favor no adjunte documentos con datos personales sensibles o cédula de identidad.</p>
 				<label class="ta-contact-optin ta-contact-accept">
 					<input type="checkbox" name="acepto_terminos" value="1" required>
-					<span>He leído y acepto <a href="<?php echo esc_url( $ta_privacy_url ); ?>" target="_blank" rel="noopener noreferrer">Política de Privacidad</a> y los <a href="<?php echo esc_url( $ta_terms_url ); ?>" target="_blank" rel="noopener noreferrer">Términos y condiciones</a>.</span>
+					<span>He leído y acepto <a href="<?php echo esc_url( $ta_privacy_url ); ?>" target="_blank" rel="noopener noreferrer">Política de Privacidad</a> y los <a href="<?php echo esc_url( $ta_terms_url ); ?>" target="_blank" rel="noopener noreferrer">Términos y Condiciones</a>.</span>
 				</label>
 				<label class="ta-contact-optin">
 					<input type="checkbox" name="acepta_ofertas" value="1">
