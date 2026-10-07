@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.18.78' );
+define( 'TA_VERSION', '1.19.0' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
