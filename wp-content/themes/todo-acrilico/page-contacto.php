@@ -40,7 +40,7 @@ $ta_contact_error_messages = array(
 	'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
 	'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominio .cl',
 	'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
-	'celular'         => 'Ingresa un celular chileno válido (8 dígitos, formato: 7456 4321 o similar).',
+	'celular'         => 'Ingrese un teléfono válido de 8 dígitos.',
 	'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
 	'archivo_grande'  => 'El archivo adjunto no puede superar los 5 MB.',
 	'archivo_tipo'    => 'El archivo adjunto debe ser una imagen (JPG, PNG, GIF o WEBP) o un PDF.',
@@ -500,7 +500,7 @@ $ta_contact_error_messages = array(
 		}
 
 		if (field.name === 'celular') {
-			field.setCustomValidity(field.value.replace(/\D/g, '').length === 8 ? '' : 'Teléfono inválido');
+			field.setCustomValidity(/^[4-9]\d{7}$/.test(field.value.replace(/\D/g, '')) ? '' : 'Teléfono inválido');
 		}
 
 		if (field.name === 'descripcion') {
@@ -547,7 +547,7 @@ $ta_contact_error_messages = array(
 		// Teléfono: el error solo aparece al presionar Enviar; al corregirlo se limpia.
 		if (field.name === 'celular') {
 			field.addEventListener('input', function () {
-				if (field.value.replace(/\D/g, '').length === 8) {
+				if (/^[4-9]\d{7}$/.test(field.value.replace(/\D/g, ''))) {
 					field.setCustomValidity('');
 					clearFieldError(field);
 				}

@@ -487,7 +487,7 @@ function ta_handle_contact_submit() {
 		'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
 		'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominio .cl',
 		'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
-		'celular'         => 'Ingresa un celular chileno válido (8 dígitos, formato: 7456 4321 o similar).',
+		'celular'         => 'Ingrese un teléfono válido de 8 dígitos.',
 		'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
 		'archivo_grande'  => 'El archivo adjunto no puede superar los 5 MB.',
 		'archivo_tipo'    => 'El archivo adjunto debe ser una imagen (JPG, PNG, GIF o WEBP) o un PDF.',
@@ -635,11 +635,14 @@ function ta_handle_contact_submit() {
 	// El campo del formulario entrega 8 dígitos (sin el 9, que va en el prefijo);
 	// por compatibilidad se tolera también el formato con 9 inicial.
 	$celular_digits = preg_replace( '/[^\d]/', '', $celular );
-	$celular_digits = preg_replace( '/^56/', '', $celular_digits );
-	if ( preg_match( '/^9\d{8}$/', $celular_digits ) ) {
+	// Acepta los 8 dígitos solos o con prefijo 9 / 569; solo se quita el prefijo si sobra largo.
+	if ( 11 === strlen( $celular_digits ) && 0 === strpos( $celular_digits, '569' ) ) {
+		$celular_digits = substr( $celular_digits, 3 );
+	} elseif ( 9 === strlen( $celular_digits ) && '9' === $celular_digits[0] ) {
 		$celular_digits = substr( $celular_digits, 1 );
 	}
-	if ( ! preg_match( '/^[2-9]\d{7}$/', $celular_digits ) ) {
+	// Móviles vigentes en Chile: tras el 9, el número comienza con 4, 5, 6, 7, 8 o 9.
+	if ( ! preg_match( '/^[4-9]\d{7}$/', $celular_digits ) ) {
 		$fail( 'celular' );
 	}
 	$celular = '+56 9 ' . $celular_digits;

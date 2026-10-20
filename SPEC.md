@@ -133,8 +133,9 @@ Ejemplo:
 
 ### Teléfono
 - ✅ Formato chileno: `+56 9 XXXX XXXX` o `+56 9 8765 4321`
-- ✅ 8 dígitos mínimo
-- ❌ Otro formato rechazado
+- ✅ Exactamente 8 dígitos después de `+56 9`
+- ✅ Deben comenzar con 4, 5, 6, 7, 8 o 9 (móviles vigentes en Chile)
+- ❌ Comienzan con 0, 1, 2 o 3, o no son 8 dígitos → "Ingrese un teléfono válido de 8 dígitos." (visible solo al presionar Enviar)
 
 ### Correo Electrónico
 - ✅ Dominios permitidos: `gmail.com`, `outlook.com`, `hotmail.com`, `live.cl`, `yahoo.com`, `icloud.com`
