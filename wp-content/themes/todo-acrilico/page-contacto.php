@@ -542,12 +542,12 @@ $ta_contact_error_messages = array(
 			return;
 		}
 
-		// Email: el error solo aparece al presionar Enviar; al editarlo se oculta.
-		if (field.name === 'email') {
+		// Email y descripción: el error solo aparece al presionar Enviar; al editarlos se oculta.
+		if (field.name === 'email' || field.name === 'descripcion') {
 			field.addEventListener('input', function () {
 				field.setCustomValidity('');
 				field.style.borderColor = '';
-				var errorSpan = form.querySelector('[data-field="email"]');
+				var errorSpan = form.querySelector('[data-field="' + field.name + '"]');
 				if (errorSpan) {
 					errorSpan.textContent = '';
 					errorSpan.style.display = 'none';
