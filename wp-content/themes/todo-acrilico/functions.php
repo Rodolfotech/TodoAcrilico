@@ -641,8 +641,8 @@ function ta_handle_contact_submit() {
 	} elseif ( 9 === strlen( $celular_digits ) && '9' === $celular_digits[0] ) {
 		$celular_digits = substr( $celular_digits, 1 );
 	}
-	// Móviles vigentes en Chile: tras el 9, el número comienza con 4, 5, 6, 7, 8 o 9.
-	if ( ! preg_match( '/^[4-9]\d{7}$/', $celular_digits ) ) {
+	// Móviles vigentes en Chile: tras el 9, el número comienza con 3, 4, 5, 6, 7, 8 o 9.
+	if ( ! preg_match( '/^[3-9]\d{7}$/', $celular_digits ) ) {
 		$fail( 'celular' );
 	}
 	$celular = '+56 9 ' . $celular_digits;

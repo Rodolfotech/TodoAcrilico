@@ -500,7 +500,7 @@ $ta_contact_error_messages = array(
 		}
 
 		if (field.name === 'celular') {
-			field.setCustomValidity(/^[4-9]\d{7}$/.test(field.value.replace(/\D/g, '')) ? '' : 'Teléfono inválido');
+			field.setCustomValidity(/^[3-9]\d{7}$/.test(field.value.replace(/\D/g, '')) ? '' : 'Teléfono inválido');
 		}
 
 		if (field.name === 'descripcion') {
@@ -547,7 +547,7 @@ $ta_contact_error_messages = array(
 		// Teléfono: el error solo aparece al presionar Enviar; al corregirlo se limpia.
 		if (field.name === 'celular') {
 			field.addEventListener('input', function () {
-				if (/^[4-9]\d{7}$/.test(field.value.replace(/\D/g, ''))) {
+				if (/^[3-9]\d{7}$/.test(field.value.replace(/\D/g, ''))) {
 					field.setCustomValidity('');
 					clearFieldError(field);
 				}

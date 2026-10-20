@@ -46,7 +46,7 @@ Cada regla de la tabla de abajo existe **dos veces**: en JavaScript (`validateFi
 | Campo | Regla (JS y PHP) | Mensaje bajo el campo | Comportamiento al escribir |
 |---|---|---|---|
 | **Nombre Completo** (`nombre`) | Nombre y apellido: 2 o más palabras, cada una de 2 o más letras. Solo letras (con tildes y ñ), espacios, `-` y `'`. Máximo 100. Regex: `^\p{L}[\p{L}'’-]*\p{L}(\s+\p{L}[\p{L}'’-]*\p{L})+$` (flag `u`). | "Ingresa al menos un nombre y un apellido." (para cualquier error del nombre) | Borra los números y convierte a **MAYÚSCULAS** |
-| **Teléfono** (`celular`) | Prefijo visual fijo `+56 9`. El usuario escribe **8 dígitos** que comienzan con **4, 5, 6, 7, 8 o 9**. Regex: `^[4-9]\d{7}$`. El servidor también acepta el número con `9` o `569` delante y lo normaliza. | "Ingrese un teléfono válido de 8 dígitos." | Solo dígitos, con formato `XXXX XXXX` |
+| **Teléfono** (`celular`) | Prefijo visual fijo `+56 9`. El usuario escribe **8 dígitos** que comienzan con **3, 4, 5, 6, 7, 8 o 9**. Regex: `^[3-9]\d{7}$`. El servidor también acepta el número con `9` o `569` delante y lo normaliza. | "Ingrese un teléfono válido de 8 dígitos." | Solo dígitos, con formato `XXXX XXXX` |
 | **Correo** (`email`) | `gmail.com`, `outlook.com`, `hotmail.com`, `live.cl`, `yahoo.com`, `icloud.com`, o cualquier dominio que termine en **`.cl`**, **`.org`** o **`.net`**. No puede empezar con un carácter especial ni contener `@.`. | "Ingrese un correo electrónico válido" (vacío: "El correo es requerido") | Convierte a **minúsculas** |
 | **Descripción** (`descripcion`) | Mínimo **20** caracteres (sin contar espacios al inicio o al final) y máximo 2000 (`maxlength`). | "La descripción del proyecto debe tener al menos 20 caracteres." Va a la izquierda de "Límite 2000 caracteres", que siempre está a la derecha. | — |
 | **Adjuntos** (`adjunto[]`, opcional) | Hasta **5** archivos de máximo **5 MB** cada uno, en formato JPG, PNG, GIF, WEBP o PDF. El servidor revisa además el contenido real (`getimagesize()` o la firma `%PDF`). | Error bajo la lista de archivos, por ejemplo: «El archivo "x.jpg" debe pesar menos de 5 MB. Pesa 11.0 MB.» | Se valida al elegir el archivo y el archivo inválido no se agrega |
@@ -105,7 +105,7 @@ Muestra "Espera un momento", una cuenta regresiva de **60** segundos y el botón
 ## Correo (wp_mail)
 
 - **Destinatario:** `ta_get_contact_email()` en functions.php, filtrable con `ta_contact_email`.
-  - ⚠️ **Hoy apunta a `rodolfo.parada.gonzalez@gmail.com` (pruebas).** La línea con `contacto@todoacrilico.cl` está comentada justo encima. **Cambiarla antes de publicar en producción.**
+  - Apunta a **`contacto@todoacrilico.cl`** (producción, desde el 2026-10-20). La casilla de pruebas `rodolfo.parada.gonzalez@gmail.com` quedó comentada debajo.
 - **Remitente:** el código no fija `From`, a propósito, para que lo controle **WP Mail SMTP** (en local: mailer Gmail con OAuth). Si `wp_mail()` falla, revisa primero WP Mail SMTP → Herramientas → Registro de correos. El error típico `invalid_grant` o 401 se resuelve reconectando la cuenta de Google.
 - **Cabeceras:** `Content-Type: text/html` y `Reply-To` con el nombre y el correo del cliente. El `Reply-To` solo se agrega si `is_email()` es válido.
 - **Si falla:** `error_log()` registra el destinatario, el asunto, las cabeceras, el número de adjuntos y el correo del remitente.
@@ -114,7 +114,7 @@ Muestra "Espera un momento", una cuenta regresiva de **60** segundos y el botón
 
 ## Páginas legales (Política de Privacidad y Términos y Condiciones)
 
-- **Páginas:** slugs `politica-de-privacidad` (ID 102) y `terminos-y-condiciones` (ID 101). Se muestran con `page.php` como **acordeón con índice lateral** (`ta_render_legal_accordion()` en functions.php).
+- **Páginas:** en local, slugs `politica-de-privacidad` (ID 102) y `terminos-y-condiciones` (ID 101); en **producción**, `politica-privacidad` (ID 2190) y `termino-y-condiciones` (ID 2193). `ta_is_legal_page()` las detecta con `ta_find_page()` (búsqueda flexible), no por slug exacto. Se muestran con `page.php` como **acordeón con índice lateral** (`ta_render_legal_accordion()` en functions.php).
   - Cada `<h2>` del contenido, con el formato **"N. Título"**, se convierte en una tarjeta plegable con su número en verde.
   - El texto se edita en WordPress como contenido normal. **No escribas HTML de acordeón en la base de datos.**
 - **Ancho:** ambas páginas usan `.ta-page-content--wide` (1280px) para que la tabla de cookies quepa sin scroll en escritorio. Bajo 860px el índice se oculta y la tabla se desplaza horizontalmente.
