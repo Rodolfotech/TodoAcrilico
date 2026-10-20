@@ -1158,7 +1158,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-page-content--wide {
-	max-width: 1120px;
+	max-width: 1280px;
 }
 
 /* En el ancho amplio la tabla cabe completa; el scroll queda solo para pantallas angostas. */
@@ -1265,6 +1265,171 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-page-content .entry-content li + li {
 	margin-top: 6px;
+}
+
+/* ---- páginas legales: índice lateral + acordeón ---- */
+
+.ta-legal {
+	display: grid;
+	grid-template-columns: 220px minmax(0, 1fr);
+	gap: 40px;
+	align-items: start;
+}
+
+.ta-page-content .entry-content .ta-legal + *,
+.ta-page-content .entry-content .ta-legal > * + * {
+	margin-top: 0;
+}
+
+.ta-legal-toc {
+	position: sticky;
+	top: 168px; /* debajo del header sticky */
+}
+
+.ta-page-content .entry-content .ta-legal-toc-title {
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: #444748;
+	margin: 0 0 12px;
+}
+
+.ta-page-content .entry-content .ta-legal-toc ol {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.ta-page-content .entry-content .ta-legal-toc li + li {
+	margin-top: 2px;
+}
+
+.ta-legal-toc a {
+	display: flex;
+	gap: 12px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.4;
+	color: var(--ta-muted);
+	text-decoration: none;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.ta-legal-toc a:hover {
+	background: var(--ta-bg);
+	color: var(--ta-accent);
+}
+
+.ta-legal-toc-num {
+	flex: 0 0 14px;
+	font-size: 11px;
+	color: #9aa3a7;
+	padding-top: 1px;
+}
+
+.ta-page-content .entry-content .ta-legal-main > * + * {
+	margin-top: 12px;
+}
+
+.ta-page-content .entry-content .ta-legal-intro {
+	margin-bottom: 20px;
+}
+
+.ta-legal-item {
+	background: var(--ta-surface);
+	border: 1px solid var(--ta-border);
+	border-radius: 12px;
+	box-shadow: 0 1px 3px rgba(26, 28, 28, 0.06);
+	scroll-margin-top: 168px;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ta-legal-item:hover,
+.ta-legal-item[open] {
+	border-color: rgba(3, 133, 74, 0.35);
+	box-shadow: 0 4px 14px rgba(26, 28, 28, 0.06);
+}
+
+.ta-legal-item summary {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 16px 20px;
+	cursor: pointer;
+	list-style: none;
+}
+
+.ta-legal-item summary::-webkit-details-marker {
+	display: none;
+}
+
+.ta-legal-item summary:focus-visible {
+	outline: 2px solid var(--ta-accent);
+	outline-offset: 2px;
+	border-radius: 12px;
+}
+
+.ta-legal-num {
+	flex: 0 0 28px;
+	height: 28px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 7px;
+	background: var(--ta-accent);
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 800;
+}
+
+.ta-page-content .entry-content .ta-legal-heading {
+	flex: 1;
+	margin: 0;
+	font-size: 15px;
+	font-weight: 700;
+	line-height: 1.4;
+	color: var(--ta-ink);
+}
+
+.ta-legal-chevron {
+	flex: 0 0 auto;
+	width: 0;
+	height: 0;
+	border-left: 5px solid transparent;
+	border-right: 5px solid transparent;
+	border-top: 6px solid var(--ta-muted);
+	transition: transform 0.2s ease;
+}
+
+.ta-legal-item[open] .ta-legal-chevron {
+	transform: rotate(180deg);
+	border-top-color: var(--ta-accent);
+}
+
+.ta-legal-body {
+	padding: 4px 20px 20px 64px;
+	border-top: 1px solid var(--ta-border);
+	padding-top: 16px;
+}
+
+.ta-page-content .entry-content .ta-legal-body > * + * {
+	margin-top: 1em;
+}
+
+@media (max-width: 860px) {
+	.ta-legal {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.ta-legal-toc {
+		display: none;
+	}
+
+	.ta-legal-body {
+		padding-left: 20px;
+	}
 }
 
 /* ---- contacto: info + formulario ---- */

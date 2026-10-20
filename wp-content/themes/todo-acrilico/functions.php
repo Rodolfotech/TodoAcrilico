@@ -1283,3 +1283,87 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
         parent::end_el( $output, $item, $depth, $args );
     }
 }
+
+/**
+ * Páginas legales (Política de Privacidad, Términos y Condiciones) mostradas como
+ * acordeón con índice lateral. El contenido se sigue editando en WordPress como
+ * texto normal: cada <h2> se convierte en una sección plegable al mostrarse.
+ */
+function ta_is_legal_page() {
+	return is_page( array( 'politica-de-privacidad', 'terminos-y-condiciones' ) );
+}
+
+function ta_render_legal_accordion( $html ) {
+	$parts = preg_split( '/(<h2[^>]*>.*?<\/h2>)/is', $html, -1, PREG_SPLIT_DELIM_CAPTURE );
+	$intro = trim( array_shift( $parts ) );
+
+	$sections = array();
+	for ( $i = 0; $i < count( $parts ); $i += 2 ) {
+		$title  = trim( wp_strip_all_tags( $parts[ $i ] ) );
+		$number = count( $sections ) + 1;
+		if ( preg_match( '/^(\d+)\.\s*(.+)$/u', $title, $m ) ) {
+			$number = (int) $m[1];
+			$title  = $m[2];
+		}
+		$sections[] = array(
+			'id'     => 'seccion-' . $number,
+			'number' => $number,
+			'title'  => $title,
+			'body'   => isset( $parts[ $i + 1 ] ) ? trim( $parts[ $i + 1 ] ) : '',
+		);
+	}
+
+	if ( ! $sections ) {
+		return $html;
+	}
+
+	ob_start();
+	?>
+	<div class="ta-legal">
+		<nav class="ta-legal-toc" aria-label="Contenido">
+			<p class="ta-legal-toc-title">Contenido</p>
+			<ol>
+				<?php foreach ( $sections as $s ) : ?>
+					<li><a href="#<?php echo esc_attr( $s['id'] ); ?>"><span class="ta-legal-toc-num"><?php echo (int) $s['number']; ?></span><span><?php echo esc_html( $s['title'] ); ?></span></a></li>
+				<?php endforeach; ?>
+			</ol>
+		</nav>
+		<div class="ta-legal-main">
+			<?php if ( $intro ) : ?>
+				<div class="ta-legal-intro"><?php echo $intro; // phpcs:ignore WordPress.Security.EscapeOutput -- contenido del post ya filtrado por the_content. ?></div>
+			<?php endif; ?>
+			<?php foreach ( $sections as $s ) : ?>
+				<details class="ta-legal-item" id="<?php echo esc_attr( $s['id'] ); ?>">
+					<summary>
+						<span class="ta-legal-num"><?php echo (int) $s['number']; ?></span>
+						<h2 class="ta-legal-heading"><?php echo esc_html( $s['title'] ); ?></h2>
+						<span class="ta-legal-chevron" aria-hidden="true"></span>
+					</summary>
+					<div class="ta-legal-body"><?php echo $s['body']; // phpcs:ignore WordPress.Security.EscapeOutput -- contenido del post ya filtrado por the_content. ?></div>
+				</details>
+			<?php endforeach; ?>
+		</div>
+	</div>
+	<script>
+	(function () {
+		function openFromHash() {
+			if (!location.hash) return;
+			var item = document.getElementById(location.hash.slice(1));
+			if (item && item.tagName === 'DETAILS') {
+				item.open = true;
+				item.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}
+		document.querySelectorAll('.ta-legal-toc a').forEach(function (a) {
+			a.addEventListener('click', function () {
+				var item = document.getElementById(a.getAttribute('href').slice(1));
+				if (item) item.open = true;
+			});
+		});
+		window.addEventListener('hashchange', openFromHash);
+		openFromHash();
+	})();
+	</script>
+	<?php
+	return ob_get_clean();
+}
