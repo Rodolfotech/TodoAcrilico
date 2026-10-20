@@ -613,6 +613,14 @@ $ta_contact_error_messages = array(
 					submitBtn.style.cursor = 'pointer';
 					// Limpiar timestamp
 					localStorage.removeItem(RATE_LIMIT_KEY);
+
+					// Remover parámetro 'reason=rate_limit' de la URL
+					// para que no reaparezca el contador al actualizar
+					var newUrl = window.location.pathname + window.location.search.replace(/[?&]reason=rate_limit/g, '').replace(/^&/, '?');
+					if (newUrl.endsWith('?')) {
+						newUrl = newUrl.slice(0, -1);
+					}
+					window.history.replaceState({}, document.title, newUrl);
 				}
 			}, 1000);
 		} else {
