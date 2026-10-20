@@ -449,6 +449,10 @@ function ta_get_contact_email() {
 
 define( 'TA_CONTACT_MAX_FILE_SIZE', 5 * 1024 * 1024 ); // 5 MB por adjunto.
 define( 'TA_CONTACT_MAX_FILES', 5 ); // Hasta 5 archivos adjuntos.
+define( 'TA_CONTACT_NAME_MIN', 3 ); // Mínimo 3 caracteres en nombre.
+define( 'TA_CONTACT_NAME_MAX', 100 ); // Máximo 100 caracteres en nombre.
+define( 'TA_CONTACT_DESC_MIN', 20 ); // Mínimo 20 caracteres en descripción.
+define( 'TA_CONTACT_RATE_LIMIT', 60 ); // Rate limit: 60 segundos entre envíos.
 
 /**
  * Manejador del formulario de Contacto. Registrado tanto para visitantes sin sesión
@@ -507,6 +511,17 @@ function ta_handle_contact_submit() {
 	$celular     = isset( $_POST['celular'] ) ? sanitize_text_field( wp_unslash( $_POST['celular'] ) ) : '';
 	$descripcion = isset( $_POST['descripcion'] ) ? sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ) ) : '';
 	$acepta_ofertas = empty( $_POST['acepta_ofertas'] ) ? '0' : '1';
+
+	// Rate limiting: máximo 1 envío por IP cada TA_CONTACT_RATE_LIMIT segundos.
+	$client_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	if ( $client_ip ) {
+		$rate_limit_key = 'ta_contact_rate_' . md5( $client_ip );
+		$last_submit     = get_transient( $rate_limit_key );
+		if ( $last_submit ) {
+			$fail( 'rate_limit' );
+		}
+		set_transient( $rate_limit_key, time(), TA_CONTACT_RATE_LIMIT );
+	}
 	$adjunto_ref = isset( $_POST['adjunto_referencia'] ) ? esc_url_raw( wp_unslash( $_POST['adjunto_referencia'] ) ) : '';
 	$adjunto_ref = ( $adjunto_ref && wp_http_validate_url( $adjunto_ref ) ) ? $adjunto_ref : '';
 	$adjunto_tit  = isset( $_POST['adjunto_titulo'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_titulo'] ) ) : '';
@@ -522,13 +537,39 @@ function ta_handle_contact_submit() {
 		$fail( 'campos' );
 	}
 
+	$nombre_length = strlen( $nombre );
+	if ( $nombre_length < TA_CONTACT_NAME_MIN || $nombre_length > TA_CONTACT_NAME_MAX ) {
+		$fail( 'campos' );
+	}
+
+	$desc_length = strlen( $descripcion );
+	if ( $desc_length < TA_CONTACT_DESC_MIN ) {
+		$fail( 'campos' );
+	}
+
+	// Anti-spam: rechazar nombres con más del 50% de dígitos.
+	$digit_count = preg_match_all( '/\d/', $nombre );
+	if ( $digit_count > ( $nombre_length * 0.5 ) ) {
+		$fail( 'campos' );
+	}
+
 	if ( '' === $email || ! is_email( $email ) ) {
+		$fail( 'email' );
+	}
+
+	// Validación mejorada de email: rechazar si empieza con caracteres especiales o dominios inválidos.
+	if ( preg_match( '/^[^a-z0-9]/i', $email ) ) {
 		$fail( 'email' );
 	}
 
 	// El dominio del correo debe estar dentro de los permitidos: .cl, .com, .net u .org.
 	$email_domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
 	if ( ! preg_match( '/\.(cl|com|net|org)$/', $email_domain ) ) {
+		$fail( 'email' );
+	}
+
+	// Validación: email no puede tener patrón inválido como ".@" o ".fadf@".
+	if ( preg_match( '/^\./i', $email ) || strpos( $email, '@.' ) !== false ) {
 		$fail( 'email' );
 	}
 

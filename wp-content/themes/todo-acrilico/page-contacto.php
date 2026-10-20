@@ -29,8 +29,8 @@ $ta_quote_uso     = $ta_quote_uso ? trim( $ta_quote_uso ) : '';
 $ta_has_quote     = (bool) $ta_quote_image;
 
 $ta_contact_error_messages = array(
-	'campos'         => 'Completa tu nombre y la descripción del proyecto.',
-	'email'          => 'Ingresa un correo electrónico válido.',
+	'campos'         => 'Completa tu nombre (mín. 3 caracteres) y descripción del proyecto (mín. 20 caracteres).',
+	'email'          => 'Ingresa un correo electrónico válido (debe empezar con letra o número).',
 	'celular'        => 'Ingresa un celular chileno válido (9 dígitos que empiecen en 9).',
 	'archivo'        => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
 	'archivo_grande' => 'El archivo adjunto no puede superar los 5 MB.',
@@ -38,6 +38,7 @@ $ta_contact_error_messages = array(
 	'archivos_muchos'=> 'Puedes adjuntar hasta 5 archivos.',
 	'terminos'       => 'Debes aceptar la Política de Privacidad y los Términos y condiciones para continuar.',
 	'nonce'          => 'Tu sesión expiró, vuelve a intentarlo.',
+	'rate_limit'     => 'Espera un momento antes de enviar otro mensaje.',
 	'envio'          => 'No se pudo enviar el mensaje. Intenta de nuevo más tarde.',
 );
 ?>
@@ -139,7 +140,7 @@ $ta_contact_error_messages = array(
 				<div class="ta-contact-form-row">
 					<label>
 						Nombre Completo
-						<input type="text" name="nombre" placeholder="Ej. Juan Pérez" required>
+						<input type="text" name="nombre" placeholder="Ej. Juan Pérez" minlength="3" maxlength="100" required>
 					</label>
 					<label>
 						Teléfono
@@ -148,7 +149,7 @@ $ta_contact_error_messages = array(
 								<span class="ta-contact-flag" aria-hidden="true">🇨🇱</span>
 								<span>+56 9</span>
 							</div>
-							<input type="tel" name="celular" placeholder="8765 4321" inputmode="tel" required>
+							<input type="tel" name="celular" placeholder="8765 4321" inputmode="tel" pattern="[0-9\s]{8,12}" maxlength="12" required>
 						</div>
 					</label>
 				</div>
@@ -158,7 +159,7 @@ $ta_contact_error_messages = array(
 				</label>
 				<label>
 					Descripción del proyecto
-					<textarea name="descripcion" rows="5" maxlength="2000" placeholder="Cuéntanos detalles de medidas, materiales y plazos…" required></textarea>
+					<textarea name="descripcion" rows="5" minlength="20" maxlength="2000" placeholder="Cuéntanos detalles de medidas, materiales y plazos…" required></textarea>
 					<span class="ta-contact-char-limit">Límite 2000 caracteres</span>
 				</label>
 				<div class="ta-contact-files">
@@ -280,7 +281,48 @@ $ta_contact_error_messages = array(
 	tel.addEventListener('input', function () {
 		var digits = tel.value.replace(/\D/g, '').slice(0, 8);
 		tel.value = digits.length > 4 ? digits.slice(0, 4) + ' ' + digits.slice(4) : digits;
+		updateFieldValidation(tel);
 	});
+})();
+
+(function () {
+	var form = document.querySelector('.ta-contact-form');
+	if (!form) return;
+
+	function updateFieldValidation(field) {
+		var isValid = field.checkValidity();
+		if (isValid) {
+			field.style.borderColor = '#16a34a';
+		} else {
+			field.style.borderColor = '#dc2626';
+		}
+	}
+
+	var fields = form.querySelectorAll('input[minlength], input[maxlength], textarea[minlength], input[type="email"]');
+	Array.prototype.forEach.call(fields, function (field) {
+		field.addEventListener('blur', function () {
+			updateFieldValidation(field);
+		});
+		field.addEventListener('input', function () {
+			if (field.value.length > 2) {
+				updateFieldValidation(field);
+			}
+		});
+	});
+
+	var submitBtn = form.querySelector('button[type="submit"]');
+	if (submitBtn) {
+		form.addEventListener('submit', function (e) {
+			var isFormValid = form.checkValidity();
+			if (!isFormValid) {
+				e.preventDefault();
+				submitBtn.style.opacity = '0.6';
+				submitBtn.disabled = true;
+			} else {
+				submitBtn.disabled = false;
+			}
+		});
+	}
 })();
 
 (function () {

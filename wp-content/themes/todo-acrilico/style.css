@@ -1459,6 +1459,23 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	outline-offset: 1px;
 }
 
+/* Validación en tiempo real: bordes verdes/rojos */
+.ta-contact-form input[type="text"][style*="borderColor: rgb(22, 163, 74)"],
+.ta-contact-form input[type="email"][style*="borderColor: rgb(22, 163, 74)"],
+.ta-contact-form input[type="tel"][style*="borderColor: rgb(22, 163, 74)"],
+.ta-contact-form textarea[style*="borderColor: rgb(22, 163, 74)"] {
+	border-color: #16a34a !important;
+	box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.1);
+}
+
+.ta-contact-form input[type="text"][style*="borderColor: rgb(220, 38, 38)"],
+.ta-contact-form input[type="email"][style*="borderColor: rgb(220, 38, 38)"],
+.ta-contact-form input[type="tel"][style*="borderColor: rgb(220, 38, 38)"],
+.ta-contact-form textarea[style*="borderColor: rgb(220, 38, 38)"] {
+	border-color: #dc2626 !important;
+	box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.1);
+}
+
 .ta-contact-form textarea {
 	resize: vertical;
 }
