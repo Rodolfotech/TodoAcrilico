@@ -786,18 +786,28 @@ function ta_handle_contact_submit() {
 	// Cierre del contenedor.
 	$html_body .= '</table></body></html>';
 
-	// Sin "From" propio a propósito: dejarlo así es lo que hace que un plugin SMTP
-	// (WP Mail SMTP, etc.) controle el remitente sin que este código le compita.
+	// Headers del email — usar sanitización para evitar problemas
 	$headers = array(
 		'Content-Type: text/html; charset=UTF-8',
-		'Reply-To: ' . $nombre . ' <' . $email . '>',
 	);
+
+	// Reply-To: solo agregar si el email es válido
+	if ( is_email( $email ) ) {
+		$nombre_clean = sanitize_text_field( $nombre );
+		$headers[] = 'Reply-To: ' . $nombre_clean . ' <' . $email . '>';
+	}
 
 	$sent = wp_mail( ta_get_contact_email(), $subject, $html_body, $headers, $attachments );
 
 	// Debug: registrar en logs si el email falló
 	if ( ! $sent ) {
-		error_log( 'TA Contact Form - wp_mail() falló. Email: ' . ta_get_contact_email() . ', Asunto: ' . $subject . ', Headers: ' . print_r( $headers, true ) );
+		error_log( 'TA Contact Form - wp_mail() falló. ' .
+			'Destinatario: ' . ta_get_contact_email() . ', ' .
+			'Asunto: ' . $subject . ', ' .
+			'Headers: ' . json_encode( $headers ) . ', ' .
+			'Archivos: ' . count( $attachments ) . ', ' .
+			'Remitente: ' . $email
+		);
 	}
 
 	foreach ( $adjunto_paths as $adjunto_path ) {
