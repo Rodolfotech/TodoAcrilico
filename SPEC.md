@@ -115,7 +115,7 @@ Ejemplo:
 ## Validación de Campos
 
 ### Nombre Completo
-- ✅ **3-100 caracteres**
+- ✅ **2-100 caracteres** (error visible solo al presionar Enviar)
 - ✅ Solo letras, espacios y acentos
 - ❌ NO números
 - ❌ NO caracteres especiales

@@ -449,7 +449,7 @@ function ta_get_contact_email() {
 
 define( 'TA_CONTACT_MAX_FILE_SIZE', 5 * 1024 * 1024 ); // 5 MB por adjunto.
 define( 'TA_CONTACT_MAX_FILES', 5 ); // Hasta 5 archivos adjuntos.
-define( 'TA_CONTACT_NAME_MIN', 3 ); // Mínimo 3 caracteres en nombre.
+define( 'TA_CONTACT_NAME_MIN', 2 ); // Mínimo 2 caracteres en nombre.
 define( 'TA_CONTACT_NAME_MAX', 100 ); // Máximo 100 caracteres en nombre.
 define( 'TA_CONTACT_DESC_MIN', 20 ); // Mínimo 20 caracteres en descripción.
 define( 'TA_CONTACT_RATE_LIMIT', 60 ); // Rate limit: 60 segundos entre envíos.
@@ -476,8 +476,8 @@ function ta_handle_contact_submit() {
 
 	// Mensajes de error mapeados
 	$error_messages = array(
-		'campos'          => 'Completa tu nombre (mín. 3 caracteres) y descripción del proyecto (mín. 20 caracteres).',
-		'nombre_corto'    => 'El nombre debe tener al menos 3 caracteres.',
+		'campos'          => 'Completa tu nombre (mín. 2 caracteres) y descripción del proyecto (mín. 20 caracteres).',
+		'nombre_corto'    => 'El nombre debe tener al menos 2 caracteres.',
 		'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
 		'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
 		'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
@@ -580,7 +580,7 @@ function ta_handle_contact_submit() {
 		$fail( 'campos' );
 	}
 
-	$nombre_length = strlen( $nombre );
+	$nombre_length = mb_strlen( $nombre );
 	if ( $nombre_length < TA_CONTACT_NAME_MIN ) {
 		$fail( 'nombre_corto' );
 	}

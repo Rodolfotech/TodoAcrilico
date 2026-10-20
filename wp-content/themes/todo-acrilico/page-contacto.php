@@ -29,8 +29,8 @@ $ta_quote_uso     = $ta_quote_uso ? trim( $ta_quote_uso ) : '';
 $ta_has_quote     = (bool) $ta_quote_image;
 
 $ta_contact_error_messages = array(
-	'campos'          => 'Completa tu nombre (mín. 3 caracteres) y descripción del proyecto (mín. 20 caracteres).',
-	'nombre_corto'    => 'El nombre debe tener al menos 3 caracteres.',
+	'campos'          => 'Completa tu nombre (mín. 2 caracteres) y descripción del proyecto (mín. 20 caracteres).',
+	'nombre_corto'    => 'El nombre debe tener al menos 2 caracteres.',
 	'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
 	'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
 	'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
@@ -178,7 +178,7 @@ $ta_contact_error_messages = array(
 				<div class="ta-contact-form-row">
 					<label>
 						Nombre Completo
-						<input type="text" name="nombre" placeholder="Ej. Juan Pérez" minlength="3" maxlength="100" required>
+						<input type="text" name="nombre" placeholder="Ej. Juan Pérez" minlength="2" maxlength="100" required>
 						<span class="ta-contact-field-error" data-field="nombre"></span>
 					</label>
 					<label>
@@ -413,8 +413,8 @@ $ta_contact_error_messages = array(
 
 	var fieldErrorMessages = {
 		nombre: {
-			valueMissing: 'Ingrese su nombre y apellidos',
-			tooShort: 'Mínimo 3 caracteres',
+			valueMissing: 'El nombre debe tener al menos 2 caracteres.',
+			tooShort: 'El nombre debe tener al menos 2 caracteres.',
 			tooLong: 'Máximo 100 caracteres',
 			custom: 'Ingrese su nombre y apellidos (sin números)'
 		},
@@ -489,6 +489,10 @@ $ta_contact_error_messages = array(
 				var message = 'Ingrese su nombre y apellidos (sin números)';
 				showFieldError(field, message);
 				return false;
+			} else if (field.value.trim().length < 2) {
+				field.setCustomValidity('Nombre corto');
+				showFieldError(field, 'El nombre debe tener al menos 2 caracteres.');
+				return false;
 			} else {
 				field.setCustomValidity('');
 			}
@@ -550,8 +554,8 @@ $ta_contact_error_messages = array(
 			return;
 		}
 
-		// Email y descripción: el error solo aparece al presionar Enviar; al editarlos se oculta.
-		if (field.name === 'email' || field.name === 'descripcion') {
+		// Nombre, email y descripción: el error solo aparece al presionar Enviar; al editarlos se oculta.
+		if (field.name === 'nombre' || field.name === 'email' || field.name === 'descripcion') {
 			field.addEventListener('input', function () {
 				field.setCustomValidity('');
 				field.style.borderColor = '';
