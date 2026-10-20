@@ -380,7 +380,6 @@ $ta_contact_error_messages = array(
 		tel.addEventListener('input', function () {
 			var digits = tel.value.replace(/\D/g, '').slice(0, 8);
 			tel.value = digits.length > 4 ? digits.slice(0, 4) + ' ' + digits.slice(4) : digits;
-			updateFieldValidation(tel);
 		});
 	}
 })();
