@@ -451,22 +451,22 @@ $ta_contact_error_messages = array(
 			}
 		}
 
-		// Validación personalizada: email
+		// Validación personalizada: email (solo si tiene contenido)
 		if (field.name === 'email' && field.value.length > 0) {
+			var isValid = true;
+			var errorMsg = 'Ingrese un correo electrónico válido';
+
 			if (!/^[a-z0-9]/i.test(field.value)) {
-				field.setCustomValidity('El email no puede comenzar con caracteres especiales');
-				var message = 'No puede comenzar con caracteres especiales';
-				showFieldError(field, message);
-				return false;
+				isValid = false;
 			} else if (field.value.indexOf('@.') !== -1 || /^\./.test(field.value)) {
-				field.setCustomValidity('El email tiene un formato inválido');
-				var message = 'Formato inválido (no puede tener "@." o comenzar con punto)';
-				showFieldError(field, message);
-				return false;
+				isValid = false;
 			} else if (!/(@gmail\.com|@outlook\.com|@hotmail\.com|@live\.cl|@yahoo\.com|@icloud\.com|\.(cl|com|net|org))$/i.test(field.value)) {
-				field.setCustomValidity('Dominio de email no permitido');
-				var message = 'Usa: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominios .cl, .com, .net, .org';
-				showFieldError(field, message);
+				isValid = false;
+			}
+
+			if (!isValid) {
+				field.setCustomValidity('Email inválido');
+				showFieldError(field, errorMsg);
 				return false;
 			} else {
 				field.setCustomValidity('');
