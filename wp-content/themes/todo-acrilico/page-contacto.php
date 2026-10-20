@@ -385,6 +385,14 @@ $ta_contact_error_messages = array(
 		});
 	}
 
+	// Convertir email a minúsculas
+	var email = document.querySelector('input[name="email"]');
+	if (email) {
+		email.addEventListener('input', function () {
+			email.value = email.value.toLowerCase();
+		});
+	}
+
 	// Formateo para teléfono
 	var tel = document.querySelector('.ta-contact-tel-wrap input[type="tel"][name="celular"]');
 	if (tel) {
