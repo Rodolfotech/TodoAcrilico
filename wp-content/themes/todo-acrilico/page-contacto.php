@@ -372,16 +372,16 @@ $ta_contact_error_messages = array(
 })();
 
 (function () {
-	// Filtro para campo nombre: solo permite letras, espacios y acentos
+	// Filtro para campo nombre: solo permite letras, espacios y acentos + convertir a mayúsculas
 	var nombre = document.querySelector('input[name="nombre"]');
 	if (nombre) {
 		nombre.addEventListener('input', function () {
 			// Elimina números automáticamente
 			var originalValue = nombre.value;
 			var filteredValue = originalValue.replace(/\d/g, '');
-			if (originalValue !== filteredValue) {
-				nombre.value = filteredValue;
-			}
+			// Convertir a mayúsculas
+			var upperValue = filteredValue.toUpperCase();
+			nombre.value = upperValue;
 		});
 	}
 
