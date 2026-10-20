@@ -137,7 +137,7 @@ $ta_contact_error_messages = array(
 				</div>
 			<?php endif; ?>
 
-			<form class="ta-contact-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
+			<form class="ta-contact-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-ajax-url="<?php echo esc_url( home_url( '/wp-admin/admin-post.php' ) ); ?>" enctype="multipart/form-data">
 				<input type="hidden" name="action" value="ta_contact_submit">
 				<input type="hidden" name="redirect_to" value="<?php echo esc_url( $contacto_url ); ?>">
 				<?php wp_nonce_field( 'ta_contact_submit', 'ta_contact_nonce' ); ?>
@@ -553,7 +553,14 @@ $ta_contact_error_messages = array(
 			submitBtn.style.opacity = '0.6';
 
 			var formData = new FormData(form);
-			fetch(form.action, {
+			var ajaxUrl = form.getAttribute('data-ajax-url') || form.action;
+
+			// Si es URL relativa, convertir a absoluta
+			if (ajaxUrl.charAt(0) === '/') {
+				ajaxUrl = window.location.origin + ajaxUrl;
+			}
+
+			fetch(ajaxUrl, {
 				method: 'POST',
 				body: formData,
 				headers: {
