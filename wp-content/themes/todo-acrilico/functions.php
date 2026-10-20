@@ -480,7 +480,7 @@ function ta_handle_contact_submit() {
 		'nombre_corto'    => 'El nombre debe tener al menos 2 caracteres.',
 		'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
 		'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
-		'nombre_invalido' => 'Ingrese un nombre válido.',
+		'nombre_invalido' => 'Ingresa al menos un nombre y un apellido.',
 		'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
 		'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
 		'email_invalido'  => 'El correo electrónico no tiene un formato válido.',

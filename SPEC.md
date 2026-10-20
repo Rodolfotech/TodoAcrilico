@@ -127,7 +127,7 @@ Ejemplo:
 ### Nombre Completo
 - ✅ **Nombre y apellido:** mínimo 2 palabras, cada una de 2+ letras (máx. 100 caracteres)
 - ✅ Solo letras (con tildes y ñ), espacios, guion y apóstrofe (ej: "PÉREZ-SOTO", "O'BRIEN")
-- ❌ "AA", "JUAN", "JUAN P" → error "Ingrese un nombre válido" (visible solo al presionar Enviar)
+- ❌ "AA", "JUAN", "JUAN P" → error "Ingresa al menos un nombre y un apellido." (visible solo al presionar Enviar)
 - ❌ NO números
 - ❌ NO caracteres especiales
 
