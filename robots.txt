@@ -1,0 +1,77 @@
+# Robots.txt - Permitir acceso a motores de búsqueda e IA generativas
+# Generative Engine Optimization (GEO)
+
+# Todos los bots por defecto
+User-agent: *
+Allow: /
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-content/plugins/
+Disallow: /wp-login.php
+Disallow: /?s=
+Disallow: /*?*orderby=
+Disallow: /*?*s=
+Disallow: /search/
+Crawl-delay: 1
+
+# Google
+User-agent: Googlebot
+Allow: /
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Crawl-delay: 1
+
+# Permitir Google-Extended para entrenamiento de Gemini/Bard
+User-agent: Google-Extended
+Allow: /
+
+# OpenAI - GPTBot y CCBot
+User-agent: GPTBot
+Allow: /
+Disallow: /wp-admin/
+Disallow: /wp-login.php
+
+User-agent: CCBot
+Allow: /
+
+# Anthropic - Claude Web Crawler
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+# Meta
+User-agent: facebookexternalhit
+Allow: /
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Disallow: /wp-admin/
+
+# Cohere
+User-agent: Cohere-AI
+Allow: /
+
+# DataForSEO
+User-agent: DataForSeoBot
+Allow: /
+
+# Scrapers éticos
+User-agent: curl
+Allow: /
+
+User-agent: wget
+Allow: /
+
+User-agent: python-requests
+Allow: /
+
+# Sitemap
+Sitemap: https://todoacrilico.cl/wp/sitemap.xml
+Sitemap: https://todoacrilico.cl/wordpress/proyecto3/sitemap.xml

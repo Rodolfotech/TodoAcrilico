@@ -7,6 +7,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 <head>
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Generative Engine Optimization (GEO) -->
+<meta name="ai-content-policy" content="allowed">
+<meta name="ai-training" content="allowed">
+<meta name="robots-ai" content="allow-generation-training">
+<link rel="ai-policy" href="/.well-known/ai.json">
 <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>

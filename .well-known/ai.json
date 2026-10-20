@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "name": "TODO Acrílico",
+  "description": "Soluciones en acrílico de alta calidad. Diseño, fabricación e instalación.",
+  "url": "https://todoacrilico.cl",
+  "contact": {
+    "email": "info@todoacrilico.cl",
+    "website": "https://todoacrilico.cl"
+  },
+  "policies": {
+    "generation": {
+      "allow": true,
+      "description": "Se permite el uso de contenido del sitio para entrenamientos y generación de contenido con IA",
+      "attribution_required": true,
+      "commercial_use": "allowed_with_credit"
+    },
+    "crawling": {
+      "allow": true,
+      "frequency": "daily",
+      "robots_txt": "https://todoacrilico.cl/wordpress/proyecto3/robots.txt",
+      "description": "Se permite el crawling del sitio por IA generativas"
+    },
+    "indexing": {
+      "allow": true,
+      "description": "Se permite indexar contenido para búsqueda y recuperación por IA"
+    },
+    "training": {
+      "allow": true,
+      "data_types": [
+        "text_content",
+        "images",
+        "product_information"
+      ],
+      "restrictions": [
+        "personal_data",
+        "user_credentials"
+      ]
+    }
+  },
+  "compliance": {
+    "gdpr": true,
+    "ccpa": true,
+    "content_policy": "https://todoacrilico.cl/wordpress/proyecto3",
+    "responsible_disclosure": "Se valora el reporte responsable de vulnerabilidades"
+  },
+  "supported_ai_agents": [
+    "GPTBot",
+    "Claude-Web",
+    "PerplexityBot",
+    "Googlebot",
+    "Google-Extended",
+    "Bingbot",
+    "facebookexternalhit",
+    "CCBot",
+    "anthropic-ai"
+  ],
+  "additional_info": {
+    "language": "es",
+    "timezone": "America/Santiago",
+    "business_type": "Manufacturing and Design",
+    "industry": "Acrylic Products",
+    "update_frequency": "weekly",
+    "last_updated": "2026-10-20"
+  }
+}
