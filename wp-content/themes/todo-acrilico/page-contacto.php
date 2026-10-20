@@ -413,10 +413,10 @@ $ta_contact_error_messages = array(
 
 	var fieldErrorMessages = {
 		nombre: {
-			valueMissing: 'El nombre debe tener al menos 2 caracteres.',
-			tooShort: 'El nombre debe tener al menos 2 caracteres.',
-			tooLong: 'Máximo 100 caracteres',
-			custom: 'Ingrese su nombre y apellidos (sin números)'
+			valueMissing: 'Ingrese un nombre válido',
+			tooShort: 'Ingrese un nombre válido',
+			tooLong: 'Ingrese un nombre válido',
+			custom: 'Ingrese un nombre válido'
 		},
 		email: {
 			valueMissing: 'El correo es requerido',
@@ -486,12 +486,12 @@ $ta_contact_error_messages = array(
 		if (field.name === 'nombre') {
 			if (/\d/.test(field.value)) {
 				field.setCustomValidity('El nombre no puede contener números');
-				var message = 'Ingrese su nombre y apellidos (sin números)';
+				var message = 'Ingrese un nombre válido';
 				showFieldError(field, message);
 				return false;
 			} else if (field.value.trim().length < 2) {
 				field.setCustomValidity('Nombre corto');
-				showFieldError(field, 'El nombre debe tener al menos 2 caracteres.');
+				showFieldError(field, 'Ingrese un nombre válido');
 				return false;
 			} else {
 				field.setCustomValidity('');
