@@ -287,14 +287,28 @@ $ta_contact_error_messages = array(
 })();
 
 (function () {
-	var tel = document.querySelector('.ta-contact-tel-wrap input[type="tel"][name="celular"]');
-	if (!tel) return;
+	// Filtro para campo nombre: solo permite letras, espacios y acentos
+	var nombre = document.querySelector('input[name="nombre"]');
+	if (nombre) {
+		nombre.addEventListener('input', function () {
+			// Elimina números automáticamente
+			var originalValue = nombre.value;
+			var filteredValue = originalValue.replace(/\d/g, '');
+			if (originalValue !== filteredValue) {
+				nombre.value = filteredValue;
+			}
+		});
+	}
 
-	tel.addEventListener('input', function () {
-		var digits = tel.value.replace(/\D/g, '').slice(0, 8);
-		tel.value = digits.length > 4 ? digits.slice(0, 4) + ' ' + digits.slice(4) : digits;
-		updateFieldValidation(tel);
-	});
+	// Formateo para teléfono
+	var tel = document.querySelector('.ta-contact-tel-wrap input[type="tel"][name="celular"]');
+	if (tel) {
+		tel.addEventListener('input', function () {
+			var digits = tel.value.replace(/\D/g, '').slice(0, 8);
+			tel.value = digits.length > 4 ? digits.slice(0, 4) + ' ' + digits.slice(4) : digits;
+			updateFieldValidation(tel);
+		});
+	}
 })();
 
 (function () {
