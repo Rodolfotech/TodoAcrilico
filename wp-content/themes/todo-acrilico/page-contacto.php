@@ -115,9 +115,7 @@ $ta_contact_error_messages = array(
 		</div>
 
 		<div class="ta-contact-form-card">
-			<?php if ( 'success' === $ta_contact_status ) : ?>
-				<p class="ta-contact-alert ta-contact-alert--success">¡Gracias! Recibimos tu mensaje y te responderemos entre 24 y 48 horas hábiles.</p>
-			<?php elseif ( 'error' === $ta_contact_status ) : ?>
+			<?php if ( 'error' === $ta_contact_status ) : ?>
 				<p class="ta-contact-alert ta-contact-alert--error"><?php echo esc_html( $ta_contact_error_messages[ $ta_contact_reason ] ?? 'Ocurrió un error. Intenta de nuevo.' ); ?></p>
 			<?php else : ?>
 				<p class="ta-contact-alert ta-contact-alert--error" style="display: none;"></p>
