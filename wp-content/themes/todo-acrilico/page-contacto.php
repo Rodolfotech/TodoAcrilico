@@ -542,6 +542,20 @@ $ta_contact_error_messages = array(
 			return;
 		}
 
+		// Email: el error solo aparece al presionar Enviar; al editarlo se oculta.
+		if (field.name === 'email') {
+			field.addEventListener('input', function () {
+				field.setCustomValidity('');
+				field.style.borderColor = '';
+				var errorSpan = form.querySelector('[data-field="email"]');
+				if (errorSpan) {
+					errorSpan.textContent = '';
+					errorSpan.style.display = 'none';
+				}
+			});
+			return;
+		}
+
 		field.addEventListener('blur', function () {
 			validateField(field);
 		});
