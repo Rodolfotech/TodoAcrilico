@@ -2343,6 +2343,11 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	transition: color 0.2s ease;
 }
 
+.ta-modal-close--right {
+	left: auto;
+	right: 16px;
+}
+
 .ta-modal-close:hover {
 	color: #1a1c1c;
 }
