@@ -576,7 +576,7 @@ function ta_handle_contact_submit() {
 	// El dominio del correo debe estar dentro de los permitidos.
 	$email_domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
 	$allowed_domains = array( 'gmail.com', 'outlook.com', 'hotmail.com', 'live.cl', 'yahoo.com', 'icloud.com' );
-	$has_allowed_domain = in_array( $email_domain, $allowed_domains, true ) || preg_match( '/\.cl$/', $email_domain );
+	$has_allowed_domain = in_array( $email_domain, $allowed_domains, true ) || preg_match( '/\.(cl|com|net|org)$/', $email_domain );
 	if ( ! $has_allowed_domain ) {
 		$fail( 'email_dominio' );
 	}

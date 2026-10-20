@@ -37,7 +37,7 @@ $ta_contact_error_messages = array(
 	'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
 	'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
 	'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
-	'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominio .cl',
+	'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominios .cl, .com, .net, .org',
 	'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
 	'celular'         => 'Ingresa un celular chileno válido (8 dígitos, formato: 7456 4321 o similar).',
 	'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
@@ -406,9 +406,9 @@ $ta_contact_error_messages = array(
 				var message = 'Formato inválido (no puede tener "@." o comenzar con punto)';
 				showFieldError(field, message);
 				return false;
-			} else if (!/(@gmail\.com|@outlook\.com|@hotmail\.com|@live\.cl|@yahoo\.com|@icloud\.com|\.cl)$/i.test(field.value)) {
+			} else if (!/(@gmail\.com|@outlook\.com|@hotmail\.com|@live\.cl|@yahoo\.com|@icloud\.com|\.(cl|com|net|org))$/i.test(field.value)) {
 				field.setCustomValidity('Dominio de email no permitido');
-				var message = 'Usa: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o .cl';
+				var message = 'Usa: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominios .cl, .com, .net, .org';
 				showFieldError(field, message);
 				return false;
 			} else {
