@@ -1482,9 +1482,9 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-contact-textarea-footer {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
 	margin-top: 4px;
+	gap: 8px;
 }
 
 .ta-contact-char-limit {
@@ -1492,6 +1492,7 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	font-weight: 400;
 	color: var(--ta-muted);
 	margin: 0;
+	margin-left: auto;
 }
 
 .ta-contact-files-note {
