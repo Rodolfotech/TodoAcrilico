@@ -91,7 +91,7 @@ $ta_contact_error_messages = array(
 		<div id="ta-contact-rate-limit-modal" class="ta-modal ta-modal--hidden">
 			<div class="ta-modal-overlay"></div>
 			<div class="ta-modal-content">
-				<button type="button" class="ta-modal-close" id="ta-rate-limit-close" aria-label="Cerrar modal">&times;</button>
+				<button type="button" class="ta-modal-close ta-modal-close--right" id="ta-rate-limit-close" aria-label="Cerrar modal">&times;</button>
 				<div class="ta-modal-icon">⏱️</div>
 				<h3 class="ta-modal-title">Espera un momento</h3>
 				<p class="ta-modal-message">Antes de enviar otro mensaje</p>
