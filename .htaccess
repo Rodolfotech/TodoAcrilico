@@ -1,0 +1,76 @@
+# BEGIN WordPress
+
+# Optimización: GZIP compression para CSS, JS, HTML, JSON, SVG
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+    AddOutputFilterByType DEFLATE application/font-woff application/font-woff2 application/vnd.ms-fontobject image/x-icon
+</IfModule>
+
+# Optimización: Expires headers para cache (1 año para assets, 1 hora para HTML)
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 hour"
+
+    # CSS, JS, Fonts - 1 año
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType application/x-javascript "access plus 1 year"
+    ExpiresByType application/font-woff "access plus 1 year"
+    ExpiresByType application/font-woff2 "access plus 1 year"
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+
+    # Imágenes - 1 año
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+
+    # HTML - 1 hora (para que cambios se vean rápido)
+    ExpiresByType text/html "access plus 1 hour"
+</IfModule>
+
+# Optimización: Cache-Control headers
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|ico|woff|woff2|ttf|eot|svg)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    <FilesMatch "\.(js|css)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /wordpress/proyecto3/
+
+# SEO: Redirecciones 301 permanentes de rutas antiguas (transferir autoridad de página)
+# /contact/ → /wp/cotizar/
+RewriteRule ^contact/?$ /wordpress/proyecto3/wp/cotizar/ [R=301,L]
+
+# /wp/catalogos/ → /wp/catalogo/
+RewriteRule ^wp/catalogos/?$ /wordpress/proyecto3/wp/catalogo/ [R=301,L]
+
+# Pasar el header Authorization al entorno para que el REST del plugin jwt-gallery
+# (login JWT por Bearer token) pueda leerlo. Sin esto, Apache/CGI lo despoja y
+# require_auth falla con "rest_forbidden" aunque el token sea válido.
+RewriteCond %{HTTP:Authorization} ^(.+)$
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
+# Seguridad: bloquear xmlrpc.php (defense-in-depth).
+# El plugin jwt-gallery deshabilita XML-RPC via add_filter('xmlrpc_enabled', '__return_false'),
+# pero se bloquea aquí también para que nunca se procese ni siquiera si el plugin
+# se desactiva. xmlrpc.php permite amplificación de brute-force via system.multicall.
+<Files xmlrpc.php>
+    Require all denied
+</Files>
+
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /wordpress/proyecto3/index.php [L]
+</IfModule>
+# END WordPress
