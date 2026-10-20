@@ -2353,18 +2353,21 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-modal-title {
-	font-size: 24px;
-	font-weight: 700;
+	font-size: 32px;
+	font-weight: 300;
 	color: #1a1c1c;
-	margin: 0 0 8px 0;
+	margin: 0 0 12px 0;
 	font-family: Manrope, sans-serif;
+	letter-spacing: -0.5px;
 }
 
 .ta-modal-message {
-	font-size: 16px;
+	font-size: 18px;
+	font-weight: 400;
 	color: #5b6469;
 	margin: 0 0 24px 0;
 	font-family: Manrope, sans-serif;
+	line-height: 1.6;
 }
 
 .ta-modal-countdown {
@@ -2392,10 +2395,12 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 }
 
 .ta-modal-note {
-	font-size: 13px;
+	font-size: 15px;
+	font-weight: 400;
 	color: #5b6469;
 	margin: 0;
 	font-family: Manrope, sans-serif;
+	line-height: 1.5;
 }
 
 @keyframes fadeIn {
