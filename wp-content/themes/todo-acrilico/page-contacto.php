@@ -569,33 +569,55 @@ $ta_contact_error_messages = array(
 	var submitBtn = form.querySelector('button[type="submit"]');
 	if (!modal || !form) return;
 
-	// Verificar si hay mensaje de rate_limit en la URL
+	var RATE_LIMIT_KEY = 'ta_rate_limit_timestamp';
+	var RATE_LIMIT_DURATION = 60000; // 60 segundos en ms
+
+	// Verificar si hay mensaje de rate_limit en la URL o si hay timestamp guardado
 	var urlParams = new URLSearchParams(window.location.search);
 	var reason = urlParams.get('reason');
+	var savedTimestamp = localStorage.getItem(RATE_LIMIT_KEY);
 
+	// Si viene con parámetro rate_limit, guardar el timestamp
 	if (reason === 'rate_limit') {
-		// Mostrar modal
-		modal.classList.remove('ta-modal--hidden');
-		submitBtn.disabled = true;
+		localStorage.setItem(RATE_LIMIT_KEY, Date.now().toString());
+		savedTimestamp = localStorage.getItem(RATE_LIMIT_KEY);
+	}
 
-		// Iniciar countdown
-		var secondsLeft = 60;
-		countdownValue.textContent = secondsLeft;
+	// Si hay timestamp guardado, mostrar modal y countdown
+	if (savedTimestamp) {
+		var timestamp = parseInt(savedTimestamp, 10);
+		var now = Date.now();
+		var elapsed = now - timestamp;
+		var secondsLeft = Math.ceil((RATE_LIMIT_DURATION - elapsed) / 1000);
 
-		var countdownInterval = setInterval(function () {
-			secondsLeft--;
+		// Si aún hay tiempo, mostrar modal
+		if (secondsLeft > 0) {
+			// Mostrar modal
+			modal.classList.remove('ta-modal--hidden');
+			submitBtn.disabled = true;
+
 			countdownValue.textContent = secondsLeft;
 
-			if (secondsLeft <= 0) {
-				clearInterval(countdownInterval);
-				// Cerrar modal y habilitar botón
-				modal.classList.add('ta-modal--hidden');
-				submitBtn.disabled = false;
-				// Cambiar estilo del botón para indicar que está activo
-				submitBtn.style.opacity = '1';
-				submitBtn.style.cursor = 'pointer';
-			}
-		}, 1000);
+			var countdownInterval = setInterval(function () {
+				secondsLeft--;
+				countdownValue.textContent = secondsLeft;
+
+				if (secondsLeft <= 0) {
+					clearInterval(countdownInterval);
+					// Cerrar modal y habilitar botón
+					modal.classList.add('ta-modal--hidden');
+					submitBtn.disabled = false;
+					// Cambiar estilo del botón para indicar que está activo
+					submitBtn.style.opacity = '1';
+					submitBtn.style.cursor = 'pointer';
+					// Limpiar timestamp
+					localStorage.removeItem(RATE_LIMIT_KEY);
+				}
+			}, 1000);
+		} else {
+			// Si ya pasaron los 60 segundos, limpiar y no mostrar modal
+			localStorage.removeItem(RATE_LIMIT_KEY);
+		}
 	}
 })();
 </script>
