@@ -1,212 +1,124 @@
-# SPEC.md - Especificación del Formulario de Contacto
+# SPEC.md — Especificación funcional (formulario de cotización y páginas legales)
 
-## Reglas Críticas
-
-### 1. El Formulario NUNCA Debe Limpiarse en Caso de Error ⚠️
-
-**Regla:** Si el usuario presiona "Enviar Mensaje" y ocurre CUALQUIER error (validación, archivo, rate limit, envío), el formulario debe mantener TODOS los datos que el usuario ingresó.
-
-**Errores considerados:**
-- Validación en frontend (campo vacío, correo inválido, teléfono incorrecto, etc.)
-- Validación en backend
-- Archivos rechazados (archivo muy grande, formato no permitido, demasiados archivos)
-- Rate limiting (máximo 1 envío por IP cada 60 segundos)
-- Error al enviar email
-- Erro de CSRF token
-
-**Comportamiento esperado:**
-```
-Usuario llena formulario con datos inválidos
-         ↓
-Usuario presiona "Enviar Mensaje"
-         ↓
-ERROR: Campo de correo inválido (ej: gmial.com)
-         ↓
-✅ Formulario SIGUE MOSTRANDO todos los datos que escribió
-✅ El campo correo muestra borde ROJO + mensaje de error debajo
-✅ El usuario puede corregir el error sin perder los datos
-```
-
-**Comportamiento INCORRECTO** (PROHIBIDO):
-```
-Usuario llena formulario
-         ↓
-Usuario presiona "Enviar Mensaje"
-         ↓
-ERROR: validación fallida
-         ↓
-❌ Formulario se limpia / se pierden todos los datos
-❌ El usuario debe reescribir todo
-```
-
-**Excepción:** El formulario SÍ se limpia solo cuando el envío es EXITOSO (no hay error).
+> **Para una IA o desarrollador que modifique el sitio:** este archivo describe el comportamiento **aprobado por el cliente** al 2026-10-20 (tema 1.20.0). Cada regla fue pedida explícitamente. Si un cambio contradice algo de aquí, **pregunta antes**; no "mejores" una regla por tu cuenta.
+>
+> Código involucrado:
+> - `wp-content/themes/todo-acrilico/page-contacto.php`: HTML del formulario, modales y todo el JavaScript.
+> - `wp-content/themes/todo-acrilico/functions.php`, función `ta_handle_contact_submit()`: validación en servidor y envío.
+> - `wp-content/themes/todo-acrilico/style.css`: estilos `.ta-contact-*` y `.ta-modal*`.
+>
+> Página: slug `cotizar` (título "Contacto"). Se ubica con `ta_find_page( array( 'cotizar', 'contacto', 'contact' ) )`.
 
 ---
 
-### 2. Los Datos se Conservan al Actualizar la Página
+## Reglas críticas (no romper)
 
-**Regla:** Si el usuario actualiza el navegador (F5) con datos escritos, el formulario debe mostrar los mismos datos (nombre, teléfono, correo, descripción y checkboxes).
+### R1. El formulario NUNCA se limpia si hay un error
 
-- Se guardan en `sessionStorage` (solo esa pestaña; se borran al cerrarla).
-- Se borran al enviar el mensaje con éxito.
-- Excepción: los archivos adjuntos no se pueden restaurar (restricción del navegador).
+Si el usuario presiona **"Enviar mensaje"** y ocurre cualquier error, el formulario conserva **todo** lo escrito, incluidos los adjuntos. Esto vale para errores de validación del navegador o del servidor, archivos rechazados, límite de 60 segundos, nonce vencido y fallo de `wp_mail()`.
 
----
+- Solo se limpia cuando el envío es **exitoso** (`form.reset()`).
+- Por eso el envío es **AJAX** (`fetch` con la cabecera `X-Requested-With: XMLHttpRequest`) y no un POST que recarga la página.
 
-## Implementación Técnica
+### R2. Los datos sobreviven a una actualización de página (F5)
 
-### Frontend (JavaScript)
-- Usar **AJAX (fetch)** en lugar de POST tradicional
-- En caso de error:
-  - NO recargar página
-  - Mostrar mensaje de error debajo del campo problemático (o en modal para rate limit)
-  - MANTENER todos los valores del formulario
-- En caso de éxito:
-  - Mostrar mensaje "¡Gracias! Recibimos tu mensaje..."
-  - LIMPIAR el formulario
-  - Opcionalmente redirigir a página de éxito
+- Se guardan en `sessionStorage`, clave **`ta_contact_draft`**: `nombre`, `celular`, `email`, `descripcion`, `acepto_terminos` y `acepta_ofertas`.
+- Se guardan en cada evento `input` o `change` y se restauran al cargar la página.
+- Se borran al enviar con éxito o al cerrar la pestaña.
+- Los **adjuntos no se pueden restaurar**: el navegador no lo permite. Es una limitación conocida y aceptada.
+- Esto está declarado en la Política de Privacidad, sección 8. Si cambias la clave o el mecanismo, **actualiza esa tabla**.
 
-### Backend (PHP)
-- Validar todos los campos
-- Si hay error, responder con JSON: `{ "success": false, "reason": "archivo_grande", "message": "..." }`
-- Si es exitoso, responder con JSON: `{ "success": true, "message": "..." }`
-- NO redirigir en caso de error (dejar que JS maneje la respuesta)
+### R3. Los errores aparecen solo al presionar "Enviar mensaje"
 
----
+- Mientras el usuario escribe, ningún campo muestra error. Si el usuario edita un campo que tenía error, el error se oculta. Solo el teléfono vuelve a verde, y únicamente cuando queda válido.
+- El `<form>` tiene **`novalidate`**: los avisos nativos del navegador no aparecen y cada error se muestra **debajo de su campo**, en rojo y con borde rojo.
+- **Única excepción:** el checkbox de términos usa el aviso nativo (`reportValidity()`) cuando no hay otros errores.
+- Los errores que devuelve el **servidor** por AJAX se muestran en la alerta roja superior (`.ta-contact-alert--error`), no bajo el campo.
 
-## Estados del Formulario
+### R4. El frontend y el servidor validan lo mismo
 
-| Estado | Descripción | Acción |
-|--------|-------------|--------|
-| **Inicial** | Formulario vacío, listo para completar | - |
-| **Completando** | Usuario escribiendo datos | Validar en tiempo real |
-| **Validando** | User hace submit, se validan campos | Mostrar errores si los hay |
-| **Error** | Hay error de validación/envío | Mostrar error + MANTENER datos |
-| **Enviando** | Email siendo enviado al servidor | Deshabilitar botón, mostrar spinner |
-| **Éxito** | Email enviado correctamente | Limpiar formulario + Mostrar mensaje éxito |
+Cada regla de la tabla de abajo existe **dos veces**: en JavaScript (`validateField()` en `page-contacto.php`) y en PHP (`ta_handle_contact_submit()`). **Si cambias una, cambia la otra.** El servidor es la barrera real, porque el JS se puede saltar.
 
 ---
 
-## Mensajes de Error
+## Campos y validación
 
-Los mensajes de error deben aparecer:
-- **Debajo del campo problemático** (si es validación de campo específico)
-- **En modal emergente** (si es rate limit de IP)
-- Con **borde ROJO** en el campo
-- Con ícono visual (⚠️ o 🔴)
+| Campo | Regla (JS y PHP) | Mensaje bajo el campo | Comportamiento al escribir |
+|---|---|---|---|
+| **Nombre Completo** (`nombre`) | Nombre y apellido: 2 o más palabras, cada una de 2 o más letras. Solo letras (con tildes y ñ), espacios, `-` y `'`. Máximo 100. Regex: `^\p{L}[\p{L}'’-]*\p{L}(\s+\p{L}[\p{L}'’-]*\p{L})+$` (flag `u`). | "Ingresa al menos un nombre y un apellido." (para cualquier error del nombre) | Borra los números y convierte a **MAYÚSCULAS** |
+| **Teléfono** (`celular`) | Prefijo visual fijo `+56 9`. El usuario escribe **8 dígitos** que comienzan con **4, 5, 6, 7, 8 o 9**. Regex: `^[4-9]\d{7}$`. El servidor también acepta el número con `9` o `569` delante y lo normaliza. | "Ingrese un teléfono válido de 8 dígitos." | Solo dígitos, con formato `XXXX XXXX` |
+| **Correo** (`email`) | `gmail.com`, `outlook.com`, `hotmail.com`, `live.cl`, `yahoo.com`, `icloud.com`, o cualquier dominio que termine en **`.cl`**, **`.org`** o **`.net`**. No puede empezar con un carácter especial ni contener `@.`. | "Ingrese un correo electrónico válido" (vacío: "El correo es requerido") | Convierte a **minúsculas** |
+| **Descripción** (`descripcion`) | Mínimo **20** caracteres (sin contar espacios al inicio o al final) y máximo 2000 (`maxlength`). | "La descripción del proyecto debe tener al menos 20 caracteres." Va a la izquierda de "Límite 2000 caracteres", que siempre está a la derecha. | — |
+| **Adjuntos** (`adjunto[]`, opcional) | Hasta **5** archivos de máximo **5 MB** cada uno, en formato JPG, PNG, GIF, WEBP o PDF. El servidor revisa además el contenido real (`getimagesize()` o la firma `%PDF`). | Error bajo la lista de archivos, por ejemplo: «El archivo "x.jpg" debe pesar menos de 5 MB. Pesa 11.0 MB.» | Se valida al elegir el archivo y el archivo inválido no se agrega |
+| **Términos** (`acepto_terminos`) | Obligatorio. | Aviso nativo del navegador | — |
+| **Ofertas** (`acepta_ofertas`) | Opcional. | — | — |
 
-Ejemplo:
-```
-┌─────────────────────────────────┐
-│ Correo Electrónico              │
-│ ┌─────────────────────────────┐ │
-│ │ juan@gmial.com              │ │ ← Borde ROJO
-│ └─────────────────────────────┘ │
-│ ⚠️ Usa un correo permitido:     │ ← Error debajo
-│    gmail.com, outlook.com, ...  │
-└─────────────────────────────────┘
-```
+**Anti-spam:**
+
+- **Honeypot:** campo oculto `ta_contact_website`. Si viene lleno, el servidor responde éxito falso y no envía nada.
+- **Nonce:** campo `ta_contact_nonce` (acción `ta_contact_submit`).
 
 ---
 
-## Rate Limiting (60 segundos)
+## Envío (AJAX) y respuestas del servidor
 
-- **Cuando se activa:** Después de un envío EXITOSO (no en intentos fallidos)
-- **Duración:** 60 segundos por IP
-- **UI:** Modal con countdown visual
-- **Comportamiento:**
-  - Botón "Enviar Mensaje" deshabilitado
-  - Modal muestra: "Espera un momento ⏱️ 60"
-  - Al llegar a 0, se cierra modal y se habilita botón
-  - Modal NO reaparece al actualizar página (URL se limpia)
+- **URL:** atributo `data-ajax-url` del form, que vale `home_url( '/wp-admin/admin-post.php' )`, con `action=ta_contact_submit`.
+- **Cómo distingue el servidor:** `ta_handle_contact_submit()` detecta AJAX por la cabecera `X-Requested-With`.
+  - **AJAX:** responde `wp_send_json( { success, reason, message } )`. En éxito incluye además `redirect_url`.
+  - **Sin JS (fallback):** redirige con `?ta_contact=error&reason=…` o `?ta_contact=success`. **Mantener este camino.**
+- **Códigos de `reason`:** `campos`, `nombre_corto`, `nombre_largo`, `nombre_numerico`, `nombre_invalido`, `desc_corta`, `email_vacio`, `email_invalido`, `email_caracteres`, `email_patron`, `email_dominio`, `celular`, `archivo`, `archivo_grande`, `archivo_tipo`, `archivos_muchos`, `terminos`, `nonce`, `rate_limit`, `envio`.
+  - Los textos están **duplicados**: en `$error_messages` (functions.php) y en `$ta_contact_error_messages` (page-contacto.php). Mantén ambos iguales.
 
 ---
 
-## Validación de Campos
+## Modales
 
-### Nombre Completo
-- ✅ **Nombre y apellido:** mínimo 2 palabras, cada una de 2+ letras (máx. 100 caracteres)
-- ✅ Solo letras (con tildes y ñ), espacios, guion y apóstrofe (ej: "PÉREZ-SOTO", "O'BRIEN")
-- ❌ "AA", "JUAN", "JUAN P" → error "Ingresa al menos un nombre y un apellido." (visible solo al presionar Enviar)
-- ❌ NO números
-- ❌ NO caracteres especiales
+Los dos modales usan la estructura `.ta-modal`, `.ta-modal-overlay` y `.ta-modal-content`, con tipografía Manrope. Se cierran con la **X arriba a la derecha** (`.ta-modal-close.ta-modal-close--right`), con el botón del modal o con un clic en el fondo oscuro.
 
-### Teléfono
-- ✅ Formato chileno: `+56 9 XXXX XXXX` o `+56 9 8765 4321`
-- ✅ Exactamente 8 dígitos después de `+56 9`
-- ✅ Deben comenzar con 4, 5, 6, 7, 8 o 9 (móviles vigentes en Chile)
-- ❌ Comienzan con 0, 1, 2 o 3, o no son 8 dígitos → "Ingrese un teléfono válido de 8 dígitos." (visible solo al presionar Enviar)
+### Modal de éxito (`#ta-contact-success-modal`)
 
-### Correo Electrónico
-- ✅ Dominios permitidos: `gmail.com`, `outlook.com`, `hotmail.com`, `live.cl`, `yahoo.com`, `icloud.com`
-- ✅ Cualquier dominio `.org` o `.net`
-- ✅ Cualquier dominio `.cl`
-- ❌ Otro dominio rechazado
-- ❌ NO caracteres especiales al inicio
+Diseño aprobado, en este orden y **sin agregar nada más** (el cliente rechazó un bloque de WhatsApp y el enlace "Enviar otro mensaje"):
 
-### Descripción
-- ✅ **20-2000 caracteres**
-- ✅ Cualquier texto
+1. Círculo verde `#03854A` con un check SVG blanco y un halo verde claro alrededor. **No usar el emoji ✅.**
+2. Título **"¡Mensaje enviado!"**, en negrita (800) y 20px.
+3. Texto: "Nos pondremos en contacto en un plazo de 24 a 48 horas hábiles."
+4. Botón negro de ancho completo **"Cerrar"**, con el texto centrado y bordes redondeados de 12px.
 
-### Archivos (opcional)
-- ✅ Máximo 5 archivos
-- ✅ Máximo 5 MB por archivo
-- ✅ Formatos: JPG, PNG, GIF, WEBP, PDF
-- ❌ Otros formatos rechazados
-- ❌ Archivos > 5 MB rechazados
+Después del éxito se limpia el formulario y el borrador, y a los **3 s** la página se recarga con `?ta_contact=success`, que **ya no muestra** la alerta verde (se eliminó a pedido del cliente).
 
-### Términos y Condiciones
-- ✅ OBLIGATORIO aceptar (checkbox marcado)
-- ❌ NO enviar si no está marcado
+### Modal de límite de envíos (`#ta-contact-rate-limit-modal`)
+
+Muestra "Espera un momento", una cuenta regresiva de **60** segundos y el botón Enviar deshabilitado. Detalles en la sección siguiente.
 
 ---
 
-## Honeypot (Anti-spam)
+## Límite de envíos (60 segundos)
 
-Campo oculto `ta_contact_website` debe estar:
-- ✅ Vacío antes del submit
-- Si tiene contenido → ❌ Rechazar silenciosamente (bot)
-
----
-
-## CSRF Token (Seguridad)
-
-- WordPress `nonce` field: `ta_contact_nonce`
-- **Validar en backend antes de procesar**
-- Si es inválido: ❌ Rechazar con mensaje "Tu sesión expiró"
+- **Servidor:** guarda un transient `ta_contact_rate_{md5(IP)}` por `TA_CONTACT_RATE_LIMIT` (60 s) **solo después de un envío exitoso**. Los intentos fallidos no renuevan la espera. Si el transient existe, responde `reason=rate_limit`.
+- **Navegador:** al recibir `rate_limit`, guarda la hora en `localStorage`, clave **`ta_rate_limit_timestamp`**, y abre el modal con la cuenta regresiva.
+  - Si el usuario actualiza la página, la cuenta **continúa desde donde iba**: no reinicia en 60.
+  - Al llegar a 0, cierra el modal, habilita el botón, borra la clave y quita `reason=rate_limit` de la URL (`history.replaceState`). Así no reaparece al actualizar.
+- Esta clave también figura en la tabla de cookies de la Política de Privacidad.
 
 ---
 
-## Email (Envío)
+## Correo (wp_mail)
 
-### Configuración Requerida
+- **Destinatario:** `ta_get_contact_email()` en functions.php, filtrable con `ta_contact_email`.
+  - ⚠️ **Hoy apunta a `rodolfo.parada.gonzalez@gmail.com` (pruebas).** La línea con `contacto@todoacrilico.cl` está comentada justo encima. **Cambiarla antes de publicar en producción.**
+- **Remitente:** el código no fija `From`, a propósito, para que lo controle **WP Mail SMTP** (en local: mailer Gmail con OAuth). Si `wp_mail()` falla, revisa primero WP Mail SMTP → Herramientas → Registro de correos. El error típico `invalid_grant` o 401 se resuelve reconectando la cuenta de Google.
+- **Cabeceras:** `Content-Type: text/html` y `Reply-To` con el nombre y el correo del cliente. El `Reply-To` solo se agrega si `is_email()` es válido.
+- **Si falla:** `error_log()` registra el destinatario, el asunto, las cabeceras, el número de adjuntos y el correo del remitente.
 
-Para que `wp_mail()` funcione correctamente en producción, se necesita:
+---
 
-- **Plugin SMTP:** WP Mail SMTP, Mailgun, SendGrid, etc.
-- **O configuración de servidor:** Postfix, Sendmail, etc.
-- **Email válido:** El email del destinatario debe ser válido
+## Páginas legales (Política de Privacidad y Términos y Condiciones)
 
-### Email del Destinatario
-
-Actualmente configurado en `functions.php`:
-```php
-function ta_get_contact_email() {
-    return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
-}
-```
-
-**Cambiar a:** El email corporativo de Todo Acrílico (ej: `contacto@todoacrilico.cl`)
-
-### Debugging
-
-Si `wp_mail()` falla, se registra en:
-- `wp-content/debug.log` (si `WP_DEBUG` está habilitado)
-- Logs del sistema (via `error_log()`)
-
-Para ver errores, habilitar en `wp-config.php`:
-```php
-define( 'WP_DEBUG', true );
-define( 'WP_DEBUG_LOG', true );
-define( 'WP_DEBUG_DISPLAY', false );
-```
+- **Páginas:** slugs `politica-de-privacidad` (ID 102) y `terminos-y-condiciones` (ID 101). Se muestran con `page.php` como **acordeón con índice lateral** (`ta_render_legal_accordion()` en functions.php).
+  - Cada `<h2>` del contenido, con el formato **"N. Título"**, se convierte en una tarjeta plegable con su número en verde.
+  - El texto se edita en WordPress como contenido normal. **No escribas HTML de acordeón en la base de datos.**
+- **Ancho:** ambas páginas usan `.ta-page-content--wide` (1280px) para que la tabla de cookies quepa sin scroll en escritorio. Bajo 860px el índice se oculta y la tabla se desplaza horizontalmente.
+- **Cookies:** la sección **8** de la Política de Privacidad, "Uso de Cookies y Almacenamiento Local", lista en una tabla cada cookie o clave del navegador: `ta_contact_draft`, `ta_rate_limit_timestamp`, `jg_session`, `wordpress_*` y `wp-settings-*`.
+  - Si agregas, quitas o renombras una cookie o una clave de `localStorage`/`sessionStorage`, **actualiza esa tabla** (Ley 21.719, deber de información).
+  - Si agregas analítica o publicidad, además hace falta un banner de consentimiento previo.
+- **Términos y Condiciones, sección 6:** remite a "la sección 8 de dicha Política". Si se renumera la Política, actualiza esa referencia.
