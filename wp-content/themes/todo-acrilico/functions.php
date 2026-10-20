@@ -538,39 +538,46 @@ function ta_handle_contact_submit() {
 	}
 
 	$nombre_length = strlen( $nombre );
-	if ( $nombre_length < TA_CONTACT_NAME_MIN || $nombre_length > TA_CONTACT_NAME_MAX ) {
-		$fail( 'campos' );
+	if ( $nombre_length < TA_CONTACT_NAME_MIN ) {
+		$fail( 'nombre_corto' );
 	}
-
-	$desc_length = strlen( $descripcion );
-	if ( $desc_length < TA_CONTACT_DESC_MIN ) {
-		$fail( 'campos' );
+	if ( $nombre_length > TA_CONTACT_NAME_MAX ) {
+		$fail( 'nombre_largo' );
 	}
 
 	// Anti-spam: rechazar nombres con más del 50% de dígitos.
 	$digit_count = preg_match_all( '/\d/', $nombre );
 	if ( $digit_count > ( $nombre_length * 0.5 ) ) {
-		$fail( 'campos' );
+		$fail( 'nombre_numerico' );
 	}
 
-	if ( '' === $email || ! is_email( $email ) ) {
-		$fail( 'email' );
+	$desc_length = strlen( $descripcion );
+	if ( $desc_length < TA_CONTACT_DESC_MIN ) {
+		$fail( 'desc_corta' );
 	}
 
-	// Validación mejorada de email: rechazar si empieza con caracteres especiales o dominios inválidos.
+	if ( '' === $email ) {
+		$fail( 'email_vacio' );
+	}
+
+	if ( ! is_email( $email ) ) {
+		$fail( 'email_invalido' );
+	}
+
+	// Validación mejorada de email: rechazar si empieza con caracteres especiales.
 	if ( preg_match( '/^[^a-z0-9]/i', $email ) ) {
-		$fail( 'email' );
+		$fail( 'email_caracteres' );
+	}
+
+	// Validación: email no puede tener patrón inválido como ".@" o ".fadf@".
+	if ( preg_match( '/^\./i', $email ) || strpos( $email, '@.' ) !== false ) {
+		$fail( 'email_patron' );
 	}
 
 	// El dominio del correo debe estar dentro de los permitidos: .cl, .com, .net u .org.
 	$email_domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
 	if ( ! preg_match( '/\.(cl|com|net|org)$/', $email_domain ) ) {
-		$fail( 'email' );
-	}
-
-	// Validación: email no puede tener patrón inválido como ".@" o ".fadf@".
-	if ( preg_match( '/^\./i', $email ) || strpos( $email, '@.' ) !== false ) {
-		$fail( 'email' );
+		$fail( 'email_dominio' );
 	}
 
 	// Celular chileno obligatorio: ocho dígitos móviles tras el prefijo +56 9.

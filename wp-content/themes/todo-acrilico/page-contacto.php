@@ -29,17 +29,25 @@ $ta_quote_uso     = $ta_quote_uso ? trim( $ta_quote_uso ) : '';
 $ta_has_quote     = (bool) $ta_quote_image;
 
 $ta_contact_error_messages = array(
-	'campos'         => 'Completa tu nombre (mín. 3 caracteres) y descripción del proyecto (mín. 20 caracteres).',
-	'email'          => 'Ingresa un correo electrónico válido (debe empezar con letra o número).',
-	'celular'        => 'Ingresa un celular chileno válido (9 dígitos que empiecen en 9).',
-	'archivo'        => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
-	'archivo_grande' => 'El archivo adjunto no puede superar los 5 MB.',
-	'archivo_tipo'   => 'El archivo adjunto debe ser una imagen (JPG, PNG, GIF o WEBP) o un PDF.',
-	'archivos_muchos'=> 'Puedes adjuntar hasta 5 archivos.',
-	'terminos'       => 'Debes aceptar la Política de Privacidad y los Términos y condiciones para continuar.',
-	'nonce'          => 'Tu sesión expiró, vuelve a intentarlo.',
-	'rate_limit'     => 'Espera un momento antes de enviar otro mensaje.',
-	'envio'          => 'No se pudo enviar el mensaje. Intenta de nuevo más tarde.',
+	'campos'          => 'Completa tu nombre (mín. 3 caracteres) y descripción del proyecto (mín. 20 caracteres).',
+	'nombre_corto'    => 'El nombre debe tener al menos 3 caracteres.',
+	'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
+	'nombre_numerico' => 'El nombre contiene demasiados números. Debe ser principalmente letras.',
+	'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
+	'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
+	'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
+	'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
+	'email_dominio'   => 'El correo debe terminar en .cl, .com, .net u .org',
+	'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
+	'celular'         => 'Ingresa un celular chileno válido (8 dígitos, formato: 7456 4321 o similar).',
+	'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
+	'archivo_grande'  => 'El archivo adjunto no puede superar los 5 MB.',
+	'archivo_tipo'    => 'El archivo adjunto debe ser una imagen (JPG, PNG, GIF o WEBP) o un PDF.',
+	'archivos_muchos' => 'Puedes adjuntar hasta 5 archivos.',
+	'terminos'        => 'Debes aceptar la Política de Privacidad y los Términos y condiciones para continuar.',
+	'nonce'           => 'Tu sesión expiró, vuelve a intentarlo.',
+	'rate_limit'      => 'Espera un momento antes de enviar otro mensaje.',
+	'envio'           => 'No se pudo enviar el mensaje. Intenta de nuevo más tarde.',
 );
 ?>
 
