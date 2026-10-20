@@ -290,8 +290,8 @@ body.admin-bar .ta-header {
 
 .ta-nav-list > li > a:hover,
 .ta-nav-list > li.current-menu-item > a {
-	background: var(--ta-bg);
-	color: var(--ta-accent);
+	background: var(--ta-accent);
+	color: #ffffff;
 	font-weight: 700;
 }
 

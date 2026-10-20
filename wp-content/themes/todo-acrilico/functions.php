@@ -58,6 +58,62 @@ function ta_document_title( $title ) {
 add_filter( 'pre_get_document_title', 'ta_document_title' );
 
 /**
+ * Metadescripción automática para SEO.
+ * WordPress no genera metadescripción por defecto; este filtro agrega una
+ * antes del </head> vía wp_head().
+ */
+function ta_meta_description() {
+	$description = '';
+
+	if ( is_singular() ) {
+		$post = get_queried_object();
+		if ( $post && ! empty( $post->post_excerpt ) ) {
+			$description = substr( wp_strip_all_tags( $post->post_excerpt ), 0, 160 );
+		} elseif ( $post ) {
+			$description = substr( wp_strip_all_tags( $post->post_content ), 0, 160 );
+		}
+	} elseif ( is_home() || is_front_page() ) {
+		$description = get_bloginfo( 'description' );
+	} else {
+		$description = 'TODO Acrílico - Soluciones en acrílico de alta calidad. Diseño, fabricación e instalación.';
+	}
+
+	if ( ! empty( $description ) ) {
+		echo '<meta name="description" content="' . esc_attr( substr( $description, 0, 160 ) ) . '">' . "\n";
+	}
+}
+add_action( 'wp_head', 'ta_meta_description' );
+
+/**
+ * Lazy loading nativo para imágenes (mejora rendimiento).
+ * Agrega loading="lazy" a todas las imágenes del contenido.
+ */
+function ta_lazy_load_images( $html, $id, $attachment_id, $size, $icon ) {
+	if ( strpos( $html, 'loading=' ) === false ) {
+		$html = str_replace( '<img ', '<img loading="lazy" ', $html );
+	}
+	return $html;
+}
+add_filter( 'wp_get_attachment_image', 'ta_lazy_load_images', 10, 5 );
+
+/**
+ * Cache headers para mejor rendimiento.
+ * Configura tiempos de expiración para assets estáticos.
+ */
+function ta_cache_headers() {
+	if ( ! is_admin() ) {
+		if ( preg_match( '/\.(js|css|png|jpg|jpeg|gif|webp|svg|woff|woff2|ttf|eot)(\?.*)?$/i', $_SERVER['REQUEST_URI'] ) ) {
+			header( 'Cache-Control: public, max-age=31536000' );
+			header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 31536000 ) . ' GMT' );
+		} elseif ( ! is_user_logged_in() ) {
+			header( 'Cache-Control: public, max-age=3600' );
+			header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 3600 ) . ' GMT' );
+		}
+	}
+}
+add_action( 'send_headers', 'ta_cache_headers' );
+
+/**
  * Botón reutilizable (CTA). Variantes: 'accent' (teal, la de siempre), 'dark' (relleno oscuro)
  * y 'outline' (contorno). $args['icon'] agrega una flecha "→" al final.
  */
