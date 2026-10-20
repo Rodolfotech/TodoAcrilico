@@ -646,6 +646,7 @@ $ta_contact_error_messages = array(
 				if (data.success) {
 					// Éxito: limpiar formulario y mostrar modal
 					form.reset();
+					try { sessionStorage.removeItem('ta_contact_draft'); } catch (err) {}
 					var successModal = document.getElementById('ta-contact-success-modal');
 					if (successModal) {
 						successModal.classList.remove('ta-modal--hidden');
@@ -710,6 +711,46 @@ $ta_contact_error_messages = array(
 		Array.prototype.forEach.call(hiddens, function (h) { h.remove(); });
 		quote.remove();
 	});
+})();
+
+// Conservar los datos del formulario al actualizar la página (se borran al enviar con éxito).
+// Los archivos adjuntos no se pueden conservar: el navegador no permite restaurarlos.
+(function () {
+	var form = document.querySelector('.ta-contact-form');
+	if (!form) return;
+
+	var KEY = 'ta_contact_draft';
+	var TEXT_FIELDS = ['nombre', 'celular', 'email', 'descripcion'];
+	var CHECK_FIELDS = ['acepto_terminos', 'acepta_ofertas'];
+
+	function save() {
+		var data = {};
+		TEXT_FIELDS.forEach(function (name) {
+			var el = form.elements[name];
+			if (el) data[name] = el.value;
+		});
+		CHECK_FIELDS.forEach(function (name) {
+			var el = form.elements[name];
+			if (el) data[name] = el.checked;
+		});
+		try { sessionStorage.setItem(KEY, JSON.stringify(data)); } catch (err) {}
+	}
+
+	var saved = null;
+	try { saved = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (err) {}
+	if (saved) {
+		TEXT_FIELDS.forEach(function (name) {
+			var el = form.elements[name];
+			if (el && typeof saved[name] === 'string') el.value = saved[name];
+		});
+		CHECK_FIELDS.forEach(function (name) {
+			var el = form.elements[name];
+			if (el && typeof saved[name] === 'boolean') el.checked = saved[name];
+		});
+	}
+
+	form.addEventListener('input', save);
+	form.addEventListener('change', save);
 })();
 
 // Cerrar modales al hacer clic en X, botón Cerrar, o en el overlay
