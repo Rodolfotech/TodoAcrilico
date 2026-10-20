@@ -64,6 +64,7 @@ class JG_JWT {
 		$claims['iat']   = $now;
 		$claims['exp']   = $now + $ttl;
 		$claims['iss']   = self::get_expected_issuer();
+		$claims['jti']   = wp_generate_password( 32, false );
 
 		$segments   = array();
 		$segments[] = self::base64url_encode( wp_json_encode( $header ) );
@@ -124,6 +125,20 @@ class JG_JWT {
 
 		if ( time() > (int) $claims['exp'] ) {
 			return new WP_Error( 'jg_expired_token', 'El token expiró, inicia sesión nuevamente.', array( 'status' => 401 ) );
+		}
+
+		// Validar revocación: comparar jti del token con el almacenado en usermeta.
+		// Si no coinciden, el token fue revocado (ej. al cerrar sesión).
+		if ( empty( $claims['jti'] ) ) {
+			return new WP_Error( 'jg_malformed_token', 'Token mal formado (jti ausente).', array( 'status' => 401 ) );
+		}
+
+		$user_id       = (int) $claims['sub'];
+		$stored_jti    = get_user_meta( $user_id, 'jg_token_jti', true );
+		$claims_jti    = (string) $claims['jti'];
+
+		if ( $stored_jti && ! hash_equals( $stored_jti, $claims_jti ) ) {
+			return new WP_Error( 'jg_token_revoked', 'Token revocado. Inicia sesión nuevamente.', array( 'status' => 401 ) );
 		}
 
 		return $claims;

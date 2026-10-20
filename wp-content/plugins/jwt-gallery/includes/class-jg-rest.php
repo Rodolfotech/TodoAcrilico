@@ -296,6 +296,17 @@ class JG_REST {
 			$ttl
 		);
 
+		// Guardar el jti en usermeta para validación en logout/revocación.
+		// Decodificar el payload del token para extraer el jti.
+		$token_parts = explode( '.', $token );
+		if ( count( $token_parts ) === 3 ) {
+			$payload      = json_decode( base64_decode( str_pad( strtr( $token_parts[1], '-_', '+/' ), strlen( $token_parts[1] ) % 4, '=', STR_PAD_RIGHT ) ), true );
+			$jti          = isset( $payload['jti'] ) ? $payload['jti'] : '';
+			if ( $jti ) {
+				update_user_meta( $user->ID, 'jg_token_jti', $jti );
+			}
+		}
+
 		self::set_session_cookie( $token, $ttl );
 
 		return rest_ensure_response(
@@ -312,6 +323,13 @@ class JG_REST {
 	}
 
 	public static function logout( WP_REST_Request $request ) {
+		// Intentar autenticar al usuario para obtener su ID y rotar el jti.
+		$claims = JG_JWT::verify( self::get_bearer_token( $request ) );
+		if ( ! is_wp_error( $claims ) && ! empty( $claims['sub'] ) ) {
+			// Rotar el jti para invalidar realmente el token en el servidor.
+			update_user_meta( (int) $claims['sub'], 'jg_token_jti', wp_generate_password( 32, false ) );
+		}
+
 		self::clear_session_cookie();
 		return rest_ensure_response( array( 'logged_out' => true ) );
 	}
