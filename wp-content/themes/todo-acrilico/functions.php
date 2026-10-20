@@ -513,14 +513,14 @@ function ta_handle_contact_submit() {
 	$acepta_ofertas = empty( $_POST['acepta_ofertas'] ) ? '0' : '1';
 
 	// Rate limiting: máximo 1 envío por IP cada TA_CONTACT_RATE_LIMIT segundos.
-	$client_ip = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	$client_ip      = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	$rate_limit_key = '';
 	if ( $client_ip ) {
 		$rate_limit_key = 'ta_contact_rate_' . md5( $client_ip );
 		$last_submit     = get_transient( $rate_limit_key );
 		if ( $last_submit ) {
 			$fail( 'rate_limit' );
 		}
-		set_transient( $rate_limit_key, time(), TA_CONTACT_RATE_LIMIT );
 	}
 	$adjunto_ref = isset( $_POST['adjunto_referencia'] ) ? esc_url_raw( wp_unslash( $_POST['adjunto_referencia'] ) ) : '';
 	$adjunto_ref = ( $adjunto_ref && wp_http_validate_url( $adjunto_ref ) ) ? $adjunto_ref : '';
@@ -760,6 +760,10 @@ function ta_handle_contact_submit() {
 
 	if ( ! $sent ) {
 		$fail( 'envio' );
+	}
+
+	if ( $rate_limit_key ) {
+		set_transient( $rate_limit_key, time(), TA_CONTACT_RATE_LIMIT );
 	}
 
 	wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
