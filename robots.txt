@@ -73,5 +73,4 @@ User-agent: python-requests
 Allow: /
 
 # Sitemap
-Sitemap: https://todoacrilico.cl/wp/sitemap.xml
 Sitemap: https://todoacrilico.cl/wordpress/proyecto3/sitemap.xml

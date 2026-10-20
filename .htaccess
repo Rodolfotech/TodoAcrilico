@@ -47,6 +47,9 @@
 RewriteEngine On
 RewriteBase /wordpress/proyecto3/
 
+# SEO: Sitemap ubicado dentro del theme
+RewriteRule ^sitemap\.xml$ wp-content/themes/todo-acrilico/sitemap.xml [L]
+
 # SEO: Redirecciones 301 permanentes de rutas antiguas (transferir autoridad de página)
 # /contact/ → /wp/cotizar/
 RewriteRule ^contact/?$ /wordpress/proyecto3/wp/cotizar/ [R=301,L]
