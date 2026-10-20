@@ -150,7 +150,7 @@ $ta_contact_error_messages = array(
 				</div>
 			<?php endif; ?>
 
-			<form class="ta-contact-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-ajax-url="<?php echo esc_url( home_url( '/wp-admin/admin-post.php' ) ); ?>" enctype="multipart/form-data">
+			<form class="ta-contact-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-ajax-url="<?php echo esc_url( home_url( '/wp-admin/admin-post.php' ) ); ?>" enctype="multipart/form-data" novalidate>
 				<input type="hidden" name="action" value="ta_contact_submit">
 				<input type="hidden" name="redirect_to" value="<?php echo esc_url( $contacto_url ); ?>">
 				<?php wp_nonce_field( 'ta_contact_submit', 'ta_contact_nonce' ); ?>
@@ -429,10 +429,10 @@ $ta_contact_error_messages = array(
 			custom: 'Ingrese un teléfono válido de 8 dígitos.'
 		},
 		descripcion: {
-			valueMissing: 'La descripción es requerida',
-			tooShort: 'Mínimo 20 caracteres',
+			valueMissing: 'La descripción del proyecto debe tener al menos 20 caracteres.',
+			tooShort: 'La descripción del proyecto debe tener al menos 20 caracteres.',
 			tooLong: 'Máximo 2000 caracteres',
-			custom: 'Descripción inválida'
+			custom: 'La descripción del proyecto debe tener al menos 20 caracteres.'
 		}
 	};
 
@@ -468,8 +468,12 @@ $ta_contact_error_messages = array(
 		}
 	}
 
-	function validateField(field) {
+	function validateField(field, onSubmit) {
 		if (field.value.length === 0) {
+			if (onSubmit && field.required) {
+				showFieldError(field, getFieldErrorMessage(field));
+				return false;
+			}
 			field.style.borderColor = '';
 			var errorSpan = form.querySelector('[data-field="' + field.name + '"]');
 			if (errorSpan) {
@@ -492,6 +496,10 @@ $ta_contact_error_messages = array(
 
 		if (field.name === 'celular') {
 			field.setCustomValidity(field.value.replace(/\D/g, '').length === 8 ? '' : 'Teléfono inválido');
+		}
+
+		if (field.name === 'descripcion') {
+			field.setCustomValidity(field.value.trim().length >= 20 ? '' : 'Descripción corta');
 		}
 
 		// Validación personalizada: email (solo si tiene contenido)
@@ -577,7 +585,7 @@ $ta_contact_error_messages = array(
 			var fieldsToValidate = form.querySelectorAll('input[required], textarea[required], input[type="email"]');
 			Array.prototype.forEach.call(fieldsToValidate, function (field) {
 				if (field.name === 'ta_contact_website') return;
-				if (!validateField(field)) {
+				if (!validateField(field, true)) {
 					hasErrors = true;
 					if (!firstInvalidField) {
 						firstInvalidField = field;
@@ -589,6 +597,9 @@ $ta_contact_error_messages = array(
 			if (termsCheckbox && !termsCheckbox.checked) {
 				hasErrors = true;
 				termsCheckbox.style.borderColor = '#dc2626';
+				if (!firstInvalidField) {
+					termsCheckbox.reportValidity();
+				}
 			}
 
 			if (hasErrors) {
