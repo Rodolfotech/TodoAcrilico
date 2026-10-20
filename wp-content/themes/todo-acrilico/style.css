@@ -2408,6 +2408,11 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	line-height: 1.5;
 }
 
+.ta-modal-button {
+	min-width: 200px;
+	margin-top: 16px;
+}
+
 @keyframes fadeIn {
 	from { opacity: 0; }
 	to { opacity: 1; }

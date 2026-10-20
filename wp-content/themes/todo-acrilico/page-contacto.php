@@ -107,9 +107,11 @@ $ta_contact_error_messages = array(
 		<div id="ta-contact-success-modal" class="ta-modal ta-modal--hidden">
 			<div class="ta-modal-overlay"></div>
 			<div class="ta-modal-content">
-				<button type="button" class="ta-modal-close ta-modal-close--right" id="ta-success-close" aria-label="Cerrar modal">&times;</button>
-				<h3 class="ta-modal-title">¡Gracias!</h3>
-				<p class="ta-modal-message">Recibimos tu mensaje y te responderemos entre 24 y 48 horas hábiles.</p>
+				<button type="button" class="ta-modal-close" id="ta-success-close" aria-label="Cerrar modal">&times;</button>
+				<div class="ta-modal-icon">✅</div>
+				<h3 class="ta-modal-title">¡Mensaje enviado!</h3>
+				<p class="ta-modal-message">Nos pondremos en contacto en un plazo de 24 a 48 horas hábiles.</p>
+				<button type="button" class="ta-button ta-button--dark ta-modal-button" id="ta-success-close-btn">Cerrar</button>
 			</div>
 		</div>
 
@@ -664,15 +666,22 @@ $ta_contact_error_messages = array(
 	});
 })();
 
-// Cerrar modales al hacer clic en X o en el overlay
+// Cerrar modales al hacer clic en X, botón Cerrar, o en el overlay
 (function () {
 	var modals = document.querySelectorAll('.ta-modal');
 	Array.prototype.forEach.call(modals, function (modal) {
 		var closeBtn = modal.querySelector('.ta-modal-close');
+		var closeModalBtn = modal.querySelector('.ta-modal-button');
 		var overlay = modal.querySelector('.ta-modal-overlay');
 
 		if (closeBtn) {
 			closeBtn.addEventListener('click', function () {
+				modal.classList.add('ta-modal--hidden');
+			});
+		}
+
+		if (closeModalBtn) {
+			closeModalBtn.addEventListener('click', function () {
 				modal.classList.add('ta-modal--hidden');
 			});
 		}
