@@ -2357,6 +2357,18 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin-bottom: 16px;
 }
 
+.ta-modal-icon--success {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 60px;
+	height: 60px;
+	background: #e8f5e9;
+	border-radius: 50%;
+	font-size: 32px;
+	margin: 0 auto 20px;
+}
+
 .ta-modal-title {
 	font-size: 32px;
 	font-weight: 300;
@@ -2410,7 +2422,57 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-modal-button {
 	min-width: 200px;
-	margin-top: 16px;
+	margin-top: 24px;
+	width: 100%;
+}
+
+.ta-modal-whatsapp {
+	background: #f5f7f6;
+	border-radius: 8px;
+	padding: 16px;
+	margin: 20px 0;
+	display: flex;
+	gap: 12px;
+	align-items: center;
+}
+
+.ta-modal-whatsapp-icon {
+	font-size: 24px;
+	flex-shrink: 0;
+}
+
+.ta-modal-whatsapp-text {
+	margin: 0;
+	font-size: 14px;
+	color: #5b6469;
+	font-family: Manrope, sans-serif;
+}
+
+.ta-modal-whatsapp-text a {
+	color: #03854a;
+	text-decoration: none;
+	font-weight: 600;
+}
+
+.ta-modal-whatsapp-text a:hover {
+	text-decoration: underline;
+}
+
+.ta-modal-link {
+	background: none;
+	border: none;
+	color: #5b6469;
+	font-size: 14px;
+	text-decoration: underline;
+	cursor: pointer;
+	padding: 8px 0;
+	font-family: Manrope, sans-serif;
+	margin-top: 12px;
+	transition: color 0.2s ease;
+}
+
+.ta-modal-link:hover {
+	color: #1a1c1c;
 }
 
 @keyframes fadeIn {
