@@ -471,22 +471,61 @@ function ta_handle_contact_submit() {
 	$adjunto_paths = array();
 	$attachments    = array();
 
-	$fail = function ( $reason ) use ( $redirect_to, &$adjunto_paths ) {
+	// Detectar si es solicitud AJAX
+	$is_ajax = ! empty( $_SERVER['HTTP_X_REQUESTED_WITH'] ) && 'XMLHttpRequest' === sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REQUESTED_WITH'] ) );
+
+	// Mensajes de error mapeados
+	$error_messages = array(
+		'campos'          => 'Completa tu nombre (mín. 3 caracteres) y descripción del proyecto (mín. 20 caracteres).',
+		'nombre_corto'    => 'El nombre debe tener al menos 3 caracteres.',
+		'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
+		'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
+		'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
+		'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
+		'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
+		'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
+		'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominio .cl',
+		'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
+		'celular'         => 'Ingresa un celular chileno válido (8 dígitos, formato: 7456 4321 o similar).',
+		'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
+		'archivo_grande'  => 'El archivo adjunto no puede superar los 5 MB.',
+		'archivo_tipo'    => 'El archivo adjunto debe ser una imagen (JPG, PNG, GIF o WEBP) o un PDF.',
+		'archivos_muchos' => 'Puedes adjuntar hasta 5 archivos.',
+		'terminos'        => 'Debes aceptar la Política de Privacidad y los Términos y condiciones para continuar.',
+		'nonce'           => 'Tu sesión expiró, vuelve a intentarlo.',
+		'rate_limit'      => 'Espera un momento antes de enviar otro mensaje.',
+		'envio'           => 'No se pudo enviar el mensaje. Intenta de nuevo más tarde.',
+	);
+
+	$fail = function ( $reason ) use ( $redirect_to, &$adjunto_paths, $is_ajax, $error_messages ) {
 		foreach ( $adjunto_paths as $adjunto_path ) {
 			if ( $adjunto_path && file_exists( $adjunto_path ) ) {
 				wp_delete_file( $adjunto_path );
 			}
 		}
-		wp_safe_redirect(
-			add_query_arg(
+
+		if ( $is_ajax ) {
+			// Responder con JSON para AJAX
+			wp_send_json(
 				array(
-					'ta_contact' => 'error',
-					'reason'     => $reason,
-				),
-				$redirect_to
-			)
-		);
-		exit;
+					'success' => false,
+					'reason'  => $reason,
+					'message' => $error_messages[ $reason ] ?? 'Ocurrió un error. Intenta de nuevo.',
+				)
+			);
+		} else {
+			// Redirigir para POST tradicional (sin JavaScript)
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'ta_contact' => 'error',
+						'reason'     => $reason,
+					),
+					$redirect_to
+				)
+			);
+			exit;
+		}
 	};
 
 	if ( ! isset( $_POST['ta_contact_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ta_contact_nonce'] ) ), 'ta_contact_submit' ) ) {
@@ -496,8 +535,12 @@ function ta_handle_contact_submit() {
 	// Honeypot: un campo oculto que solo un bot completaría. Si viene lleno, se
 	// descarta en silencio simulando éxito — no le da pistas a quien lo esté probando.
 	if ( ! empty( $_POST['ta_contact_website'] ) ) {
-		wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
-		exit;
+		if ( $is_ajax ) {
+			wp_send_json( array( 'success' => true, 'message' => 'Mensaje recibido.' ) );
+		} else {
+			wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
+			exit;
+		}
 	}
 
 	// Aceptación obligatoria de la Política de Privacidad y los Términos y
@@ -766,8 +809,20 @@ function ta_handle_contact_submit() {
 		set_transient( $rate_limit_key, time(), TA_CONTACT_RATE_LIMIT );
 	}
 
-	wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
-	exit;
+	if ( $is_ajax ) {
+		// Responder con JSON para AJAX
+		wp_send_json(
+			array(
+				'success'      => true,
+				'message'      => '¡Gracias! Recibimos tu mensaje y te responderemos entre 24 y 48 horas hábiles.',
+				'redirect_url' => add_query_arg( 'ta_contact', 'success', $redirect_to ),
+			)
+		);
+	} else {
+		// Redirigir para POST tradicional (sin JavaScript)
+		wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
+		exit;
+	}
 }
 
 /**

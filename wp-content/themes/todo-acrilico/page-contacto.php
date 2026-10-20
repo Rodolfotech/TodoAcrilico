@@ -107,6 +107,8 @@ $ta_contact_error_messages = array(
 				<p class="ta-contact-alert ta-contact-alert--success">¡Gracias! Recibimos tu mensaje y te responderemos entre 24 y 48 horas hábiles.</p>
 			<?php elseif ( 'error' === $ta_contact_status ) : ?>
 				<p class="ta-contact-alert ta-contact-alert--error"><?php echo esc_html( $ta_contact_error_messages[ $ta_contact_reason ] ?? 'Ocurrió un error. Intenta de nuevo.' ); ?></p>
+			<?php else : ?>
+				<p class="ta-contact-alert ta-contact-alert--error" style="display: none;"></p>
 			<?php endif; ?>
 
 			<?php if ( $ta_has_quote ) : ?>
@@ -517,6 +519,7 @@ $ta_contact_error_messages = array(
 	var submitBtn = form.querySelector('button[type="submit"]');
 	if (submitBtn) {
 		form.addEventListener('submit', function (e) {
+			e.preventDefault();
 			var hasErrors = false;
 			var firstInvalidField = null;
 
@@ -538,13 +541,78 @@ $ta_contact_error_messages = array(
 			}
 
 			if (hasErrors) {
-				e.preventDefault();
 				if (firstInvalidField) {
 					firstInvalidField.focus();
 					firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
 				}
 				return false;
 			}
+
+			// AJAX submit — mantener datos del formulario si hay error
+			submitBtn.disabled = true;
+			submitBtn.style.opacity = '0.6';
+
+			var formData = new FormData(form);
+			fetch(form.action, {
+				method: 'POST',
+				body: formData,
+				headers: {
+					'X-Requested-With': 'XMLHttpRequest'
+				}
+			})
+			.then(function(response) { return response.json(); })
+			.catch(function(err) {
+				console.error('Error en AJAX:', err);
+				submitBtn.disabled = false;
+				submitBtn.style.opacity = '1';
+				alert('Error de conexión. Intenta de nuevo.');
+			})
+			.then(function(data) {
+				if (!data) return;
+				submitBtn.disabled = false;
+				submitBtn.style.opacity = '1';
+
+				if (data.success) {
+					// Éxito: limpiar formulario y mostrar mensaje
+					form.reset();
+					window.location.href = data.redirect_url || window.location.href;
+				} else {
+					// Error: mostrar mensaje pero MANTENER datos
+					var alertDiv = form.parentElement.querySelector('.ta-contact-alert--error');
+					if (alertDiv) {
+						alertDiv.textContent = data.message || 'Ocurrió un error. Intenta de nuevo.';
+						alertDiv.style.display = 'block';
+						alertDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					}
+					// Para rate_limit, mostrar modal en lugar de alerta
+					if (data.reason === 'rate_limit') {
+						// Trigger countdown modal manualmente
+						var modal = document.getElementById('ta-contact-rate-limit-modal');
+						if (modal) {
+							modal.classList.remove('ta-modal--hidden');
+							submitBtn.disabled = true;
+							submitBtn.style.opacity = '0.6';
+							localStorage.setItem('ta_rate_limit_timestamp', Date.now().toString());
+							// Reiniciar countdown
+							var countdownValue = document.getElementById('ta-countdown-value');
+							var RATE_LIMIT_DURATION = 60000;
+							var secondsLeft = 60;
+							countdownValue.textContent = secondsLeft;
+							var countdownInterval = setInterval(function () {
+								secondsLeft--;
+								countdownValue.textContent = secondsLeft;
+								if (secondsLeft <= 0) {
+									clearInterval(countdownInterval);
+									modal.classList.add('ta-modal--hidden');
+									submitBtn.disabled = false;
+									submitBtn.style.opacity = '1';
+									localStorage.removeItem('ta_rate_limit_timestamp');
+								}
+							}, 1000);
+						}
+					}
+				}
+			});
 		});
 	}
 })();

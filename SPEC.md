@@ -1,0 +1,163 @@
+# SPEC.md - Especificación del Formulario de Contacto
+
+## Reglas Críticas
+
+### 1. El Formulario NUNCA Debe Limpiarse en Caso de Error ⚠️
+
+**Regla:** Si el usuario presiona "Enviar Mensaje" y ocurre CUALQUIER error (validación, archivo, rate limit, envío), el formulario debe mantener TODOS los datos que el usuario ingresó.
+
+**Errores considerados:**
+- Validación en frontend (campo vacío, correo inválido, teléfono incorrecto, etc.)
+- Validación en backend
+- Archivos rechazados (archivo muy grande, formato no permitido, demasiados archivos)
+- Rate limiting (máximo 1 envío por IP cada 60 segundos)
+- Error al enviar email
+- Erro de CSRF token
+
+**Comportamiento esperado:**
+```
+Usuario llena formulario con datos inválidos
+         ↓
+Usuario presiona "Enviar Mensaje"
+         ↓
+ERROR: Campo de correo inválido (ej: gmial.com)
+         ↓
+✅ Formulario SIGUE MOSTRANDO todos los datos que escribió
+✅ El campo correo muestra borde ROJO + mensaje de error debajo
+✅ El usuario puede corregir el error sin perder los datos
+```
+
+**Comportamiento INCORRECTO** (PROHIBIDO):
+```
+Usuario llena formulario
+         ↓
+Usuario presiona "Enviar Mensaje"
+         ↓
+ERROR: validación fallida
+         ↓
+❌ Formulario se limpia / se pierden todos los datos
+❌ El usuario debe reescribir todo
+```
+
+**Excepción:** El formulario SÍ se limpia solo cuando el envío es EXITOSO (no hay error).
+
+---
+
+## Implementación Técnica
+
+### Frontend (JavaScript)
+- Usar **AJAX (fetch)** en lugar de POST tradicional
+- En caso de error:
+  - NO recargar página
+  - Mostrar mensaje de error debajo del campo problemático (o en modal para rate limit)
+  - MANTENER todos los valores del formulario
+- En caso de éxito:
+  - Mostrar mensaje "¡Gracias! Recibimos tu mensaje..."
+  - LIMPIAR el formulario
+  - Opcionalmente redirigir a página de éxito
+
+### Backend (PHP)
+- Validar todos los campos
+- Si hay error, responder con JSON: `{ "success": false, "reason": "archivo_grande", "message": "..." }`
+- Si es exitoso, responder con JSON: `{ "success": true, "message": "..." }`
+- NO redirigir en caso de error (dejar que JS maneje la respuesta)
+
+---
+
+## Estados del Formulario
+
+| Estado | Descripción | Acción |
+|--------|-------------|--------|
+| **Inicial** | Formulario vacío, listo para completar | - |
+| **Completando** | Usuario escribiendo datos | Validar en tiempo real |
+| **Validando** | User hace submit, se validan campos | Mostrar errores si los hay |
+| **Error** | Hay error de validación/envío | Mostrar error + MANTENER datos |
+| **Enviando** | Email siendo enviado al servidor | Deshabilitar botón, mostrar spinner |
+| **Éxito** | Email enviado correctamente | Limpiar formulario + Mostrar mensaje éxito |
+
+---
+
+## Mensajes de Error
+
+Los mensajes de error deben aparecer:
+- **Debajo del campo problemático** (si es validación de campo específico)
+- **En modal emergente** (si es rate limit de IP)
+- Con **borde ROJO** en el campo
+- Con ícono visual (⚠️ o 🔴)
+
+Ejemplo:
+```
+┌─────────────────────────────────┐
+│ Correo Electrónico              │
+│ ┌─────────────────────────────┐ │
+│ │ juan@gmial.com              │ │ ← Borde ROJO
+│ └─────────────────────────────┘ │
+│ ⚠️ Usa un correo permitido:     │ ← Error debajo
+│    gmail.com, outlook.com, ...  │
+└─────────────────────────────────┘
+```
+
+---
+
+## Rate Limiting (60 segundos)
+
+- **Cuando se activa:** Después de un envío EXITOSO (no en intentos fallidos)
+- **Duración:** 60 segundos por IP
+- **UI:** Modal con countdown visual
+- **Comportamiento:**
+  - Botón "Enviar Mensaje" deshabilitado
+  - Modal muestra: "Espera un momento ⏱️ 60"
+  - Al llegar a 0, se cierra modal y se habilita botón
+  - Modal NO reaparece al actualizar página (URL se limpia)
+
+---
+
+## Validación de Campos
+
+### Nombre Completo
+- ✅ **3-100 caracteres**
+- ✅ Solo letras, espacios y acentos
+- ❌ NO números
+- ❌ NO caracteres especiales
+
+### Teléfono
+- ✅ Formato chileno: `+56 9 XXXX XXXX` o `+56 9 8765 4321`
+- ✅ 8 dígitos mínimo
+- ❌ Otro formato rechazado
+
+### Correo Electrónico
+- ✅ Dominios permitidos: `gmail.com`, `outlook.com`, `hotmail.com`, `live.cl`, `yahoo.com`, `icloud.com`
+- ✅ Cualquier dominio `.cl`
+- ❌ Otro dominio rechazado
+- ❌ NO caracteres especiales al inicio
+
+### Descripción
+- ✅ **20-2000 caracteres**
+- ✅ Cualquier texto
+
+### Archivos (opcional)
+- ✅ Máximo 5 archivos
+- ✅ Máximo 5 MB por archivo
+- ✅ Formatos: JPG, PNG, GIF, WEBP, PDF
+- ❌ Otros formatos rechazados
+- ❌ Archivos > 5 MB rechazados
+
+### Términos y Condiciones
+- ✅ OBLIGATORIO aceptar (checkbox marcado)
+- ❌ NO enviar si no está marcado
+
+---
+
+## Honeypot (Anti-spam)
+
+Campo oculto `ta_contact_website` debe estar:
+- ✅ Vacío antes del submit
+- Si tiene contenido → ❌ Rechazar silenciosamente (bot)
+
+---
+
+## CSRF Token (Seguridad)
+
+- WordPress `nonce` field: `ta_contact_nonce`
+- **Validar en backend antes de procesar**
+- Si es inválido: ❌ Rechazar con mensaje "Tu sesión expiró"
