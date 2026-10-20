@@ -1157,6 +1157,21 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	padding: 56px 60px;
 }
 
+.ta-page-content--wide {
+	max-width: 1120px;
+}
+
+/* En el ancho amplio la tabla cabe completa; el scroll queda solo para pantallas angostas. */
+.ta-page-content--wide .entry-content .ta-table-scroll table {
+	min-width: 0;
+}
+
+@media (max-width: 860px) {
+	.ta-page-content--wide .entry-content .ta-table-scroll table {
+		min-width: 640px;
+	}
+}
+
 .ta-page-content h1 {
 	font-size: 2rem;
 	margin-bottom: 24px;
