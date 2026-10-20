@@ -87,6 +87,21 @@ $ta_contact_error_messages = array(
 			</ul>
 		</div>
 
+		<!-- Modal de Rate Limiting -->
+		<div id="ta-contact-rate-limit-modal" class="ta-modal ta-modal--hidden">
+			<div class="ta-modal-overlay"></div>
+			<div class="ta-modal-content">
+				<div class="ta-modal-icon">⏱️</div>
+				<h3 class="ta-modal-title">Espera un momento</h3>
+				<p class="ta-modal-message">Antes de enviar otro mensaje</p>
+				<div class="ta-modal-countdown">
+					<span id="ta-countdown-value" class="ta-countdown-number">60</span>
+					<span class="ta-countdown-label">segundos</span>
+				</div>
+				<p class="ta-modal-note">Intenta de nuevo cuando el contador llegue a 0</p>
+			</div>
+		</div>
+
 		<div class="ta-contact-form-card">
 			<?php if ( 'success' === $ta_contact_status ) : ?>
 				<p class="ta-contact-alert ta-contact-alert--success">¡Gracias! Recibimos tu mensaje y te responderemos entre 24 y 48 horas hábiles.</p>
@@ -544,6 +559,44 @@ $ta_contact_error_messages = array(
 		Array.prototype.forEach.call(hiddens, function (h) { h.remove(); });
 		quote.remove();
 	});
+})();
+
+// Modal de Rate Limiting con Countdown
+(function () {
+	var modal = document.getElementById('ta-contact-rate-limit-modal');
+	var countdownValue = document.getElementById('ta-countdown-value');
+	var form = document.querySelector('.ta-contact-form');
+	var submitBtn = form.querySelector('button[type="submit"]');
+	if (!modal || !form) return;
+
+	// Verificar si hay mensaje de rate_limit en la URL
+	var urlParams = new URLSearchParams(window.location.search);
+	var reason = urlParams.get('reason');
+
+	if (reason === 'rate_limit') {
+		// Mostrar modal
+		modal.classList.remove('ta-modal--hidden');
+		submitBtn.disabled = true;
+
+		// Iniciar countdown
+		var secondsLeft = 60;
+		countdownValue.textContent = secondsLeft;
+
+		var countdownInterval = setInterval(function () {
+			secondsLeft--;
+			countdownValue.textContent = secondsLeft;
+
+			if (secondsLeft <= 0) {
+				clearInterval(countdownInterval);
+				// Cerrar modal y habilitar botón
+				modal.classList.add('ta-modal--hidden');
+				submitBtn.disabled = false;
+				// Cambiar estilo del botón para indicar que está activo
+				submitBtn.style.opacity = '1';
+				submitBtn.style.cursor = 'pointer';
+			}
+		}, 1000);
+	}
 })();
 </script>
 
