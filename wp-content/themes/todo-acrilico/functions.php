@@ -545,9 +545,8 @@ function ta_handle_contact_submit() {
 		$fail( 'nombre_largo' );
 	}
 
-	// Anti-spam: rechazar nombres con más del 50% de dígitos.
-	$digit_count = preg_match_all( '/\d/', $nombre );
-	if ( $digit_count > ( $nombre_length * 0.5 ) ) {
+	// Anti-spam: rechazar nombres que contienen números.
+	if ( preg_match( '/\d/', $nombre ) ) {
 		$fail( 'nombre_numerico' );
 	}
 

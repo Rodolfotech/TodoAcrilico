@@ -32,7 +32,7 @@ $ta_contact_error_messages = array(
 	'campos'          => 'Completa tu nombre (mín. 3 caracteres) y descripción del proyecto (mín. 20 caracteres).',
 	'nombre_corto'    => 'El nombre debe tener al menos 3 caracteres.',
 	'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
-	'nombre_numerico' => 'El nombre contiene demasiados números. Debe ser principalmente letras.',
+	'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
 	'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
 	'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
 	'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
@@ -303,10 +303,10 @@ $ta_contact_error_messages = array(
 
 	var fieldErrorMessages = {
 		nombre: {
-			valueMissing: 'El nombre es requerido',
+			valueMissing: 'Ingrese su nombre y apellidos',
 			tooShort: 'Mínimo 3 caracteres',
 			tooLong: 'Máximo 100 caracteres',
-			custom: 'Demasiados números (debe ser principalmente letras)'
+			custom: 'Ingrese su nombre y apellidos (sin números)'
 		},
 		email: {
 			valueMissing: 'El correo es requerido',
@@ -368,13 +368,11 @@ $ta_contact_error_messages = array(
 			return true;
 		}
 
-		// Validación personalizada: nombre con más del 50% de dígitos
+		// Validación personalizada: nombre NO puede contener números
 		if (field.name === 'nombre') {
-			var digitCount = (field.value.match(/\d/g) || []).length;
-			var digitPercentage = digitCount / field.value.length;
-			if (digitPercentage > 0.5) {
-				field.setCustomValidity('El nombre contiene demasiados números');
-				var message = 'Demasiados números (debe ser principalmente letras)';
+			if (/\d/.test(field.value)) {
+				field.setCustomValidity('El nombre no puede contener números');
+				var message = 'Ingrese su nombre y apellidos (sin números)';
 				showFieldError(field, message);
 				return false;
 			} else {
