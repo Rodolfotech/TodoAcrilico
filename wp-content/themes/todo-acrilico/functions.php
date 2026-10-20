@@ -58,31 +58,32 @@ function ta_document_title( $title ) {
 add_filter( 'pre_get_document_title', 'ta_document_title' );
 
 /**
- * Metadescripción automática para SEO.
- * WordPress no genera metadescripción por defecto; este filtro agrega una
- * antes del </head> vía wp_head().
+ * Metadescripción para SEO via el filtro correcto de WordPress.
  */
 function ta_meta_description() {
-	$description = '';
+	if ( is_admin() ) {
+		return;
+	}
+
+	$description = 'TODO Acrílico - Soluciones en acrílico de alta calidad. Diseño, fabricación e instalación.';
 
 	if ( is_singular() ) {
 		$post = get_queried_object();
 		if ( $post && ! empty( $post->post_excerpt ) ) {
 			$description = substr( wp_strip_all_tags( $post->post_excerpt ), 0, 160 );
-		} elseif ( $post ) {
+		} elseif ( $post && ! empty( $post->post_content ) ) {
 			$description = substr( wp_strip_all_tags( $post->post_content ), 0, 160 );
 		}
 	} elseif ( is_home() || is_front_page() ) {
-		$description = get_bloginfo( 'description' );
-	} else {
-		$description = 'TODO Acrílico - Soluciones en acrílico de alta calidad. Diseño, fabricación e instalación.';
+		$blogdesc = get_bloginfo( 'description' );
+		if ( ! empty( $blogdesc ) ) {
+			$description = $blogdesc;
+		}
 	}
 
-	if ( ! empty( $description ) ) {
-		echo '<meta name="description" content="' . esc_attr( substr( $description, 0, 160 ) ) . '">' . "\n";
-	}
+	printf( '<meta name="description" content="%s">' . "\n", esc_attr( $description ) );
 }
-add_action( 'wp_head', 'ta_meta_description' );
+add_action( 'wp_head', 'ta_meta_description', 1 );
 
 /**
  * Lazy loading nativo para imágenes (mejora rendimiento).
