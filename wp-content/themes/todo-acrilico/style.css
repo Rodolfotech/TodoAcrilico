@@ -1632,6 +1632,18 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	color: #fff;
 }
 
+.ta-contact-file-error {
+	background: #fdecea;
+	border: 1px solid #fccccb;
+	border-radius: 6px;
+	padding: 10px 12px;
+	margin: 0 0 12px 0;
+	font-size: 0.85rem;
+	color: #dc2626;
+	font-weight: 500;
+	animation: slideDown 0.2s ease-out;
+}
+
 .ta-contact-form .ta-contact-optin {
 	display: flex;
 	flex-direction: row;

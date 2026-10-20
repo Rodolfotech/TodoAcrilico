@@ -208,6 +208,7 @@ $ta_contact_error_messages = array(
 <script>
 (function () {
 	var MAX = 5;
+	var MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 	var input = document.getElementById('ta-adjunto-input');
 	var list = document.getElementById('ta-adjunto-list');
 	var upload = document.querySelector('.ta-contact-file-upload');
@@ -223,6 +224,24 @@ $ta_contact_error_messages = array(
 
 	function syncFiles() {
 		input.files = dt.files;
+	}
+
+	function showFileError(message) {
+		var existingError = list.querySelector('.ta-contact-file-error');
+		if (existingError) {
+			existingError.remove();
+		}
+		var errorDiv = document.createElement('div');
+		errorDiv.className = 'ta-contact-file-error';
+		errorDiv.textContent = '⚠ ' + message;
+		list.insertBefore(errorDiv, list.firstChild);
+	}
+
+	function clearFileError() {
+		var errorDiv = list.querySelector('.ta-contact-file-error');
+		if (errorDiv) {
+			errorDiv.remove();
+		}
 	}
 
 	function render() {
@@ -258,6 +277,7 @@ $ta_contact_error_messages = array(
 				dt.items.remove(index);
 				syncFiles();
 				render();
+				clearFileError();
 			});
 
 			actions.appendChild(add);
@@ -271,10 +291,39 @@ $ta_contact_error_messages = array(
 	}
 
 	input.addEventListener('change', function () {
+		clearFileError();
 		var accepted = [];
-		for (var i = 0; i < input.files.length && dt.files.length + accepted.length < MAX; i++) {
-			accepted.push(input.files[i]);
+		var hasError = false;
+
+		for (var i = 0; i < input.files.length; i++) {
+			var file = input.files[i];
+
+			// Validar tamaño
+			if (file.size > MAX_FILE_SIZE) {
+				showFileError('El archivo "' + file.name + '" es demasiado grande (' + formatSize(file.size) + '). Máximo 5 MB.');
+				hasError = true;
+				continue;
+			}
+
+			// Validar extensión
+			var ext = file.name.split('.').pop().toLowerCase();
+			var validExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
+			if (validExts.indexOf(ext) === -1) {
+				showFileError('El archivo "' + file.name + '" no tiene un formato válido. Usa: JPG, PNG, GIF, WEBP o PDF.');
+				hasError = true;
+				continue;
+			}
+
+			// Validar límite de archivos
+			if (dt.files.length + accepted.length >= MAX) {
+				showFileError('Puedes adjuntar máximo 5 archivos.');
+				hasError = true;
+				continue;
+			}
+
+			accepted.push(file);
 		}
+
 		for (var j = 0; j < accepted.length; j++) {
 			dt.items.add(accepted[j]);
 		}
