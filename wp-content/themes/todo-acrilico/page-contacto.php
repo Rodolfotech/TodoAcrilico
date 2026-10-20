@@ -424,9 +424,9 @@ $ta_contact_error_messages = array(
 			custom: 'No puede comenzar con caracteres especiales'
 		},
 		celular: {
-			valueMissing: 'El teléfono es requerido',
-			patternMismatch: 'Ingresa 8 dígitos válidos (ej: 7456 4321)',
-			custom: 'Formato de teléfono inválido'
+			valueMissing: 'Ingrese un teléfono válido de 8 dígitos.',
+			patternMismatch: 'Ingrese un teléfono válido de 8 dígitos.',
+			custom: 'Ingrese un teléfono válido de 8 dígitos.'
 		},
 		descripcion: {
 			valueMissing: 'La descripción es requerida',
@@ -490,6 +490,10 @@ $ta_contact_error_messages = array(
 			}
 		}
 
+		if (field.name === 'celular') {
+			field.setCustomValidity(field.value.replace(/\D/g, '').length === 8 ? '' : 'Teléfono inválido');
+		}
+
 		// Validación personalizada: email (solo si tiene contenido)
 		if (field.name === 'email' && field.value.length > 0) {
 			var isValid = true;
@@ -526,6 +530,17 @@ $ta_contact_error_messages = array(
 	var fields = form.querySelectorAll('input[minlength], input[maxlength], textarea[minlength], input[type="email"], input[type="tel"], input[type="text"]');
 	Array.prototype.forEach.call(fields, function (field) {
 		if (field.name === 'ta_contact_website') return;
+
+		// Teléfono: el error solo aparece al presionar Enviar; al corregirlo se limpia.
+		if (field.name === 'celular') {
+			field.addEventListener('input', function () {
+				if (field.value.replace(/\D/g, '').length === 8) {
+					field.setCustomValidity('');
+					clearFieldError(field);
+				}
+			});
+			return;
+		}
 
 		field.addEventListener('blur', function () {
 			validateField(field);
