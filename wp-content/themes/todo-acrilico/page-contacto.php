@@ -368,6 +368,37 @@ $ta_contact_error_messages = array(
 			return true;
 		}
 
+		// Validación personalizada: nombre con más del 50% de dígitos
+		if (field.name === 'nombre') {
+			var digitCount = (field.value.match(/\d/g) || []).length;
+			var digitPercentage = digitCount / field.value.length;
+			if (digitPercentage > 0.5) {
+				field.setCustomValidity('El nombre contiene demasiados números');
+				var message = 'Demasiados números (debe ser principalmente letras)';
+				showFieldError(field, message);
+				return false;
+			} else {
+				field.setCustomValidity('');
+			}
+		}
+
+		// Validación personalizada: email no puede empezar con caracteres especiales
+		if (field.name === 'email' && field.value.length > 0) {
+			if (!/^[a-z0-9]/i.test(field.value)) {
+				field.setCustomValidity('El email no puede comenzar con caracteres especiales');
+				var message = 'No puede comenzar con caracteres especiales';
+				showFieldError(field, message);
+				return false;
+			} else if (field.value.indexOf('@.') !== -1 || /^\./.test(field.value)) {
+				field.setCustomValidity('El email tiene un formato inválido');
+				var message = 'Formato inválido (no puede tener "@." o comenzar con punto)';
+				showFieldError(field, message);
+				return false;
+			} else {
+				field.setCustomValidity('');
+			}
+		}
+
 		if (!field.checkValidity()) {
 			var message = getFieldErrorMessage(field);
 			showFieldError(field, message);
