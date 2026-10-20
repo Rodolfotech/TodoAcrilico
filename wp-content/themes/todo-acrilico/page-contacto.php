@@ -560,15 +560,13 @@ $ta_contact_error_messages = array(
 					'X-Requested-With': 'XMLHttpRequest'
 				}
 			})
-			.then(function(response) { return response.json(); })
-			.catch(function(err) {
-				console.error('Error en AJAX:', err);
-				submitBtn.disabled = false;
-				submitBtn.style.opacity = '1';
-				alert('Error de conexión. Intenta de nuevo.');
+			.then(function(response) {
+				if (!response.ok) {
+					throw new Error('HTTP ' + response.status);
+				}
+				return response.json();
 			})
 			.then(function(data) {
-				if (!data) return;
 				submitBtn.disabled = false;
 				submitBtn.style.opacity = '1';
 
@@ -595,7 +593,6 @@ $ta_contact_error_messages = array(
 							localStorage.setItem('ta_rate_limit_timestamp', Date.now().toString());
 							// Reiniciar countdown
 							var countdownValue = document.getElementById('ta-countdown-value');
-							var RATE_LIMIT_DURATION = 60000;
 							var secondsLeft = 60;
 							countdownValue.textContent = secondsLeft;
 							var countdownInterval = setInterval(function () {
@@ -612,6 +609,12 @@ $ta_contact_error_messages = array(
 						}
 					}
 				}
+			})
+			.catch(function(err) {
+				console.error('Error en AJAX:', err);
+				submitBtn.disabled = false;
+				submitBtn.style.opacity = '1';
+				alert('Error de conexión. Intenta de nuevo. Detalles: ' + err.message);
 			});
 		});
 	}
