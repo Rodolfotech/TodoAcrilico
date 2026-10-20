@@ -139,6 +139,7 @@ Ejemplo:
 
 ### Correo Electrónico
 - ✅ Dominios permitidos: `gmail.com`, `outlook.com`, `hotmail.com`, `live.cl`, `yahoo.com`, `icloud.com`
+- ✅ Cualquier dominio `.org`
 - ✅ Cualquier dominio `.cl`
 - ❌ Otro dominio rechazado
 - ❌ NO caracteres especiales al inicio

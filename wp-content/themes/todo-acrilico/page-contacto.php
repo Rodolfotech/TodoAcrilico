@@ -38,7 +38,7 @@ $ta_contact_error_messages = array(
 	'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
 	'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
 	'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
-	'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominio .cl',
+	'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominios .cl y .org',
 	'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
 	'celular'         => 'Ingrese un teléfono válido de 8 dígitos.',
 	'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
@@ -516,8 +516,8 @@ $ta_contact_error_messages = array(
 				isValid = false;
 			} else if (field.value.indexOf('@.') !== -1 || /^\./.test(field.value)) {
 				isValid = false;
-			} else if (!/(@gmail\.com|@outlook\.com|@hotmail\.com|@live\.cl|@yahoo\.com|@icloud\.com|\.cl)$/i.test(field.value)) {
-				// Solo permite: los 6 dominios específicos O cualquier dominio .cl
+			} else if (!/(@gmail\.com|@outlook\.com|@hotmail\.com|@live\.cl|@yahoo\.com|@icloud\.com|\.cl|\.org)$/i.test(field.value)) {
+				// Solo permite: los 6 dominios específicos O cualquier dominio .cl / .org
 				isValid = false;
 			}
 

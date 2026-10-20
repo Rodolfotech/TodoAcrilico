@@ -485,7 +485,7 @@ function ta_handle_contact_submit() {
 		'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
 		'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
 		'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
-		'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominio .cl',
+		'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominios .cl y .org',
 		'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
 		'celular'         => 'Ingrese un teléfono válido de 8 dígitos.',
 		'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
@@ -626,7 +626,7 @@ function ta_handle_contact_submit() {
 	// Solo: dominios específicos (gmail, outlook, hotmail, etc.) + dominios .cl
 	$email_domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
 	$allowed_domains = array( 'gmail.com', 'outlook.com', 'hotmail.com', 'live.cl', 'yahoo.com', 'icloud.com' );
-	$has_allowed_domain = in_array( $email_domain, $allowed_domains, true ) || preg_match( '/\.cl$/', $email_domain );
+	$has_allowed_domain = in_array( $email_domain, $allowed_domains, true ) || preg_match( '/\.(cl|org)$/', $email_domain );
 	if ( ! $has_allowed_domain ) {
 		$fail( 'email_dominio' );
 	}
