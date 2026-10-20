@@ -442,8 +442,8 @@ function ta_render_cta_section( $title, $description, $button_label, $button_url
  * §1.10). Filtrable con `ta_contact_email` para no tener que tocar código si cambia.
  */
 function ta_get_contact_email() {
-	// return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
-	return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
+	 return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
+	//return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
 }
 
 
