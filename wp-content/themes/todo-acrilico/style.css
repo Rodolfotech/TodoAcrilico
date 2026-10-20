@@ -2361,13 +2361,29 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 80px;
-	height: 80px;
-	background: #4caf50;
+	width: 40px;
+	height: 40px;
+	background: #03854a;
 	border-radius: 50%;
-	font-size: 44px;
-	margin: 0 auto 24px;
-	color: #ffffff;
+	box-shadow: 0 0 0 8px rgba(3, 133, 74, 0.15);
+	margin: 8px auto 24px;
+}
+
+.ta-modal-content--success {
+	border-radius: 20px;
+	padding: 32px 28px 28px;
+}
+
+.ta-modal-content--success .ta-modal-title {
+	font-size: 20px;
+	font-weight: 800;
+	letter-spacing: 0;
+	margin: 0;
+}
+
+.ta-modal-content--success .ta-modal-close {
+	font-size: 22px;
+	font-weight: 300;
 }
 
 .ta-modal-title {
@@ -2424,6 +2440,13 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-modal-button {
 	margin-top: 24px;
 	width: 100%;
+	justify-content: center;
+	padding: 12px 22px;
+	border-radius: 12px;
+	font-size: 14px;
+	font-weight: 700;
+	font-family: Manrope, sans-serif;
+	cursor: pointer;
 }
 
 @keyframes fadeIn {

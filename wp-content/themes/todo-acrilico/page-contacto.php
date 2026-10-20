@@ -108,7 +108,9 @@ $ta_contact_error_messages = array(
 			<div class="ta-modal-overlay"></div>
 			<div class="ta-modal-content ta-modal-content--success">
 				<button type="button" class="ta-modal-close ta-modal-close--right" id="ta-success-close" aria-label="Cerrar modal">&times;</button>
-				<div class="ta-modal-icon ta-modal-icon--success">✅</div>
+				<div class="ta-modal-icon--success" aria-hidden="true">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+				</div>
 				<h3 class="ta-modal-title">¡Mensaje enviado!</h3>
 				<button type="button" class="ta-button ta-button--dark ta-modal-button" id="ta-success-close-btn">Cerrar</button>
 			</div>
