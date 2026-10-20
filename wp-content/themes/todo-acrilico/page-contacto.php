@@ -110,7 +110,6 @@ $ta_contact_error_messages = array(
 				<button type="button" class="ta-modal-close ta-modal-close--right" id="ta-success-close" aria-label="Cerrar modal">&times;</button>
 				<div class="ta-modal-icon ta-modal-icon--success">✅</div>
 				<h3 class="ta-modal-title">¡Mensaje enviado!</h3>
-				<p class="ta-modal-message">Nos pondremos en contacto en un plazo de 24 a 48 horas hábiles.</p>
 				<button type="button" class="ta-button ta-button--dark ta-modal-button" id="ta-success-close-btn">Cerrar</button>
 			</div>
 		</div>
