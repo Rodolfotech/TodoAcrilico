@@ -8,7 +8,7 @@ get_header();
 while ( have_posts() ) :
 	the_post();
 	?>
-	<div class="ta-page-content<?php echo is_page( 'politica-de-privacidad' ) ? ' ta-page-content--wide' : ''; ?>">
+	<div class="ta-page-content<?php echo is_page( array( 'politica-de-privacidad', 'terminos-y-condiciones' ) ) ? ' ta-page-content--wide' : ''; ?>">
 		<h1><?php the_title(); ?></h1>
 		<div class="entry-content">
 			<?php the_content(); ?>
