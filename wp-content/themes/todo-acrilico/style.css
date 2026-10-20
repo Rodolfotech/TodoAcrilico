@@ -1212,6 +1212,32 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	padding: 10px 12px;
 	border: 1px solid var(--ta-border);
 	color: var(--ta-muted);
+	vertical-align: top;
+}
+
+.ta-page-content .entry-content .ta-table-scroll {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.ta-page-content .entry-content .ta-table-scroll table {
+	min-width: 640px;
+}
+
+.ta-page-content .entry-content h3 {
+	font-size: 1rem;
+	font-weight: 700;
+	margin: 20px 0 6px;
+	color: var(--ta-ink);
+}
+
+.ta-page-content .entry-content code {
+	font-size: 0.8125rem;
+	background: var(--ta-bg);
+	padding: 1px 5px;
+	border-radius: 4px;
+	color: var(--ta-ink);
+	white-space: nowrap;
 }
 
 .ta-page-content .entry-content ul {
