@@ -1290,7 +1290,24 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
  * texto normal: cada <h2> se convierte en una sección plegable al mostrarse.
  */
 function ta_is_legal_page() {
-	return is_page( array( 'politica-de-privacidad', 'terminos-y-condiciones' ) );
+	if ( ! is_page() ) {
+		return false;
+	}
+
+	// Por búsqueda flexible y no por slug exacto: en local son `politica-de-privacidad`
+	// y `terminos-y-condiciones`, en producción `politica-privacidad` y `termino-y-condiciones`.
+	$legal_pages = array(
+		ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) ),
+		ta_find_page( array( 'terminos-y-condiciones', 'termino-y-condiciones', 'termino' ) ),
+	);
+
+	foreach ( $legal_pages as $page ) {
+		if ( $page && (int) $page->ID === (int) get_queried_object_id() ) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 function ta_render_legal_accordion( $html ) {
