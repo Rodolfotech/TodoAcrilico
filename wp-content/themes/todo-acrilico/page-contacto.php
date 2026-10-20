@@ -252,7 +252,12 @@ $ta_contact_error_messages = array(
 			row.className = 'ta-contact-file-status';
 
 			var name = document.createElement('span');
-			name.textContent = file.name + (formatSize(file.size) ? ' (' + formatSize(file.size) + ')' : '');
+			var sizeWarning = '';
+			if (file.size > MAX_FILE_SIZE) {
+				sizeWarning = ' (⚠ ' + formatSize(file.size) + ' - muy grande)';
+				row.style.opacity = '0.6';
+			}
+			name.textContent = file.name + (formatSize(file.size) ? ' (' + formatSize(file.size) + ')' : '') + sizeWarning;
 
 			var actions = document.createElement('div');
 			actions.className = 'ta-contact-file-actions';
@@ -293,15 +298,14 @@ $ta_contact_error_messages = array(
 	input.addEventListener('change', function () {
 		clearFileError();
 		var accepted = [];
-		var hasError = false;
+		var errorMessages = [];
 
 		for (var i = 0; i < input.files.length; i++) {
 			var file = input.files[i];
 
 			// Validar tamaño
 			if (file.size > MAX_FILE_SIZE) {
-				showFileError('El archivo "' + file.name + '" es demasiado grande (' + formatSize(file.size) + '). Máximo 5 MB.');
-				hasError = true;
+				errorMessages.push('El archivo "' + file.name + '" debe pesar menos de 5 MB. Pesa ' + formatSize(file.size) + '.');
 				continue;
 			}
 
@@ -309,21 +313,25 @@ $ta_contact_error_messages = array(
 			var ext = file.name.split('.').pop().toLowerCase();
 			var validExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf'];
 			if (validExts.indexOf(ext) === -1) {
-				showFileError('El archivo "' + file.name + '" no tiene un formato válido. Usa: JPG, PNG, GIF, WEBP o PDF.');
-				hasError = true;
+				errorMessages.push('El archivo "' + file.name + '" tiene formato no permitido. Usa: JPG, PNG, GIF, WEBP o PDF.');
 				continue;
 			}
 
 			// Validar límite de archivos
 			if (dt.files.length + accepted.length >= MAX) {
-				showFileError('Puedes adjuntar máximo 5 archivos.');
-				hasError = true;
+				errorMessages.push('Puedes adjuntar máximo 5 archivos.');
 				continue;
 			}
 
 			accepted.push(file);
 		}
 
+		// Mostrar todos los errores si existen
+		if (errorMessages.length > 0) {
+			showFileError(errorMessages.join(' '));
+		}
+
+		// Solo agregar archivos válidos
 		for (var j = 0; j < accepted.length; j++) {
 			dt.items.add(accepted[j]);
 		}
