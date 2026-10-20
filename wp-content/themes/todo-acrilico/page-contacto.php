@@ -149,6 +149,7 @@ $ta_contact_error_messages = array(
 					<label>
 						Nombre Completo
 						<input type="text" name="nombre" placeholder="Ej. Juan Pérez" minlength="3" maxlength="100" required>
+						<span class="ta-contact-field-error" data-field="nombre"></span>
 					</label>
 					<label>
 						Teléfono
@@ -159,16 +160,19 @@ $ta_contact_error_messages = array(
 							</div>
 							<input type="tel" name="celular" placeholder="8765 4321" inputmode="tel" pattern="[0-9\s]{8,12}" maxlength="12" required>
 						</div>
+						<span class="ta-contact-field-error" data-field="celular"></span>
 					</label>
 				</div>
 				<label>
 					Correo Electrónico
 					<input type="email" name="email" placeholder="juan@ejemplo.cl" required>
+					<span class="ta-contact-field-error" data-field="email"></span>
 				</label>
 				<label>
 					Descripción del proyecto
 					<textarea name="descripcion" rows="5" minlength="20" maxlength="2000" placeholder="Cuéntanos detalles de medidas, materiales y plazos…" required></textarea>
 					<span class="ta-contact-char-limit">Límite 2000 caracteres</span>
+					<span class="ta-contact-field-error" data-field="descripcion"></span>
 				</label>
 				<div class="ta-contact-files">
 					<input type="file" name="adjunto[]" id="ta-adjunto-input" accept="image/*,.pdf,application/pdf" multiple>
@@ -297,60 +301,94 @@ $ta_contact_error_messages = array(
 	var form = document.querySelector('.ta-contact-form');
 	if (!form) return;
 
-	function getFieldLabel(field) {
-		var label = form.querySelector('label:has(> ' + field.tagName + '[name="' + field.name + '"], > div > ' + field.tagName + '[name="' + field.name + '"])');
-		if (label) {
-			var text = label.textContent.split('\n')[0].trim();
-			return text || field.name;
+	var fieldErrorMessages = {
+		nombre: {
+			valueMissing: 'El nombre es requerido',
+			tooShort: 'Mínimo 3 caracteres',
+			tooLong: 'Máximo 100 caracteres',
+			custom: 'Demasiados números (debe ser principalmente letras)'
+		},
+		email: {
+			valueMissing: 'El correo es requerido',
+			typeMismatch: 'Formato de correo inválido',
+			custom: 'No puede comenzar con caracteres especiales'
+		},
+		celular: {
+			valueMissing: 'El teléfono es requerido',
+			patternMismatch: 'Ingresa 8 dígitos válidos (ej: 7456 4321)',
+			custom: 'Formato de teléfono inválido'
+		},
+		descripcion: {
+			valueMissing: 'La descripción es requerida',
+			tooShort: 'Mínimo 20 caracteres',
+			tooLong: 'Máximo 2000 caracteres',
+			custom: 'Descripción inválida'
 		}
-		return field.name;
+	};
+
+	function getFieldErrorMessage(field) {
+		var messages = fieldErrorMessages[field.name] || {};
+		var validity = field.validity;
+
+		if (validity.valueMissing) return messages.valueMissing || 'Campo requerido';
+		if (validity.typeMismatch) return messages.typeMismatch || 'Formato inválido';
+		if (validity.tooShort) return messages.tooShort || 'Demasiado corto';
+		if (validity.tooLong) return messages.tooLong || 'Demasiado largo';
+		if (validity.patternMismatch) return messages.patternMismatch || 'Formato inválido';
+		if (validity.customError) return messages.custom || 'Valor inválido';
+
+		return '';
 	}
 
-	function updateFieldValidation(field) {
-		var isValid = field.checkValidity();
+	function showFieldError(field, message) {
+		field.style.borderColor = '#dc2626';
+		var errorSpan = form.querySelector('[data-field="' + field.name + '"]');
+		if (errorSpan) {
+			errorSpan.textContent = message;
+			errorSpan.style.display = 'block';
+		}
+	}
+
+	function clearFieldError(field) {
+		field.style.borderColor = '#16a34a';
+		var errorSpan = form.querySelector('[data-field="' + field.name + '"]');
+		if (errorSpan) {
+			errorSpan.textContent = '';
+			errorSpan.style.display = 'none';
+		}
+	}
+
+	function validateField(field) {
 		if (field.value.length === 0) {
 			field.style.borderColor = '';
-			return;
-		}
-		if (isValid) {
-			field.style.borderColor = '#16a34a';
-		} else {
-			field.style.borderColor = '#dc2626';
-		}
-	}
-
-	function validateForm() {
-		var errors = [];
-		var fieldsToValidate = form.querySelectorAll('input[required], textarea[required], input[type="email"]');
-
-		Array.prototype.forEach.call(fieldsToValidate, function (field) {
-			if (!field.checkValidity()) {
-				var label = getFieldLabel(field);
-				errors.push(label);
-				field.style.borderColor = '#dc2626';
-			} else {
-				field.style.borderColor = '#16a34a';
+			var errorSpan = form.querySelector('[data-field="' + field.name + '"]');
+			if (errorSpan) {
+				errorSpan.style.display = 'none';
 			}
-		});
-
-		// Validar checkbox de términos
-		var termsCheckbox = form.querySelector('input[name="acepto_terminos"]');
-		if (termsCheckbox && !termsCheckbox.checked) {
-			errors.push('Aceptar Política de Privacidad y Términos');
-			termsCheckbox.style.borderColor = '#dc2626';
+			return true;
 		}
 
-		return errors;
+		if (!field.checkValidity()) {
+			var message = getFieldErrorMessage(field);
+			showFieldError(field, message);
+			return false;
+		} else {
+			clearFieldError(field);
+			return true;
+		}
 	}
 
 	var fields = form.querySelectorAll('input[minlength], input[maxlength], textarea[minlength], input[type="email"], input[type="tel"], input[type="text"]');
 	Array.prototype.forEach.call(fields, function (field) {
+		if (field.name === 'ta_contact_website') return;
+
 		field.addEventListener('blur', function () {
-			updateFieldValidation(field);
+			validateField(field);
 		});
+
 		field.addEventListener('input', function () {
 			if (field.value.length > 2 || field.value.length === 0) {
-				updateFieldValidation(field);
+				validateField(field);
 			}
 		});
 	});
@@ -358,35 +396,32 @@ $ta_contact_error_messages = array(
 	var submitBtn = form.querySelector('button[type="submit"]');
 	if (submitBtn) {
 		form.addEventListener('submit', function (e) {
-			var errors = validateForm();
+			var hasErrors = false;
+			var firstInvalidField = null;
 
-			if (errors.length > 0) {
-				e.preventDefault();
-
-				// Scroll al primer campo con error
-				var firstInvalidField = form.querySelector('input:invalid, textarea:invalid');
-				if (!firstInvalidField) {
-					firstInvalidField = form.querySelector('input[type="tel"]');
+			var fieldsToValidate = form.querySelectorAll('input[required], textarea[required], input[type="email"]');
+			Array.prototype.forEach.call(fieldsToValidate, function (field) {
+				if (field.name === 'ta_contact_website') return;
+				if (!validateField(field)) {
+					hasErrors = true;
+					if (!firstInvalidField) {
+						firstInvalidField = field;
+					}
 				}
+			});
+
+			var termsCheckbox = form.querySelector('input[name="acepto_terminos"]');
+			if (termsCheckbox && !termsCheckbox.checked) {
+				hasErrors = true;
+				termsCheckbox.style.borderColor = '#dc2626';
+			}
+
+			if (hasErrors) {
+				e.preventDefault();
 				if (firstInvalidField) {
 					firstInvalidField.focus();
 					firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
 				}
-
-				// Crear y mostrar mensaje de error
-				var existingError = form.querySelector('.ta-contact-form-errors');
-				if (existingError) {
-					existingError.remove();
-				}
-
-				var errorDiv = document.createElement('div');
-				errorDiv.className = 'ta-contact-form-errors';
-				errorDiv.setAttribute('role', 'alert');
-				errorDiv.innerHTML = '<strong>Por favor corrige los siguientes campos:</strong><ul>' +
-					errors.map(function (e) { return '<li>' + e + '</li>'; }).join('') +
-					'</ul>';
-
-				form.insertBefore(errorDiv, form.firstChild);
 				return false;
 			}
 		});
