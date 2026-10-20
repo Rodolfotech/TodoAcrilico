@@ -2381,6 +2381,12 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin: 0;
 }
 
+.ta-modal-content--success .ta-modal-message {
+	font-size: 15px;
+	margin: 8px 0 0;
+	line-height: 1.5;
+}
+
 .ta-modal-content--success .ta-modal-close {
 	font-size: 22px;
 	font-weight: 300;

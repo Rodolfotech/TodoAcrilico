@@ -112,6 +112,7 @@ $ta_contact_error_messages = array(
 					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
 				</div>
 				<h3 class="ta-modal-title">¡Mensaje enviado!</h3>
+				<p class="ta-modal-message">Nos pondremos en contacto en un plazo de 24 a 48 horas hábiles.</p>
 				<button type="button" class="ta-button ta-button--dark ta-modal-button" id="ta-success-close-btn">Cerrar</button>
 			</div>
 		</div>
