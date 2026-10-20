@@ -1480,11 +1480,18 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	resize: vertical;
 }
 
+.ta-contact-textarea-footer {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-top: 4px;
+}
+
 .ta-contact-char-limit {
-	align-self: flex-end;
 	font-size: 0.78rem;
 	font-weight: 400;
 	color: var(--ta-muted);
+	margin: 0;
 }
 
 .ta-contact-files-note {

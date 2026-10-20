@@ -200,8 +200,10 @@ $ta_contact_error_messages = array(
 				<label>
 					Descripción del proyecto
 					<textarea name="descripcion" rows="5" minlength="20" maxlength="2000" placeholder="Cuéntanos detalles de medidas, materiales y plazos…" required></textarea>
-					<span class="ta-contact-char-limit">Límite 2000 caracteres</span>
-					<span class="ta-contact-field-error" data-field="descripcion"></span>
+					<div class="ta-contact-textarea-footer">
+						<span class="ta-contact-field-error" data-field="descripcion"></span>
+						<span class="ta-contact-char-limit">Límite 2000 caracteres</span>
+					</div>
 				</label>
 				<div class="ta-contact-files">
 					<input type="file" name="adjunto[]" id="ta-adjunto-input" accept="image/*,.pdf,application/pdf" multiple>
