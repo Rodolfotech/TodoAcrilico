@@ -795,6 +795,11 @@ function ta_handle_contact_submit() {
 
 	$sent = wp_mail( ta_get_contact_email(), $subject, $html_body, $headers, $attachments );
 
+	// Debug: registrar en logs si el email falló
+	if ( ! $sent ) {
+		error_log( 'TA Contact Form - wp_mail() falló. Email: ' . ta_get_contact_email() . ', Asunto: ' . $subject . ', Headers: ' . print_r( $headers, true ) );
+	}
+
 	foreach ( $adjunto_paths as $adjunto_path ) {
 		if ( $adjunto_path && file_exists( $adjunto_path ) ) {
 			wp_delete_file( $adjunto_path );

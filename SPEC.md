@@ -161,3 +161,39 @@ Campo oculto `ta_contact_website` debe estar:
 - WordPress `nonce` field: `ta_contact_nonce`
 - **Validar en backend antes de procesar**
 - Si es inválido: ❌ Rechazar con mensaje "Tu sesión expiró"
+
+---
+
+## Email (Envío)
+
+### Configuración Requerida
+
+Para que `wp_mail()` funcione correctamente en producción, se necesita:
+
+- **Plugin SMTP:** WP Mail SMTP, Mailgun, SendGrid, etc.
+- **O configuración de servidor:** Postfix, Sendmail, etc.
+- **Email válido:** El email del destinatario debe ser válido
+
+### Email del Destinatario
+
+Actualmente configurado en `functions.php`:
+```php
+function ta_get_contact_email() {
+    return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
+}
+```
+
+**Cambiar a:** El email corporativo de Todo Acrílico (ej: `contacto@todoacrilico.cl`)
+
+### Debugging
+
+Si `wp_mail()` falla, se registra en:
+- `wp-content/debug.log` (si `WP_DEBUG` está habilitado)
+- Logs del sistema (via `error_log()`)
+
+Para ver errores, habilitar en `wp-config.php`:
+```php
+define( 'WP_DEBUG', true );
+define( 'WP_DEBUG_LOG', true );
+define( 'WP_DEBUG_DISPLAY', false );
+```
