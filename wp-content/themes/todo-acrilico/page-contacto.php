@@ -289,8 +289,21 @@ $ta_contact_error_messages = array(
 	var form = document.querySelector('.ta-contact-form');
 	if (!form) return;
 
+	function getFieldLabel(field) {
+		var label = form.querySelector('label:has(> ' + field.tagName + '[name="' + field.name + '"], > div > ' + field.tagName + '[name="' + field.name + '"])');
+		if (label) {
+			var text = label.textContent.split('\n')[0].trim();
+			return text || field.name;
+		}
+		return field.name;
+	}
+
 	function updateFieldValidation(field) {
 		var isValid = field.checkValidity();
+		if (field.value.length === 0) {
+			field.style.borderColor = '';
+			return;
+		}
 		if (isValid) {
 			field.style.borderColor = '#16a34a';
 		} else {
@@ -298,13 +311,37 @@ $ta_contact_error_messages = array(
 		}
 	}
 
-	var fields = form.querySelectorAll('input[minlength], input[maxlength], textarea[minlength], input[type="email"]');
+	function validateForm() {
+		var errors = [];
+		var fieldsToValidate = form.querySelectorAll('input[required], textarea[required], input[type="email"]');
+
+		Array.prototype.forEach.call(fieldsToValidate, function (field) {
+			if (!field.checkValidity()) {
+				var label = getFieldLabel(field);
+				errors.push(label);
+				field.style.borderColor = '#dc2626';
+			} else {
+				field.style.borderColor = '#16a34a';
+			}
+		});
+
+		// Validar checkbox de términos
+		var termsCheckbox = form.querySelector('input[name="acepto_terminos"]');
+		if (termsCheckbox && !termsCheckbox.checked) {
+			errors.push('Aceptar Política de Privacidad y Términos');
+			termsCheckbox.style.borderColor = '#dc2626';
+		}
+
+		return errors;
+	}
+
+	var fields = form.querySelectorAll('input[minlength], input[maxlength], textarea[minlength], input[type="email"], input[type="tel"], input[type="text"]');
 	Array.prototype.forEach.call(fields, function (field) {
 		field.addEventListener('blur', function () {
 			updateFieldValidation(field);
 		});
 		field.addEventListener('input', function () {
-			if (field.value.length > 2) {
+			if (field.value.length > 2 || field.value.length === 0) {
 				updateFieldValidation(field);
 			}
 		});
@@ -313,13 +350,36 @@ $ta_contact_error_messages = array(
 	var submitBtn = form.querySelector('button[type="submit"]');
 	if (submitBtn) {
 		form.addEventListener('submit', function (e) {
-			var isFormValid = form.checkValidity();
-			if (!isFormValid) {
+			var errors = validateForm();
+
+			if (errors.length > 0) {
 				e.preventDefault();
-				submitBtn.style.opacity = '0.6';
-				submitBtn.disabled = true;
-			} else {
-				submitBtn.disabled = false;
+
+				// Scroll al primer campo con error
+				var firstInvalidField = form.querySelector('input:invalid, textarea:invalid');
+				if (!firstInvalidField) {
+					firstInvalidField = form.querySelector('input[type="tel"]');
+				}
+				if (firstInvalidField) {
+					firstInvalidField.focus();
+					firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}
+
+				// Crear y mostrar mensaje de error
+				var existingError = form.querySelector('.ta-contact-form-errors');
+				if (existingError) {
+					existingError.remove();
+				}
+
+				var errorDiv = document.createElement('div');
+				errorDiv.className = 'ta-contact-form-errors';
+				errorDiv.setAttribute('role', 'alert');
+				errorDiv.innerHTML = '<strong>Por favor corrige los siguientes campos:</strong><ul>' +
+					errors.map(function (e) { return '<li>' + e + '</li>'; }).join('') +
+					'</ul>';
+
+				form.insertBefore(errorDiv, form.firstChild);
+				return false;
 			}
 		});
 	}

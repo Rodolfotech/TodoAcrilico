@@ -1707,6 +1707,32 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	color: #b3261e;
 }
 
+.ta-contact-form-errors {
+	background: #fdecea;
+	border: 1px solid #fccccb;
+	border-radius: 6px;
+	padding: 14px 16px;
+	margin: 0 0 20px;
+	font-size: 0.9rem;
+	color: #b3261e;
+}
+
+.ta-contact-form-errors strong {
+	display: block;
+	font-weight: 700;
+	margin-bottom: 8px;
+}
+
+.ta-contact-form-errors ul {
+	margin: 0;
+	padding-left: 20px;
+	list-style: disc;
+}
+
+.ta-contact-form-errors li {
+	margin-bottom: 6px;
+}
+
 .ta-contact-alert--info {
 	display: flex;
 	gap: 10px;
