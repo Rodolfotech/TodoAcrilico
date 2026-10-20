@@ -7,7 +7,7 @@ class JG_CPT {
 
 	const TAXONOMY = 'jg_gallery_category';
 
-	const DEFAULT_CATEGORIES = array( 'organizador', 'proteger', 'vidrios', 'exhibir', 'informar' );
+	const DEFAULT_CATEGORIES = array( 'organizador', 'proteger', 'trabajos-especiales', 'exhibir', 'informar' );
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register' ) );
