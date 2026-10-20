@@ -125,8 +125,9 @@ Ejemplo:
 ## Validación de Campos
 
 ### Nombre Completo
-- ✅ **2-100 caracteres** (error visible solo al presionar Enviar)
-- ✅ Solo letras, espacios y acentos
+- ✅ **Nombre y apellido:** mínimo 2 palabras, cada una de 2+ letras (máx. 100 caracteres)
+- ✅ Solo letras (con tildes y ñ), espacios, guion y apóstrofe (ej: "PÉREZ-SOTO", "O'BRIEN")
+- ❌ "AA", "JUAN", "JUAN P" → error "Ingrese un nombre válido" (visible solo al presionar Enviar)
 - ❌ NO números
 - ❌ NO caracteres especiales
 

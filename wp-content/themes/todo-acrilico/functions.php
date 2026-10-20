@@ -480,6 +480,7 @@ function ta_handle_contact_submit() {
 		'nombre_corto'    => 'El nombre debe tener al menos 2 caracteres.',
 		'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
 		'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
+		'nombre_invalido' => 'Ingrese un nombre válido.',
 		'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
 		'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
 		'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
@@ -591,6 +592,11 @@ function ta_handle_contact_submit() {
 	// Anti-spam: rechazar nombres que contienen números.
 	if ( preg_match( '/\d/', $nombre ) ) {
 		$fail( 'nombre_numerico' );
+	}
+
+	// Nombre completo: al menos nombre y apellido, cada palabra de 2+ letras.
+	if ( ! preg_match( "/^\p{L}[\p{L}'’-]*\p{L}(\s+\p{L}[\p{L}'’-]*\p{L})+$/u", trim( $nombre ) ) ) {
+		$fail( 'nombre_invalido' );
 	}
 
 	$desc_length = strlen( $descripcion );

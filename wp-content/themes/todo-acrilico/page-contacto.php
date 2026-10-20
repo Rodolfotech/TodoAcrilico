@@ -33,6 +33,7 @@ $ta_contact_error_messages = array(
 	'nombre_corto'    => 'El nombre debe tener al menos 2 caracteres.',
 	'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
 	'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
+	'nombre_invalido' => 'Ingrese un nombre válido.',
 	'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
 	'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
 	'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
@@ -489,7 +490,7 @@ $ta_contact_error_messages = array(
 				var message = 'Ingrese un nombre válido';
 				showFieldError(field, message);
 				return false;
-			} else if (field.value.trim().length < 2) {
+			} else if (!/^\p{L}[\p{L}'’-]*\p{L}(\s+\p{L}[\p{L}'’-]*\p{L})+$/u.test(field.value.trim())) {
 				field.setCustomValidity('Nombre corto');
 				showFieldError(field, 'Ingrese un nombre válido');
 				return false;
