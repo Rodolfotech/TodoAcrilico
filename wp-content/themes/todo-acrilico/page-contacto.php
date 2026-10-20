@@ -106,17 +106,12 @@ $ta_contact_error_messages = array(
 		<!-- Modal de Éxito -->
 		<div id="ta-contact-success-modal" class="ta-modal ta-modal--hidden">
 			<div class="ta-modal-overlay"></div>
-			<div class="ta-modal-content">
+			<div class="ta-modal-content ta-modal-content--success">
 				<button type="button" class="ta-modal-close ta-modal-close--right" id="ta-success-close" aria-label="Cerrar modal">&times;</button>
 				<div class="ta-modal-icon ta-modal-icon--success">✅</div>
 				<h3 class="ta-modal-title">¡Mensaje enviado!</h3>
 				<p class="ta-modal-message">Nos pondremos en contacto en un plazo de 24 a 48 horas hábiles.</p>
-				<div class="ta-modal-whatsapp">
-					<span class="ta-modal-whatsapp-icon">💬</span>
-					<p class="ta-modal-whatsapp-text">¿Es urgente? <a href="https://wa.me/56912345678" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a></p>
-				</div>
 				<button type="button" class="ta-button ta-button--dark ta-modal-button" id="ta-success-close-btn">Cerrar</button>
-				<button type="button" class="ta-modal-link" id="ta-send-another-msg">Enviar otro mensaje</button>
 			</div>
 		</div>
 
@@ -688,20 +683,6 @@ $ta_contact_error_messages = array(
 		if (closeModalBtn) {
 			closeModalBtn.addEventListener('click', function () {
 				modal.classList.add('ta-modal--hidden');
-			});
-		}
-
-		// Botón "Enviar otro mensaje" en modal de éxito
-		var sendAnotherBtn = modal.querySelector('#ta-send-another-msg');
-		if (sendAnotherBtn) {
-			sendAnotherBtn.addEventListener('click', function () {
-				modal.classList.add('ta-modal--hidden');
-				// Scroll al formulario
-				var form = document.querySelector('.ta-contact-form');
-				if (form) {
-					form.scrollIntoView({ behavior: 'smooth', block: 'start' });
-					form.focus();
-				}
 			});
 		}
 
