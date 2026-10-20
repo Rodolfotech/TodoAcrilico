@@ -577,8 +577,9 @@ $ta_contact_error_messages = array(
 	var reason = urlParams.get('reason');
 	var savedTimestamp = localStorage.getItem(RATE_LIMIT_KEY);
 
-	// Si viene con parámetro rate_limit, guardar el timestamp
-	if (reason === 'rate_limit') {
+	// Si viene con parámetro rate_limit Y no hay timestamp guardado, guardar el timestamp
+	// (evita sobrescribir si el usuario actualiza la página)
+	if (reason === 'rate_limit' && !savedTimestamp) {
 		localStorage.setItem(RATE_LIMIT_KEY, Date.now().toString());
 		savedTimestamp = localStorage.getItem(RATE_LIMIT_KEY);
 	}
