@@ -91,6 +91,7 @@ $ta_contact_error_messages = array(
 		<div id="ta-contact-rate-limit-modal" class="ta-modal ta-modal--hidden">
 			<div class="ta-modal-overlay"></div>
 			<div class="ta-modal-content">
+				<button type="button" class="ta-modal-close" id="ta-rate-limit-close" aria-label="Cerrar modal">&times;</button>
 				<div class="ta-modal-icon">⏱️</div>
 				<h3 class="ta-modal-title">Espera un momento</h3>
 				<p class="ta-modal-message">Antes de enviar otro mensaje</p>
@@ -99,6 +100,17 @@ $ta_contact_error_messages = array(
 					<span class="ta-countdown-label">segundos</span>
 				</div>
 				<p class="ta-modal-note">Intenta de nuevo cuando el contador llegue a 0</p>
+			</div>
+		</div>
+
+		<!-- Modal de Éxito -->
+		<div id="ta-contact-success-modal" class="ta-modal ta-modal--hidden">
+			<div class="ta-modal-overlay"></div>
+			<div class="ta-modal-content">
+				<button type="button" class="ta-modal-close" id="ta-success-close" aria-label="Cerrar modal">&times;</button>
+				<div class="ta-modal-icon">✅</div>
+				<h3 class="ta-modal-title">¡Gracias!</h3>
+				<p class="ta-modal-message">Recibimos tu mensaje y te responderemos entre 24 y 48 horas hábiles.</p>
 			</div>
 		</div>
 
@@ -577,9 +589,16 @@ $ta_contact_error_messages = array(
 				submitBtn.style.opacity = '1';
 
 				if (data.success) {
-					// Éxito: limpiar formulario y mostrar mensaje
+					// Éxito: limpiar formulario y mostrar modal
 					form.reset();
-					window.location.href = data.redirect_url || window.location.href;
+					var successModal = document.getElementById('ta-contact-success-modal');
+					if (successModal) {
+						successModal.classList.remove('ta-modal--hidden');
+					}
+					// Después de 3 segundos, redirigir
+					setTimeout(function() {
+						window.location.href = data.redirect_url || window.location.href;
+					}, 3000);
 				} else {
 					// Error: mostrar mensaje pero MANTENER datos
 					var alertDiv = form.parentElement.querySelector('.ta-contact-alert--error');
@@ -635,6 +654,27 @@ $ta_contact_error_messages = array(
 		var hiddens = document.querySelectorAll('input[name^="adjunto_"]');
 		Array.prototype.forEach.call(hiddens, function (h) { h.remove(); });
 		quote.remove();
+	});
+})();
+
+// Cerrar modales al hacer clic en X o en el overlay
+(function () {
+	var modals = document.querySelectorAll('.ta-modal');
+	Array.prototype.forEach.call(modals, function (modal) {
+		var closeBtn = modal.querySelector('.ta-modal-close');
+		var overlay = modal.querySelector('.ta-modal-overlay');
+
+		if (closeBtn) {
+			closeBtn.addEventListener('click', function () {
+				modal.classList.add('ta-modal--hidden');
+			});
+		}
+
+		if (overlay) {
+			overlay.addEventListener('click', function () {
+				modal.classList.add('ta-modal--hidden');
+			});
+		}
 	});
 })();
 

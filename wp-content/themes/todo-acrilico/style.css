@@ -2317,6 +2317,28 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	animation: slideUp 0.3s ease-out;
 }
 
+.ta-modal-close {
+	position: absolute;
+	top: 16px;
+	left: 16px;
+	background: none;
+	border: none;
+	font-size: 28px;
+	color: #5b6469;
+	cursor: pointer;
+	padding: 0;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: color 0.2s ease;
+}
+
+.ta-modal-close:hover {
+	color: #1a1c1c;
+}
+
 .ta-modal-icon {
 	font-size: 48px;
 	margin-bottom: 16px;
