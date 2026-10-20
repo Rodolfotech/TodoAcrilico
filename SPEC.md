@@ -43,6 +43,16 @@ ERROR: validación fallida
 
 ---
 
+### 2. Los Datos se Conservan al Actualizar la Página
+
+**Regla:** Si el usuario actualiza el navegador (F5) con datos escritos, el formulario debe mostrar los mismos datos (nombre, teléfono, correo, descripción y checkboxes).
+
+- Se guardan en `sessionStorage` (solo esa pestaña; se borran al cerrarla).
+- Se borran al enviar el mensaje con éxito.
+- Excepción: los archivos adjuntos no se pueden restaurar (restricción del navegador).
+
+---
+
 ## Implementación Técnica
 
 ### Frontend (JavaScript)
