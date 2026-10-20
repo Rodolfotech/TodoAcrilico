@@ -394,7 +394,7 @@ $ta_contact_error_messages = array(
 			}
 		}
 
-		// Validación personalizada: email no puede empezar con caracteres especiales
+		// Validación personalizada: email
 		if (field.name === 'email' && field.value.length > 0) {
 			if (!/^[a-z0-9]/i.test(field.value)) {
 				field.setCustomValidity('El email no puede comenzar con caracteres especiales');
@@ -404,6 +404,11 @@ $ta_contact_error_messages = array(
 			} else if (field.value.indexOf('@.') !== -1 || /^\./.test(field.value)) {
 				field.setCustomValidity('El email tiene un formato inválido');
 				var message = 'Formato inválido (no puede tener "@." o comenzar con punto)';
+				showFieldError(field, message);
+				return false;
+			} else if (!/\.(cl|com|net|org)$/i.test(field.value)) {
+				field.setCustomValidity('El dominio debe terminar en .cl, .com, .net u .org');
+				var message = 'El correo debe terminar en .cl, .com, .net u .org';
 				showFieldError(field, message);
 				return false;
 			} else {
