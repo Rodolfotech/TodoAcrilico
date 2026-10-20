@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- Inicio -->
+  <url>
+    <loc>https://todoacrilico.cl/wp/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Catálogo -->
+  <url>
+    <loc>https://todoacrilico.cl/wp/catalogo/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Catálogo - Categorías -->
+  <url>
+    <loc>https://todoacrilico.cl/wp/catalogo/?categoria=exhibir</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://todoacrilico.cl/wp/catalogo/?categoria=informar</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://todoacrilico.cl/wp/catalogo/?categoria=organizador</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://todoacrilico.cl/wp/catalogo/?categoria=proteger</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://todoacrilico.cl/wp/catalogo/?categoria=trabajos-especiales</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Soluciones -->
+  <url>
+    <loc>https://todoacrilico.cl/wp/nuestras-soluciones/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Cuidados -->
+  <url>
+    <loc>https://todoacrilico.cl/wp/cuidados-del-acrilico/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Contacto / Cotizar -->
+  <url>
+    <loc>https://todoacrilico.cl/wp/cotizar/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Galería / Panel -->
+  <url>
+    <loc>https://todoacrilico.cl/wp/galeria/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://todoacrilico.cl/wp/galeria-panel/</loc>
+    <lastmod>2026-10-20</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>
