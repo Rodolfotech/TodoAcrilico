@@ -28,7 +28,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				height="89"
 			>
 		</a>
-		<nav class="ta-nav" aria-label="Menú principal">
+		<button type="button" class="ta-nav-toggle" aria-controls="ta-primary-nav" aria-expanded="false" aria-label="Abrir menú">
+			<span class="ta-nav-toggle-bar" aria-hidden="true"></span>
+			<span class="ta-nav-toggle-bar" aria-hidden="true"></span>
+			<span class="ta-nav-toggle-bar" aria-hidden="true"></span>
+		</button>
+		<nav class="ta-nav" id="ta-primary-nav" aria-label="Menú principal">
 			<?php
 			wp_nav_menu(
 				array(

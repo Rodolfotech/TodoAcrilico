@@ -8,6 +8,31 @@
 	document.addEventListener('DOMContentLoaded', function () {
 		var items = document.querySelectorAll('.ta-nav-has-caret');
 
+		// Menú hamburguesa (solo visible <= 861px, ver style.css).
+		var header = document.querySelector('.ta-header');
+		var navToggle = document.querySelector('.ta-nav-toggle');
+
+		function setNavOpen(open) {
+			if (!header || !navToggle) {
+				return;
+			}
+			header.classList.toggle('is-nav-open', open);
+			navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+			navToggle.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+		}
+
+		if (navToggle) {
+			navToggle.addEventListener('click', function () {
+				setNavOpen(!header.classList.contains('is-nav-open'));
+			});
+
+			window.addEventListener('resize', function () {
+				if (window.innerWidth > 861) {
+					setNavOpen(false);
+				}
+			});
+		}
+
 		function close(li) {
 			li.classList.remove('is-open');
 			var toggle = li.querySelector(':scope > .ta-nav-caret-toggle');
@@ -69,6 +94,10 @@
 
 		document.addEventListener('keydown', function (e) {
 			if (e.key === 'Escape') {
+				if (header && header.classList.contains('is-nav-open')) {
+					setNavOpen(false);
+					navToggle.focus();
+				}
 				document.querySelectorAll('.ta-nav-list li.is-open').forEach(function (li) {
 					li.classList.remove('is-open');
 					var btn = li.querySelector('.ta-nav-caret-toggle');

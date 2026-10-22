@@ -2,7 +2,7 @@
 Theme Name:   TodoAcrílico
 Description:  Tema a medida para Todo Acrílico — inicio, nuestras soluciones (categorías e imágenes de la galería), cuidados del acrílico y contacto.
 Author:       TodoAcrilicoTheme
-Version:      2.0.0
+Version:      2.0.1
 Requires at least: 6.0
 Requires PHP: 7.2.24
 License:      GPL-2.0-or-later
@@ -365,14 +365,22 @@ body.admin-bar .ta-header {
 
 /* ---- Media Queries: Navegación Responsive ---- */
 
-/* Tablet y Pantallas Medianas (<= 861px) */
+/* Botón hamburguesa: oculto en escritorio. */
+.ta-nav-toggle {
+	display: none;
+}
+
+/* Tablet y móvil (<= 861px): logo + hamburguesa en una fila; el menú se
+   despliega debajo, en columna, solo con .is-nav-open (ta-nav.js). */
 @media (max-width: 861px) {
 	.ta-header-inner {
 		padding-top: 16px;
 		padding-bottom: 16px;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: 16px;
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
 	}
 
 	.ta-logo-img {
@@ -380,33 +388,69 @@ body.admin-bar .ta-header {
 		width: auto;
 	}
 
+	.ta-nav-toggle {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		gap: 5px;
+		width: 44px;
+		height: 44px;
+		padding: 0;
+		background: var(--ta-surface);
+		border: 1px solid var(--ta-border);
+		border-radius: 10px;
+		cursor: pointer;
+		transition: border-color 0.15s ease;
+	}
+
+	.ta-nav-toggle:hover,
+	.ta-nav-toggle:focus-visible {
+		border-color: var(--ta-ink);
+	}
+
+	.ta-nav-toggle:focus-visible {
+		outline: 2px solid var(--ta-accent);
+		outline-offset: 2px;
+	}
+
+	.ta-nav-toggle-bar {
+		display: block;
+		width: 20px;
+		height: 2px;
+		border-radius: 2px;
+		background: var(--ta-ink);
+		transition: transform 0.2s ease, opacity 0.2s ease;
+	}
+
+	/* Al abrir, las tres líneas forman una X. */
+	.ta-header.is-nav-open .ta-nav-toggle-bar:nth-child(1) {
+		transform: translateY(7px) rotate(45deg);
+	}
+
+	.ta-header.is-nav-open .ta-nav-toggle-bar:nth-child(2) {
+		opacity: 0;
+	}
+
+	.ta-header.is-nav-open .ta-nav-toggle-bar:nth-child(3) {
+		transform: translateY(-7px) rotate(-45deg);
+	}
+
 	.ta-nav {
+		display: none;
+		flex-basis: 100%;
 		width: 100%;
+		max-height: calc(100vh - 110px);
+		overflow-y: auto;
+		overflow-x: hidden;
+	}
+
+	.ta-header.is-nav-open .ta-nav {
+		display: block;
 	}
 
 	.ta-nav-list {
 		width: 100%;
-		gap: 4px;
-		justify-content: flex-start;
-	}
-
-	.ta-nav-list > li > a {
-		padding: 8px 10px;
-		font-size: 0.88rem;
-	}
-
-	/* Limita el submenú para que no se salga del margen de la pantalla */
-	.ta-nav-dropdown {
-		left: 0;
-		right: auto;
-		min-width: 200px;
-		max-width: calc(100vw - 40px);
-	}
-}
-
-/* Teléfonos Moviles (<= 480px) */
-@media (max-width: 480px) {
-	.ta-nav-list {
 		flex-direction: column;
 		align-items: stretch;
 		gap: 2px;
@@ -420,16 +464,37 @@ body.admin-bar .ta-header {
 		display: block;
 		width: 100%;
 		padding: 10px 12px;
+		font-size: 0.95rem;
 	}
 
 	.ta-nav-list .ta-nav-has-caret > a {
-		padding-right: 44px; /* Otorga más espacio al botón caret en móviles */
+		padding-right: 44px; /* Espacio para el botón caret */
 	}
 
-	/* Convierte el desplegable en un acordeón vertical dentro del menú */
+	/* La flecha queda a la altura del link "Catálogo", no centrada en todo el
+	   <li> (que crece al abrir el submenú y la escondía detrás). */
+	.ta-nav-caret-toggle {
+		width: 44px;
+		height: 44px;
+		min-height: 0;
+	}
+
+	/* En escritorio "Cotizar" lleva margen izquierdo; a ancho completo se desbordaba. */
+	.ta-nav-list .ta-nav-cta {
+		margin-left: 0;
+		margin-top: 6px;
+	}
+
+	.ta-nav-list li.ta-nav-cta > a {
+		text-align: center;
+	}
+
+	/* El desplegable de Catálogo se vuelve un acordeón dentro del menú. */
 	.ta-nav-dropdown {
 		position: static;
-		width: 100%;
+		width: auto;
+		min-width: 0;
+		max-width: none;
 		box-shadow: none;
 		border: none;
 		border-left: 2px solid var(--ta-accent);
@@ -443,7 +508,6 @@ body.admin-bar .ta-header {
 		transform: none;
 	}
 
-	/* Muestra el desplegable en modo acordeón únicamente cuando está activo */
 	.ta-nav-list li.is-open > .ta-nav-dropdown {
 		display: block;
 	}
