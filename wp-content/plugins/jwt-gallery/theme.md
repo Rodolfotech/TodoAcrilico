@@ -1,5 +1,7 @@
 # JWT Gallery — theme.md (bitácora de análisis)
 
+> ⚠️ **DOCUMENTO HISTÓRICO (congelado en 1.4.8, 2026-09-29).** El plugin hoy está en **2.0.0**. **No uses este archivo como referencia para modificar el código.** Lo vigente está en `Docs_Plugin.md` (raíz del proyecto), `Docs_Seguridad.md` y las reglas de `CLAUDE.md`. Este archivo no se incluye en el ZIP del plugin.
+
 > Documento de referencia del plugin **jwt-gallery** (nombre visible: "TodoAcrílico-Panel").
 > Convención: este archivo describe **cómo está hoy** el código y registra las
 > mejoras propuestas **sin modificar el código existente**. Si una mejora se

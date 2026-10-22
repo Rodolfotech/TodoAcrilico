@@ -1,6 +1,6 @@
-# SPEC.md — Especificación funcional (formulario de cotización y páginas legales)
+# SPEC.md — Especificación funcional (formulario de cotización, menú de navegación y páginas legales)
 
-> **Para una IA o desarrollador que modifique el sitio:** este archivo describe el comportamiento **aprobado por el cliente** al 2026-10-20 (tema 2.0.2, plugin 2.0.0). Cada regla fue pedida explícitamente. Si un cambio contradice algo de aquí, **pregunta antes**; no "mejores" una regla por tu cuenta.
+> **Para una IA o desarrollador que modifique el sitio:** este archivo describe el comportamiento **aprobado por el cliente** al 2026-10-22 (tema 2.0.2, plugin 2.0.0). Cada regla fue pedida explícitamente. Si un cambio contradice algo de aquí, **pregunta antes**; no "mejores" una regla por tu cuenta.
 >
 > Código involucrado:
 > - `wp-content/themes/todo-acrilico/page-contacto.php`: HTML del formulario, modales y todo el JavaScript.
@@ -117,6 +117,20 @@ Muestra "Espera un momento", una cuenta regresiva de **60** segundos y el botón
 - **Remitente:** el código no fija `From`, a propósito, para que lo controle **WP Mail SMTP** (en local: mailer Gmail con OAuth). Si `wp_mail()` falla, revisa primero WP Mail SMTP → Herramientas → Registro de correos. El error típico `invalid_grant` o 401 se resuelve reconectando la cuenta de Google.
 - **Cabeceras:** `Content-Type: text/html` y `Reply-To` con el nombre y el correo del cliente. El `Reply-To` solo se agrega si `is_email()` es válido.
 - **Si falla:** `error_log()` registra el destinatario, el asunto, las cabeceras, el número de adjuntos y el correo del remitente.
+
+---
+
+## Menú de navegación (todas las páginas)
+
+- **Escritorio (más de 861px):** menú horizontal con Inicio, Catálogo (desplegable de categorías que se abre **solo con clic**, no con hover), Cuidados y el botón negro "Cotizar".
+- **Móvil y tablet (861px o menos):**
+  - Arriba van el logo a la izquierda y el botón **hamburguesa** a la derecha (`.ta-nav-toggle`, 44×44, borde suave). El menú está **cerrado** al cargar la página.
+  - Al tocar el botón, el menú se despliega debajo en columna y el ícono cambia a **✕**.
+  - Se cierra tocando ✕, con Escape o al agrandar la ventana a más de 861px.
+  - Dentro del menú, Catálogo abre sus categorías como acordeón, con la flecha hacia arriba. "Cotizar" ocupa el ancho completo.
+  - No debe haber scroll horizontal.
+- **Accesibilidad:** el botón usa `aria-expanded`, `aria-controls="ta-primary-nav"` y una `aria-label` que alterna entre "Abrir menú" y "Cerrar menú".
+- **Código:** botón en `header.php`, lógica en `assets/js/ta-nav.js` (`setNavOpen()`, clase `.is-nav-open` en `.ta-header`) y estilos en `style.css`, bloque `@media (max-width: 861px)`.
 
 ---
 

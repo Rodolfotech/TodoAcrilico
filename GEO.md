@@ -2,11 +2,24 @@
 
 Este documento describe la política de **Generative Engine Optimization (GEO)** del sitio. GEO es el conjunto de prácticas que permiten que modelos de IA y motores de búsqueda generativos (como ChatGPT, Claude, Gemini, etc.) accedan, indexen y utilicen el contenido del sitio de forma ética y eficiente.
 
+> **Estado real verificado el 2026-10-22 (leer antes de modificar):**
+>
+> | Pieza | Local (`/wordpress/proyecto3/`) | Producción (`https://todoacrilico.cl/wp/`) |
+> |---|---|---|
+> | `robots.txt` GEO | ✅ El archivo vive en `wp-content/themes/todo-acrilico/robots.txt` y `.htaccess` lo sirve en la raíz (`RewriteRule ^robots\.txt$`) | ❌ Se sirve el `robots.txt` **por defecto de WordPress** (`Disallow: /wp/wp-admin/`). La regla de `.htaccess` del tema no está en producción |
+> | `.well-known/ai.json` | Existe en la raíz de `proyecto3` | ❌ **404** en `/.well-known/ai.json` y en `/wp/.well-known/ai.json` |
+> | Metas GEO en `header.php` | ✅ | ✅ Presentes, pero `<link rel="ai-policy" href="/.well-known/ai.json">` apunta a una URL que da 404 |
+> | `sitemap.xml` | Servido desde el tema por `.htaccess` | Redirige (301) |
+>
+> **Para activarlo en producción:** copiar las reglas de `robots.txt` y `sitemap.xml` al `.htaccess` de producción (ajustando la ruta del tema) y subir `.well-known/ai.json` a la raíz del dominio. Si no, cambiar el `href` del `<link>` en `header.php`. Además, `ai.json` usa `info@todoacrilico.cl`, mientras el sitio y el formulario usan **`contacto@todoacrilico.cl`**: unificarlos si el cliente lo confirma.
+>
+> **No toques** `header.php` ni `.htaccess` por GEO sin revisar `CLAUDE.md` (reglas 4 y 5: versión y caché).
+
 ---
 
 ## 📋 Archivos de Configuración GEO
 
-### 1. **`robots.txt`** (Raíz del proyecto)
+### 1. **`robots.txt`** (archivo en `wp-content/themes/todo-acrilico/robots.txt`, servido en la raíz por `.htaccess`)
 Define qué bots y IA pueden acceder al sitio.
 
 **Características:**
@@ -147,12 +160,14 @@ El sitio cumple con:
 ## 📍 Ubicaciones de Archivos GEO
 
 ```
-/
-├── robots.txt                    ← Política de bots y IA
+/ (raíz de WordPress)
+├── .htaccess                     ← RewriteRule ^robots\.txt$ y ^sitemap\.xml$ → archivos del tema
 ├── .well-known/
 │   └── ai.json                   ← Política detallada de IA
 └── wp-content/themes/todo-acrilico/
-    └── header.php               ← Meta tags GEO
+    ├── robots.txt                ← Política de bots y IA (viaja en el ZIP del tema)
+    ├── sitemap.xml               ← Sitemap (viaja en el ZIP del tema)
+    └── header.php                ← Meta tags GEO
 ```
 
 ---
@@ -161,23 +176,25 @@ El sitio cumple con:
 
 ### 1. Verificar que robots.txt existe
 ```bash
-curl https://todoacrilico.cl/wordpress/proyecto3/robots.txt
+curl http://localhost/wordpress/proyecto3/robots.txt      # local
+curl https://todoacrilico.cl/robots.txt                     # producción (hoy: el de WordPress, no el GEO)
 ```
 
 ### 2. Verificar que ai.json es accesible
 ```bash
-curl https://todoacrilico.cl/wordpress/proyecto3/.well-known/ai.json
+curl http://localhost/wordpress/proyecto3/.well-known/ai.json   # local
+curl https://todoacrilico.cl/.well-known/ai.json                  # producción (hoy: 404)
 ```
 
 ### 3. Verificar meta tags en HTML
 ```bash
-curl -s https://todoacrilico.cl/ | grep "ai-content-policy"
+curl -s https://todoacrilico.cl/wp/ | grep "ai-content-policy"
 ```
 
 ### 4. Probar con curl de IA
 ```bash
-curl -A "Claude-Web" https://todoacrilico.cl/wordpress/proyecto3/
-curl -A "GPTBot" https://todoacrilico.cl/wordpress/proyecto3/
+curl -A "Claude-Web" https://todoacrilico.cl/wp/
+curl -A "GPTBot" https://todoacrilico.cl/wp/
 ```
 
 ---
@@ -194,9 +211,9 @@ curl -A "GPTBot" https://todoacrilico.cl/wordpress/proyecto3/
 
 ## 📅 Última Actualización
 
-- **Fecha:** 2026-10-20
+- **Fecha:** 2026-10-22 (revisión del estado real)
 - **Versión GEO:** 1.0.0
-- **Estado:** ✅ Activo y operativo
+- **Estado:** ✅ Activo en local · ⚠️ **Parcial en producción**: solo las metas. Ver la tabla al inicio
 
 ---
 
