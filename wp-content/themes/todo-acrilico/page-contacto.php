@@ -377,16 +377,19 @@ $ta_contact_error_messages = array(
 })();
 
 (function () {
-	// Filtro para campo nombre: solo permite letras, espacios y acentos + convertir a mayúsculas
+	// Nombre: solo letras (con tildes y ñ), espacios, guion y apóstrofe, en MAYÚSCULAS.
+	// Mismos caracteres que acepta la validación (JS y PHP); el resto se borra al escribir o pegar.
 	var nombre = document.querySelector('input[name="nombre"]');
 	if (nombre) {
 		nombre.addEventListener('input', function () {
-			// Elimina números automáticamente
-			var originalValue = nombre.value;
-			var filteredValue = originalValue.replace(/\d/g, '');
-			// Convertir a mayúsculas
-			var upperValue = filteredValue.toUpperCase();
-			nombre.value = upperValue;
+			var original = nombre.value;
+			var cursor = nombre.selectionStart;
+			var limpio = original.replace(/[^\p{L}\s'’-]/gu, '').toUpperCase();
+			if (limpio !== original) {
+				var quitados = original.slice(0, cursor).length - original.slice(0, cursor).replace(/[^\p{L}\s'’-]/gu, '').length;
+				nombre.value = limpio;
+				nombre.setSelectionRange(cursor - quitados, cursor - quitados);
+			}
 		});
 	}
 
