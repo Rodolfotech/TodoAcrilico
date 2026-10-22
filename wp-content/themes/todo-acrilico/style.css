@@ -2,7 +2,7 @@
 Theme Name:   TodoAcrílico
 Description:  Tema a medida para Todo Acrílico — inicio, nuestras soluciones (categorías e imágenes de la galería), cuidados del acrílico y contacto.
 Author:       TodoAcrilicoTheme
-Version:      2.0.1
+Version:      2.0.2
 Requires at least: 6.0
 Requires PHP: 7.2.24
 License:      GPL-2.0-or-later
@@ -1507,8 +1507,25 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	margin: 0 auto;
 	display: grid;
 	grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
-	gap: 64px;
+	/* 5 filas de contenido + una final flexible que absorbe el alto extra de
+	   la tarjeta, para no estirar la descripción ni bajar la lista. */
+	grid-template-rows: auto auto auto auto auto 1fr;
+	column-gap: 64px;
+	row-gap: 0;
 	align-items: start;
+}
+
+/* La tarjeta del formulario empieza siempre a la altura de la descripción
+   ("Escríbenos con la mayor cantidad…"), sin importar en cuántas líneas se
+   parta el título: los hijos de .ta-contact-info pasan a ser filas de la
+   grilla (eyebrow, título, divisora, descripción, lista) y la tarjeta ocupa
+   la columna 2 desde la fila de la descripción. */
+.ta-contact-info {
+	display: contents;
+}
+
+.ta-contact-info > * {
+	grid-column: 1;
 }
 
 .ta-contact-eyebrow {
@@ -1606,10 +1623,8 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	border-radius: 0px;
 	padding: 32px;
 	max-width: 680px;
-	/* Baja la tarjeta para que el formulario empiece a la misma altura que la
-	   descripción de la columna izquierda ("Escríbenos con la mayor cantidad
-	   de detalles…"): eyebrow + título + divisora de la columna izquierda. */
-	margin-top: 137px;
+	grid-column: 2;
+	grid-row: 4 / -1;
 }
 
 .ta-contact-quote {
@@ -2069,9 +2084,12 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 @media (max-width: 860px) {
 	.ta-contact-inner {
 		grid-template-columns: 1fr;
+		grid-template-rows: none;
 	}
 	.ta-contact-form-card {
-		margin-top: 0;
+		grid-column: 1;
+		grid-row: auto;
+		margin-top: 40px;
 	}
 }
 

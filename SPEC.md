@@ -1,6 +1,6 @@
 # SPEC.md — Especificación funcional (formulario de cotización y páginas legales)
 
-> **Para una IA o desarrollador que modifique el sitio:** este archivo describe el comportamiento **aprobado por el cliente** al 2026-10-20 (tema 2.0.1, plugin 2.0.0). Cada regla fue pedida explícitamente. Si un cambio contradice algo de aquí, **pregunta antes**; no "mejores" una regla por tu cuenta.
+> **Para una IA o desarrollador que modifique el sitio:** este archivo describe el comportamiento **aprobado por el cliente** al 2026-10-20 (tema 2.0.2, plugin 2.0.0). Cada regla fue pedida explícitamente. Si un cambio contradice algo de aquí, **pregunta antes**; no "mejores" una regla por tu cuenta.
 >
 > Código involucrado:
 > - `wp-content/themes/todo-acrilico/page-contacto.php`: HTML del formulario, modales y todo el JavaScript.
@@ -38,6 +38,14 @@ Si el usuario presiona **"Enviar mensaje"** y ocurre cualquier error, el formula
 ### R4. El frontend y el servidor validan lo mismo
 
 Cada regla de la tabla de abajo existe **dos veces**: en JavaScript (`validateField()` en `page-contacto.php`) y en PHP (`ta_handle_contact_submit()`). **Si cambias una, cambia la otra.** El servidor es la barrera real, porque el JS se puede saltar.
+
+---
+
+## Diseño de la página
+
+- **Escritorio (más de 860px):** dos columnas. Arriba a la izquierda van el eyebrow "Contacto", el título y la línea. Debajo van la descripción y los datos de contacto. La **tarjeta del formulario empieza exactamente a la altura de la descripción** (borde superior alineado con su primera línea), sin importar en cuántas líneas se parta el título.
+- **Móvil (860px o menos):** una columna. La tarjeta va debajo de los datos de contacto.
+- El contenido del formulario (campos, textos y orden) no cambia con esta regla.
 
 ---
 
