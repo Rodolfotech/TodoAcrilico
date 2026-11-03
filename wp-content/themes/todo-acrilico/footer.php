@@ -74,6 +74,9 @@ $ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacid
 		<div class="ta-footer-legal">
 			<a href="<?php echo esc_url( $ta_footer_privacidad ? get_permalink( $ta_footer_privacidad ) : home_url( '/' ) ); ?>">Política de privacidad</a>
 			<a href="<?php echo esc_url( $ta_footer_terminos ? get_permalink( $ta_footer_terminos ) : home_url( '/' ) ); ?>">Términos y condiciones</a>
+			<?php if ( ta_get_clarity_id() ) : ?>
+				<button type="button" class="ta-footer-consent" data-ta-consent-open>Preferencias de cookies</button>
+			<?php endif; ?>
 			<span>Diseñado con foco en usabilidad</span>
 		</div>
 	</div>

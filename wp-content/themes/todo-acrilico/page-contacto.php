@@ -118,7 +118,8 @@ $ta_contact_error_messages = array(
 			</div>
 		</div>
 
-		<div class="ta-contact-form-card">
+		<?php // data-clarity-mask: Microsoft Clarity nunca graba el contenido de la tarjeta (datos personales). No altera lo que ve el usuario. ?>
+		<div class="ta-contact-form-card" data-clarity-mask="true">
 			<?php if ( 'error' === $ta_contact_status ) : ?>
 				<p class="ta-contact-alert ta-contact-alert--error"><?php echo esc_html( $ta_contact_error_messages[ $ta_contact_reason ] ?? 'Ocurrió un error. Intenta de nuevo.' ); ?></p>
 			<?php else : ?>

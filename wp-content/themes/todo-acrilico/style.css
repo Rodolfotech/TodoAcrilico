@@ -2,7 +2,7 @@
 Theme Name:   TodoAcrílico
 Description:  Tema a medida para Todo Acrílico — inicio, nuestras soluciones (categorías e imágenes de la galería), cuidados del acrílico y contacto.
 Author:       TodoAcrilicoTheme
-Version:      2.0.2
+Version:      2.1.0
 Requires at least: 6.0
 Requires PHP: 7.2.24
 License:      GPL-2.0-or-later
@@ -2170,6 +2170,14 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 	--jg-surface-2: #f1f1ee;
 }
 
+/* En móvil, los botones de la paginación bajan de línea en vez de hacer la
+   página más ancha que la pantalla (eso además empujaba fuera de vista el
+   banner de cookies, que es position: fixed). */
+.ta-catalog-pagination .jg-pagination-nav {
+	flex-wrap: wrap;
+	row-gap: 6px;
+}
+
 .ta-catalog-pagination .jg-pagination-nav {
 	margin-left: auto;
 }
@@ -2483,8 +2491,9 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-footer-legal {
 	display: flex;
+	flex-wrap: wrap; /* en móvil los enlaces bajan de línea en vez de desbordar la página */
 	align-items: center;
-	gap: 24px;
+	gap: 8px 24px;
 	font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 	font-size: 0.8rem;
 	color: var(--ta-muted);
@@ -2497,6 +2506,107 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 
 .ta-footer-legal a:hover {
 	color: var(--ta-ink);
+}
+
+/* "Preferencias de cookies" (solo si Clarity está configurado): reabre el banner. */
+.ta-footer-consent {
+	background: none;
+	border: 0;
+	padding: 0;
+	font: inherit;
+	color: var(--ta-muted);
+	cursor: pointer;
+}
+
+.ta-footer-consent:hover,
+.ta-footer-consent:focus-visible {
+	color: var(--ta-ink);
+}
+
+/* ---- Banner de consentimiento (Microsoft Clarity) ----
+   Fijo abajo, por debajo de los modales (.ta-modal usa z-index 9999). Mientras
+   está visible, ta-consent.js agrega al body un padding-bottom igual a su alto,
+   así nunca tapa contenido ni el botón "Enviar mensaje". */
+.ta-consent {
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 9000;
+	background: var(--ta-surface);
+	border-top: 1px solid var(--ta-border);
+	box-shadow: 0 -6px 24px rgba(26, 28, 28, 0.08);
+	font-family: Manrope, sans-serif;
+}
+
+.ta-consent[hidden] {
+	display: none;
+}
+
+.ta-consent-inner {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 16px 24px;
+	display: flex;
+	align-items: center;
+	gap: 24px;
+}
+
+.ta-consent-text {
+	flex: 1;
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.5;
+	color: var(--ta-muted);
+}
+
+.ta-consent-text strong {
+	color: var(--ta-ink);
+}
+
+.ta-consent-text a {
+	color: var(--ta-accent);
+	font-weight: 700;
+	white-space: nowrap;
+}
+
+.ta-consent-actions {
+	display: flex;
+	gap: 12px;
+	flex-shrink: 0;
+}
+
+/* Mismo tamaño y peso para Aceptar y Rechazar: ninguna opción se destaca para
+   forzar la aceptación (consentimiento libre). */
+.ta-consent-btn {
+	min-width: 120px;
+	justify-content: center;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+.ta-consent-btn--reject {
+	background: var(--ta-surface);
+	border-color: var(--ta-ink);
+	color: var(--ta-ink);
+}
+
+.ta-consent-btn--reject:hover {
+	background: var(--ta-bg);
+}
+
+@media (max-width: 640px) {
+	.ta-consent-inner {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 12px;
+		padding: 14px 16px;
+	}
+
+	.ta-consent-actions .ta-consent-btn {
+		flex: 1;
+		min-width: 0;
+	}
 }
 
 @media (max-width: 861px) {

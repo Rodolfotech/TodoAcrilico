@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '2.0.2' );
+define( 'TA_VERSION', '2.1.0' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -30,8 +30,67 @@ function ta_assets() {
 
 	wp_enqueue_script( 'ta-carousel', get_template_directory_uri() . '/assets/js/ta-carousel.js', array(), TA_VERSION, true );
 	wp_enqueue_script( 'ta-nav', get_template_directory_uri() . '/assets/js/ta-nav.js', array(), TA_VERSION, true );
+
+	// Microsoft Clarity: solo si hay un ID configurado. El script de Clarity NO se
+	// imprime aquí: ta-consent.js lo inyecta únicamente después de que el visitante
+	// acepta la analítica en el banner (Ley 21.719, consentimiento previo).
+	$clarity_id = ta_get_clarity_id();
+	if ( $clarity_id ) {
+		wp_enqueue_script( 'ta-consent', get_template_directory_uri() . '/assets/js/ta-consent.js', array(), TA_VERSION, true );
+		wp_add_inline_script(
+			'ta-consent',
+			'window.taConsentConfig = ' . wp_json_encode( array( 'clarityId' => $clarity_id ) ) . ';',
+			'before'
+		);
+	}
 }
 add_action( 'wp_enqueue_scripts', 'ta_assets' );
+
+define( 'TA_CLARITY_DEFAULT_ID', 'z81r92medx' ); // Proyecto Clarity de Todo Acrílico.
+
+/**
+ * ID del proyecto de Microsoft Clarity. Por defecto TA_CLARITY_DEFAULT_ID (así
+ * funciona apenas se sube el tema, sin configurar nada); se puede cambiar en
+ * Personalizar → Analítica. Guardarlo vacío desactiva Clarity: no hay banner,
+ * ni script, ni enlace "Preferencias de cookies".
+ */
+function ta_get_clarity_id() {
+	$id = (string) get_theme_mod( 'ta_clarity_id', TA_CLARITY_DEFAULT_ID );
+	$id = (string) apply_filters( 'ta_clarity_id', $id );
+	return preg_match( '/^[a-z0-9]{6,20}$/i', $id ) ? $id : '';
+}
+
+function ta_sanitize_clarity_id( $value ) {
+	$value = strtolower( trim( (string) $value ) );
+	return preg_match( '/^[a-z0-9]{6,20}$/', $value ) ? $value : '';
+}
+
+/**
+ * Banner de consentimiento de cookies de analítica. Se imprime oculto (hidden)
+ * y ta-consent.js lo muestra si el visitante aún no decidió.
+ */
+function ta_render_consent_banner() {
+	if ( ! ta_get_clarity_id() ) {
+		return;
+	}
+	$privacy_page = ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) );
+	$privacy_url  = $privacy_page ? get_permalink( $privacy_page ) : home_url( '/' );
+	?>
+	<div class="ta-consent" id="ta-consent" role="region" aria-label="Preferencias de cookies" hidden>
+		<div class="ta-consent-inner">
+			<p class="ta-consent-text">
+				Usamos cookies de analítica de <strong>Microsoft Clarity</strong> para entender cómo se usa el sitio y mejorarlo. Solo se activan si las aceptas. Los datos que escribes en el formulario de cotización nunca se graban.
+				<a href="<?php echo esc_url( $privacy_url ); ?>#seccion-8">Más información</a>
+			</p>
+			<div class="ta-consent-actions">
+				<button type="button" class="ta-button ta-consent-btn ta-consent-btn--reject" data-ta-consent="reject">Rechazar</button>
+				<button type="button" class="ta-button ta-button--dark ta-consent-btn" data-ta-consent="accept">Aceptar</button>
+			</div>
+		</div>
+	</div>
+	<?php
+}
+add_action( 'wp_footer', 'ta_render_consent_banner', 5 );
 
 /**
  * Título del documento para las páginas de Catálogo y Cotizar.
@@ -166,6 +225,33 @@ function ta_customize_register( $wp_customize ) {
 				'section'  => 'title_tagline',
 				'settings' => 'ta_hero_image_url',
 			)
+		)
+	);
+
+	$wp_customize->add_section(
+		'ta_analytics',
+		array(
+			'title'       => 'Analítica (Microsoft Clarity)',
+			'description' => 'ID del proyecto de Clarity (clarity.microsoft.com → Configuración → Instalación). Déjalo vacío para desactivar Clarity. Solo se carga si el visitante acepta las cookies de analítica en el banner.',
+			'priority'    => 160,
+		)
+	);
+
+	$wp_customize->add_setting(
+		'ta_clarity_id',
+		array(
+			'default'           => TA_CLARITY_DEFAULT_ID,
+			'sanitize_callback' => 'ta_sanitize_clarity_id',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		'ta_clarity_id',
+		array(
+			'label'   => 'ID del proyecto de Clarity',
+			'section' => 'ta_analytics',
+			'type'    => 'text',
 		)
 	);
 }
