@@ -1,7 +1,8 @@
 /*
- * Consentimiento de cookies de analítica + carga diferida de Microsoft Clarity.
- * Reglas (SPEC.md, "Microsoft Clarity"):
- * - Clarity se inyecta SOLO después de que el visitante presiona "Aceptar".
+ * Consentimiento de cookies de analítica + carga diferida de Microsoft Clarity y
+ * Google Tag Manager (GA4 se configura dentro del contenedor de GTM).
+ * Reglas (SPEC.md, "Analítica: Microsoft Clarity y Google Tag Manager"):
+ * - Clarity y GTM se inyectan SOLO después de que el visitante presiona "Aceptar".
  * - La decisión se guarda 12 meses en localStorage (ta_cookie_consent) y se puede
  *   cambiar desde "Preferencias de cookies" del footer.
  * - Todo va en try/catch: un fallo aquí (o de Clarity) no debe afectar al sitio
@@ -10,13 +11,15 @@
 (function () {
 	var config = window.taConsentConfig || {};
 	var clarityId = config.clarityId;
-	if (!clarityId) {
+	var gtmId = config.gtmId;
+	if (!clarityId && !gtmId) {
 		return;
 	}
 
 	var KEY = 'ta_cookie_consent';
 	var MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 	var clarityLoaded = false;
+	var gtmLoaded = false;
 
 	function readConsent() {
 		try {
@@ -35,7 +38,7 @@
 	}
 
 	function loadClarity() {
-		if (clarityLoaded) {
+		if (!clarityId || clarityLoaded) {
 			return;
 		}
 		clarityLoaded = true;
@@ -49,8 +52,45 @@
 		} catch (err) {}
 	}
 
-	function deleteClarityCookies() {
-		var names = ['_clck', '_clsk', 'CLID', 'ANONCHK', 'MR', 'MUID', 'SM'];
+	// Snippet oficial de GTM. Antes de cargarlo se fija el modo de consentimiento
+	// de Google: el visitante aceptó solo analítica, así que la publicidad queda
+	// denegada aunque el contenedor tenga etiquetas de anuncios.
+	function loadGtm() {
+		if (!gtmId || gtmLoaded) {
+			return;
+		}
+		gtmLoaded = true;
+		try {
+			window.dataLayer = window.dataLayer || [];
+			window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+			window.gtag('consent', 'default', {
+				analytics_storage: 'granted',
+				ad_storage: 'denied',
+				ad_user_data: 'denied',
+				ad_personalization: 'denied'
+			});
+			window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+			var t = document.createElement('script');
+			t.async = true;
+			t.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtmId);
+			var y = document.getElementsByTagName('script')[0];
+			y.parentNode.insertBefore(t, y);
+		} catch (err) {}
+	}
+
+	function loadAnalytics() {
+		loadClarity();
+		loadGtm();
+	}
+
+	function deleteAnalyticsCookies() {
+		var names = ['_clck', '_clsk', 'CLID', 'ANONCHK', 'MR', 'MUID', 'SM', '_ga', '_gid', '_gat'];
+		document.cookie.split(';').forEach(function (c) {
+			var name = c.split('=')[0].trim();
+			if (/^_ga_/.test(name) || /^_gat_/.test(name)) {
+				names.push(name);
+			}
+		});
 		var host = location.hostname;
 		var domains = ['', host, '.' + host, '.' + host.split('.').slice(-2).join('.')];
 		names.forEach(function (name) {
@@ -92,7 +132,7 @@
 
 		var consent = readConsent();
 		if (consent && consent.analytics) {
-			loadClarity();
+			loadAnalytics();
 		} else if (!consent) {
 			showBanner();
 		}
@@ -108,11 +148,11 @@
 				saveConsent(accepted);
 				hideBanner();
 				if (accepted) {
-					loadClarity();
-				} else if (clarityLoaded || (previous && previous.analytics)) {
+					loadAnalytics();
+				} else if (clarityLoaded || gtmLoaded || (previous && previous.analytics)) {
 					// Retiro del consentimiento: borrar cookies y recargar para
-					// que el script de Clarity ya cargado deje de ejecutarse.
-					deleteClarityCookies();
+					// que los scripts ya cargados (Clarity, GTM) dejen de ejecutarse.
+					deleteAnalyticsCookies();
 					location.reload();
 				}
 			});

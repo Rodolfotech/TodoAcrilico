@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '2.1.0' );
+define( 'TA_VERSION', '2.2.0' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -31,15 +31,20 @@ function ta_assets() {
 	wp_enqueue_script( 'ta-carousel', get_template_directory_uri() . '/assets/js/ta-carousel.js', array(), TA_VERSION, true );
 	wp_enqueue_script( 'ta-nav', get_template_directory_uri() . '/assets/js/ta-nav.js', array(), TA_VERSION, true );
 
-	// Microsoft Clarity: solo si hay un ID configurado. El script de Clarity NO se
-	// imprime aquí: ta-consent.js lo inyecta únicamente después de que el visitante
-	// acepta la analítica en el banner (Ley 21.719, consentimiento previo).
-	$clarity_id = ta_get_clarity_id();
-	if ( $clarity_id ) {
+	// Analítica (Microsoft Clarity y Google Tag Manager): solo si hay algún ID
+	// configurado. Sus scripts NO se imprimen aquí: ta-consent.js los inyecta
+	// únicamente después de que el visitante acepta la analítica en el banner
+	// (Ley 21.719, consentimiento previo).
+	if ( ta_analytics_enabled() ) {
 		wp_enqueue_script( 'ta-consent', get_template_directory_uri() . '/assets/js/ta-consent.js', array(), TA_VERSION, true );
 		wp_add_inline_script(
 			'ta-consent',
-			'window.taConsentConfig = ' . wp_json_encode( array( 'clarityId' => $clarity_id ) ) . ';',
+			'window.taConsentConfig = ' . wp_json_encode(
+				array(
+					'clarityId' => ta_get_clarity_id(),
+					'gtmId'     => ta_get_gtm_id(),
+				)
+			) . ';',
 			'before'
 		);
 	}
@@ -60,6 +65,29 @@ function ta_get_clarity_id() {
 	return preg_match( '/^[a-z0-9]{6,20}$/i', $id ) ? $id : '';
 }
 
+define( 'TA_GTM_DEFAULT_ID', 'GTM-K7FR5V9K' ); // Contenedor de Google Tag Manager de Todo Acrílico.
+
+/**
+ * ID del contenedor de Google Tag Manager (GA4 y demás etiquetas se configuran
+ * dentro del contenedor). Por defecto TA_GTM_DEFAULT_ID; se cambia en
+ * Personalizar → Analítica. Vacío = GTM desactivado.
+ */
+function ta_get_gtm_id() {
+	$id = (string) get_theme_mod( 'ta_gtm_id', TA_GTM_DEFAULT_ID );
+	$id = (string) apply_filters( 'ta_gtm_id', $id );
+	return preg_match( '/^GTM-[A-Z0-9]{4,12}$/', $id ) ? $id : '';
+}
+
+function ta_sanitize_gtm_id( $value ) {
+	$value = strtoupper( trim( (string) $value ) );
+	return preg_match( '/^GTM-[A-Z0-9]{4,12}$/', $value ) ? $value : '';
+}
+
+/** Hay banner de cookies si al menos una herramienta de analítica está configurada. */
+function ta_analytics_enabled() {
+	return (bool) ( ta_get_clarity_id() || ta_get_gtm_id() );
+}
+
 function ta_sanitize_clarity_id( $value ) {
 	$value = strtolower( trim( (string) $value ) );
 	return preg_match( '/^[a-z0-9]{6,20}$/', $value ) ? $value : '';
@@ -70,16 +98,22 @@ function ta_sanitize_clarity_id( $value ) {
  * y ta-consent.js lo muestra si el visitante aún no decidió.
  */
 function ta_render_consent_banner() {
-	if ( ! ta_get_clarity_id() ) {
+	if ( ! ta_analytics_enabled() ) {
 		return;
 	}
+	$tools = array_filter(
+		array(
+			ta_get_clarity_id() ? '<strong>Microsoft Clarity</strong>' : '',
+			ta_get_gtm_id() ? '<strong>Google Analytics</strong> (vía Google Tag Manager)' : '',
+		)
+	);
 	$privacy_page = ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) );
 	$privacy_url  = $privacy_page ? get_permalink( $privacy_page ) : home_url( '/' );
 	?>
 	<div class="ta-consent" id="ta-consent" role="region" aria-label="Preferencias de cookies" hidden>
 		<div class="ta-consent-inner">
 			<p class="ta-consent-text">
-				Usamos cookies de analítica de <strong>Microsoft Clarity</strong> para entender cómo se usa el sitio y mejorarlo. Solo se activan si las aceptas. Los datos que escribes en el formulario de cotización nunca se graban.
+				Usamos cookies de analítica de <?php echo wp_kses( implode( ' y ', $tools ), array( 'strong' => array() ) ); ?> para entender cómo se usa el sitio y mejorarlo. Solo se activan si las aceptas. Los datos que escribes en el formulario de cotización nunca se graban.
 				<a href="<?php echo esc_url( $privacy_url ); ?>#seccion-8">Más información</a>
 			</p>
 			<div class="ta-consent-actions">
@@ -231,8 +265,8 @@ function ta_customize_register( $wp_customize ) {
 	$wp_customize->add_section(
 		'ta_analytics',
 		array(
-			'title'       => 'Analítica (Microsoft Clarity)',
-			'description' => 'ID del proyecto de Clarity (clarity.microsoft.com → Configuración → Instalación). Déjalo vacío para desactivar Clarity. Solo se carga si el visitante acepta las cookies de analítica en el banner.',
+			'title'       => 'Analítica (Clarity y Google Tag Manager)',
+			'description' => 'IDs de Microsoft Clarity y de Google Tag Manager. Deja un campo vacío para desactivar esa herramienta. Ambas se cargan solo si el visitante acepta las cookies de analítica en el banner.',
 			'priority'    => 160,
 		)
 	);
@@ -252,6 +286,25 @@ function ta_customize_register( $wp_customize ) {
 			'label'   => 'ID del proyecto de Clarity',
 			'section' => 'ta_analytics',
 			'type'    => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'ta_gtm_id',
+		array(
+			'default'           => TA_GTM_DEFAULT_ID,
+			'sanitize_callback' => 'ta_sanitize_gtm_id',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		'ta_gtm_id',
+		array(
+			'label'       => 'ID del contenedor de Google Tag Manager',
+			'description' => 'Formato GTM-XXXXXXX (tagmanager.google.com).',
+			'section'     => 'ta_analytics',
+			'type'        => 'text',
 		)
 	);
 }
