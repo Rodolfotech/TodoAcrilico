@@ -1,11 +1,13 @@
 # JWT Gallery — theme.md (bitácora de análisis)
 
+> ⚠️ **DOCUMENTO HISTÓRICO (congelado en 1.4.8, 2026-09-29).** El plugin hoy está en **2.0.0**. **No uses este archivo como referencia para modificar el código.** Lo vigente está en `Docs_Plugin.md` (raíz del proyecto), `Docs_Seguridad.md` y las reglas de `CLAUDE.md`. Este archivo no se incluye en el ZIP del plugin.
+
 > Documento de referencia del plugin **jwt-gallery** (nombre visible: "TodoAcrílico-Panel").
 > Convención: este archivo describe **cómo está hoy** el código y registra las
 > mejoras propuestas **sin modificar el código existente**. Si una mejora se
 > implementa, se mueve a "Cambios aplicados" y se actualiza este documento.
 >
-> Última revisión: 2026-08-25 · Versión del plugin: **1.3.3**
+> Última revisión: 2026-09-29 · Versión del plugin: **1.4.8**
 
 ---
 
@@ -18,13 +20,16 @@
   blanco, sin header/footer del tema.
 - REST namespace `jwt-gallery/v1` con login + CRUD de imágenes y categorías.
 - **Estado verificado:** los 3 endpoints de imagen (POST crear, PUT editar,
+  DELETE eliminar) y los 3 endpoints de categoría (POST crear, PUT editar,
   DELETE eliminar) funcionan con un token válido. El código del backend estaba
-  correcto desde el inicio; el fallo anterior era solo de infraestructura
-  (header `Authorization` no llegaba al PHP por el `.htaccess`).
+  correcto desde el inicio; el fallo anterior de imágenes era solo de
+  infraestructura (header `Authorization` no llegaba al PHP por el `.htaccess`),
+  y el de categorías era el check de la capability `manage_categories` que se
+  quitó (§3.4).
 
 ---
 
-## 1. Estructura de archivos (estado real, v1.3.3)
+## 1. Estructura de archivos (estado real, v1.4.8)
 
 ```
 jwt-gallery/
@@ -50,7 +55,7 @@ jwt-gallery/
 ## 2. Detalle por archivo
 
 ### 2.1 `jwt-gallery.php` (raíz)
-- Cabecera del plugin, define `JG_VERSION` (1.3.3), `JG_PATH`, `JG_URL`.
+- Cabecera del plugin, define `JG_VERSION` (1.4.8), `JG_PATH`, `JG_URL`.
 - Carga las 5 clases de `includes/` y las inicializa.
 - `register_activation_hook`: genera el secret JWT, registra CPT/taxonomía,
   siembra categorías por defecto y hace `flush_rewrite_rules()`.
@@ -84,6 +89,10 @@ Puntos clave de autorización:
 - `owned_post_or_error()`: devuelve 404 si el post no existe o no es del CPT,
   y **403 si el usuario autenticado no es el autor**. Lo usan PUT y DELETE de
   imágenes — un usuario solo puede editar/eliminar las suyas.
+- `require_category_manager()`: valida que el usuario esté autenticado vía
+  JWT (`$user instanceof WP_User`). No exige la capability `manage_categories`
+  de WordPress — cualquier usuario con sesión iniciada puede crear, editar y
+  eliminar categorías (ver §3.4).
 - `validate_image_url()` / `validate_image_urls()`: validan formato, esquema
   y extensión (jpg, jpeg, png, gif, webp, avif). No descargan el contenido.
 - `MAX_IMAGES_PER_POST = 10` (mismo objeto en distintos ángulos).
@@ -161,6 +170,22 @@ Puntos clave de autorización:
 - `jwt-gallery.php` `JG_VERSION` → 1.3.3, para forzar la recarga del JS en
   el navegador (cache-busting vía `?ver=1.3.3` en el enqueue).
 
+### 3.4 Fix de permisos de gestión de categorías (2026-08-25)
+- **Síntoma:** crear, editar o eliminar una categoría desde `/galeria-panel/`
+  devolvía 403 "No tienes permisos para gestionar categorías.", incluso con
+  la cuenta de Administrador.
+- **Causa raíz:** `require_category_manager()` exigía la capability de
+  WordPress `manage_categories` sobre el `$user` resuelto desde el token
+  JWT. La autenticación del panel funciona por cookie `jg_session` (no por
+  header `Authorization`), y la verificación de la capability fallaba para
+  el usuario así autenticado.
+- **Fix:** `require_category_manager()` ahora solo valida que el usuario
+  esté autenticado vía JWT (`$user instanceof WP_User`), sin exigir
+  `manage_categories`. Se alinea con el modelo de las imágenes, que solo
+  exige autenticación.
+- **Resultado:** los 3 endpoints de categoría (POST crear, PUT editar,
+  DELETE eliminar) quedaron verificados desde el panel.
+
 ---
 
 ## 4. Verificación de los endpoints de imagen (2026-08-25)
@@ -187,8 +212,10 @@ de prueba temporal:
 - Los productos publicados **no necesitan subirse de nuevo**. Viven en la
   base de datos (`wp_posts` tipo `jg_gallery_image`) con las URLs en el meta
   `_jg_image_url` y las categorías como términos de la taxonomía.
-- Los cambios recientes tocaron solo `.htaccess`, `jwt-gallery.js` y el
-  número de versión — nada de la base de datos.
+- Desde 1.4.0 esas URLs apuntan a **archivos locales** en
+  `wp-content/uploads/jg-gallery/` (migración de §8.1): ya no hay hostings
+  externos. El endpoint de subida acepta archivos del dispositivo
+  (`$_FILES`) y guarda en ese directorio.
 - El endpoint `GET /images` lista todo lo `publish`; si una publicación está
   en `draft` o `trash` no aparece (filtro `post_status => 'publish'` en
   `list_images()`, línea 347 de class-jg-rest.php).
@@ -200,17 +227,27 @@ de prueba temporal:
 > Anotadas para revisión futura. Implementar solo con aprobación explícita.
 
 ### 6.1 Documentación
-- `Docs_Plugin.md` (raíz del proyecto) está en 1.2.1; el código real es
-  1.3.3. Convendría sincronizarlo o marcar este `theme.md` como fuente de
-  verdad.
+- `Docs_Plugin.md` (raíz del proyecto) ya está sincronizado con el código
+  real (**1.4.7**, 2026-09-29). Este `theme.md` se mantiene como bitácora
+  de análisis y complemento del `Docs_Plugin.md`.
+- El tema `todo-acrilico` documenta su lado en `Docs_theme.md`
+  (`TA_VERSION` 1.18.61): las pestañas del catálogo se construyen desde la
+  taxonomía `jg_gallery_category` (hide_empty=false) y las piezas son
+  archivos locales.
 
 ### 6.2 Seguridad
 - Rotar `AUTH_KEY` / `SECURE_AUTH_KEY` de `wp-config.php` (anotado también en
   Docs_Plugin.md §12).
 - Cualquier usuario autenticado puede crear/renombrar/eliminar categorías y
-  subir imágenes (no hay check de rol/capability). Hoy es aceptable porque
+  subir imágenes (no hay check de rol/capability). Antes el backend exigía
+  `manage_categories` para categorías, pero se quitó (§3.4) porque bloqueaba
+  incluso al Administrador autenticado por cookie. Hoy es aceptable porque
   los usuarios del panel son controlados, pero si crece el número de
   usuarios conviene restringir a un rol.
+- `authHeaders()` en el JS recibe `session` pero no lo usa para construir el
+  header `Authorization: Bearer ...` — la autenticación funciona solo por la
+  cookie `jg_session`. Si se quiere enviar el token en el header (más
+  robusto), habría que arreglar esa función.
 - TTL del token fijo en 24 h (`JG_JWT::DEFAULT_TTL`). Se podría hacer
   configurable o agregar refresh.
 
@@ -225,12 +262,14 @@ de prueba temporal:
 ### 6.4 Backend
 - `update_image()` valida el título como obligatorio pero permite descripción
   vacía. Consistente con el form.
-- No hay límite de tamaño en la descripción desde el backend (el form JS
-  tiene `maxlength="600"`); se podría replicar con `sanitize_textarea_field`
-  + validación de longitud en el endpoint.
+- Los límites de longitud **ya están implementados** desde 1.4.3–1.4.5:
+  título 43 (`jg_title_too_long`), descripción 120
+  (`jg_description_too_long`) y uso 43 (`jg_usage_too_long`), validados en
+  el backend además del `maxlength` del formulario.
 - `delete_image()` usa `wp_delete_post($post->ID, true)` (borrado definitivo,
-  sin papelera). Hoy es lo esperado para un panel admin; si se quiere
-  deshacer, cambiar el segundo argumento a `false` enviaría a papelera.
+  sin papelera) y, desde 1.4.1, también borra los archivos locales
+  asociados (`delete_local_images()`); `delete_category()` borra además
+  todas las piezas de la categoría (posts + archivos).
 
 ---
 
@@ -242,3 +281,124 @@ de prueba temporal:
 - Antes de editar código, releer el archivo correspondiente de la sección 2
   para respetar la convención existente (vanilla JS, sin framework, helpers
   estáticos, nombres `jg_*`, etc.).
+
+---
+
+## 8. Cambios aplicados v1.4.0 → 1.4.8 (2026-09-20 a 2026-09-29)
+
+> Detalle completo, con verificación e2e, en `Docs_Plugin.md` §12.30–§12.36.
+
+### 8.1 Migración a imágenes locales (2026-09-20)
+- 51/51 piezas del catálogo pasaron de URLs externas a archivos locales en
+  `wp-content/uploads/jg-gallery/`; `_jg_image_url` reescrito a ruta local.
+
+### 8.2 Subida y edición por archivos reales — v1.4.0
+- `buildImagePicker()` reemplaza al repetidor de URLs en el panel.
+- Backend: `prepare_file_params()`, `save_uploaded_image()`,
+  `jg_uploads_dir()`, `delete_local_images()`, `collect_image_sources()`;
+  `MAX_UPLOAD_BYTES` (8 MB) y extensiones permitidas.
+- Edición por **POST + `X-HTTP-Method-Override: PUT`** (multipart no
+  puebla `$_FILES` en PUT).
+
+### 8.3 Eliminar categoría elimina sus piezas — v1.4.1
+- `delete_category()` borra posts + archivos de la categoría y devuelve
+  `pieces_deleted`; el modal del panel avisa y refresca la grilla.
+
+### 8.4 Campo "Uso" y límites — v1.4.2 a 1.4.5
+- Meta `_jg_usage` (máx. 43) en upload/update/format y en la tarjeta/cotización.
+- Límites backend+frontend: título 43, descripción 120, uso 43.
+
+### 8.5 Tipografía Manrope — v1.4.6 y 1.4.7
+- `body.jg-blank-page`, modal y todas las secciones del panel/login con
+  `font-family: "Manrope"`; títulos de sección 24px/500, textos 0.9375rem,
+  alineados con el componente "Cuatro maneras de trabajar el acrílico" del
+  tema (`TA_VERSION` 1.18.61).
+
+### 8.6 Compatibilidad con PHP 7.2.24 y sin `mbstring` — v1.4.8
+- El servidor de producción corre WordPress 6.9.9 (mínimo oficial PHP 7.2.24) y no
+  se puede actualizar; `Requires PHP` bajó de 7.4 a 7.2.24.
+- Nuevo helper `JG_REST::char_length()`: los 6 `mb_strlen()` (límites de título 43,
+  descripción 120, uso 43 y medidas 20) ya no dependan de la extensión `mbstring`;
+  sin ella caían a `preg_match_all( '/./us' )`. Antes era un fatal al subir/editar.
+- El "error crítico" de la portada venía del tema (`private ?int` en `functions.php`,
+  sintaxis de PHP 7.4), no del plugin — ver `Docs_theme.md` §4.99.
+
+### 8.7 Estado verificado (v1.4.8)
+- Login, subida por archivos, edición, borrado, gestión de categorías (con
+  eliminación de piezas) y límites verificados e2e. Pendiente solo la
+  reautorización del SMTP del sitio (`Docs_theme.md` §4.40/§6.2).
+
+### 8.8 Autor del plugin y límite de intentos — v1.4.9 y 1.5.0
+- **1.4.9:** `Author` del docblock: `dev@reparadores.cl` → `TodoAcrilicoPanel`.
+- **1.5.0:** el límite de intentos del login se contaba por IP sola, y detrás
+  del proxy del hosting todas las peticiones comparten `REMOTE_ADDR`, así que
+  5 intentos fallidos de cualquiera bloqueaban el login de todo el sitio
+  (HTTP 429 incluso con la contraseña correcta). Ahora se cuentan dos claves
+  separadas: **por cuenta** (`md5` del correo normalizado, 5 intentos / 5 min) y
+  **por IP real** (25 / 5 min). Los dos contadores se borran al entrar bien.
+- `client_ip()` ya no confía a ciegas en `X-Forwarded-For` (se podía falsificar
+  para rotar el límite). Solo la usa si `REMOTE_ADDR` está en la lista de proxies
+  de confianza — opción `jg_trusted_proxy_ips` o filtro `jg_trusted_proxy_ips` —
+  y en ese caso toma la primera entrada no confiable de la cadena, que es el
+  cliente real.
+- El límite se comprueba **después** de validar los campos: una petición vacía
+  devuelve 400 y no consume intento.
+- 19 pruebas del flujo real de `JG_REST::login()` bajo PHP 7.3, todas en verde.
+  Detalle en `Docs_Plugin.md` §12.37.
+
+### 8.9 El panel exige permiso para editar contenido — v1.6.0
+- Antes, el login solo comprobaba que la contraseña fuera correcta: **cualquier
+  usuario de WordPress** (suscriptor, comentarista) que se autenticara podía
+  subir, editar y borrar imágenes del catálogo. El token no llevaba permisos y
+  ninguna ruta usaba `current_user_can`.
+- Ahora `authenticated_user()` valida `edit_posts` por defecto (admin y editor
+  entran; autor, colaborador y suscriptor no) y responde `jg_forbidden` (403).
+  Todas las rutas de escritura pasan por ahí, así que la puerta es una sola.
+- `login()` hace la misma comprobación y devuelve 403 sin emitir token ni
+  consumir un intento fallido: la contraseña era correcta, faltaba el rol.
+- Configurable con el filtro `jg_required_capabilities` (acepta string o array;
+  se exigen **todas** las capacidades). Si el filtro devuelve una lista vacía se
+  vuelve a `edit_posts`, para que "sin capacidades" nunca abra el panel.
+- El frontend no necesitó cambios: el JS ya pintaba `message`, así que el 403
+  se lee "Tu cuenta no tiene permiso para usar este panel".
+- Banco de pruebas ampliado a 30 aserciones (`tests-login-rate.php`), las 10
+  últimas del control de permisos. Detalle en `Docs_Plugin.md` §12.38.
+
+### 8.10 Pantalla "Credenciales del panel" — v1.7.0
+- El login busca la cuenta en `wp_users`/`wp_usermeta` de **la misma base de
+  datos de la instalación**, así que en producción hay que crearla ahí: local y
+  producción no comparten usuarios.
+- Los tres fallos típicos en un hosting recién instalado son: la cuenta no
+  existe, tiene el **correo electrónico vacío**, o existe con un rol que no
+  alcanza. Los tres se ven de un vistazo en la pantalla.
+- Nueva pantalla **Ajustes → Credenciales del panel** (`class-jg-settings.php`),
+  solo para `manage_options`, con `check_admin_referer()` y el handler repetiendo
+  la comprobación de permiso. Escribe correo + contraseña: si la cuenta existe
+  le cambia el clave, si no, la crea con rol `administrator` (filtrable con
+  `jg_panel_role`).
+- Tabla con todas las cuentas, sus roles y si pueden usar el panel: ese es el
+  diagnóstico directo del 401/403.
+- Ninguna contraseña en el código; se escribe en el navegador y se guarda
+  cifrada. `submit_button()` tiene fallback para no dar error fatal si la
+  pantalla se renderiza fuera del admin.
+- 16 aserciones con WordPress 7.1 real (`tests-settings-credentials.php`), todas
+  en verde, incluida la de que un suscriptor no puede crear ni cambiar
+  credenciales. Detalle en `Docs_Plugin.md` §12.39.
+
+### 8.11 La contraseña correcta ya no espera — v1.8.0
+- Probando el login real en Chrome headless, con la contraseña **correcta** la
+  respuesta fue 429: el bloqueo por intentos se evaluaba antes de comprobar la
+  contraseña. Cinco errores de tecleo costaban cinco minutos de espera, y la
+  espera se alargaba con cada intento nuevo.
+- Ahora el orden es: validar campos → verificar contraseña → y **solo si es
+  incorrecta** mirar el límite de fallos (5 por cuenta, 25 por IP). Con la
+  contraseña correcta se entra siempre, sin esperas.
+- El contador se consulta antes de sumarse, para que un atacante no pueda
+  renovar el bloqueo indefinidamente.
+- El cortafuegos antiabuso por número de peticiones queda **desactivado por
+  defecto**: detrás del proxy del hosting todas las peticiones comparten IP, y
+  un tope por IP volvería a bloquear a todo el mundo (el bug de la 1.5.0). Se
+  puede activar con `jg_max_requests_per_ip`.
+- Verificado en navegador real: cuenta bloqueada + contraseña correcta → 200,
+  redirección a `/galeria-panel/`, sin mensajes y con el catálogo cargado.
+- Banco ampliado a 38 aserciones. Detalle en `Docs_Plugin.md` §12.40.

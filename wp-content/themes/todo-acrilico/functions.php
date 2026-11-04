@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '1.14.20' );
+define( 'TA_VERSION', '2.3.3' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -20,10 +20,245 @@ add_action( 'after_setup_theme', 'ta_setup' );
 
 function ta_assets() {
 	wp_enqueue_style( 'ta-style', get_stylesheet_uri(), array(), TA_VERSION );
+
+	// El catálogo reutiliza literalmente los estilos del paginador del panel.
+	$catalog_page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones' ) );
+
+	if ( $catalog_page && is_page( $catalog_page->ID ) && wp_style_is( 'jg-gallery', 'registered' ) ) {
+		wp_enqueue_style( 'jg-gallery' );
+	}
+
 	wp_enqueue_script( 'ta-carousel', get_template_directory_uri() . '/assets/js/ta-carousel.js', array(), TA_VERSION, true );
 	wp_enqueue_script( 'ta-nav', get_template_directory_uri() . '/assets/js/ta-nav.js', array(), TA_VERSION, true );
+
+	// Analítica (Microsoft Clarity y Google Tag Manager): solo si hay algún ID
+	// configurado. Sus scripts NO se imprimen aquí: ta-consent.js los inyecta
+	// únicamente después de que el visitante acepta la analítica en el banner
+	// (Ley 21.719, consentimiento previo). Nunca en las páginas privadas del
+	// panel (ta_is_private_page).
+	if ( ta_should_load_analytics() ) {
+		wp_enqueue_script( 'ta-consent', get_template_directory_uri() . '/assets/js/ta-consent.js', array(), TA_VERSION, true );
+		wp_add_inline_script(
+			'ta-consent',
+			'window.taConsentConfig = ' . wp_json_encode(
+				array(
+					'clarityId' => ta_get_clarity_id(),
+					'gtmId'     => ta_get_gtm_id(),
+					'ga4Id'     => ta_get_ga4_id(),
+				)
+			) . ';',
+			'before'
+		);
+	}
 }
 add_action( 'wp_enqueue_scripts', 'ta_assets' );
+
+define( 'TA_CLARITY_DEFAULT_ID', 'z81r92medx' ); // Proyecto Clarity de Todo Acrílico.
+
+/**
+ * ID del proyecto de Microsoft Clarity. Por defecto TA_CLARITY_DEFAULT_ID (así
+ * funciona apenas se sube el tema, sin configurar nada); se puede cambiar en
+ * Personalizar → Analítica. Guardarlo vacío desactiva Clarity: no hay banner,
+ * ni script, ni enlace "Preferencias de cookies".
+ */
+function ta_get_clarity_id() {
+	$id = (string) get_theme_mod( 'ta_clarity_id', TA_CLARITY_DEFAULT_ID );
+	$id = (string) apply_filters( 'ta_clarity_id', $id );
+	return preg_match( '/^[a-z0-9]{6,20}$/i', $id ) ? $id : '';
+}
+
+define( 'TA_GTM_DEFAULT_ID', 'GTM-K7FR5V9K' ); // Contenedor de Google Tag Manager de Todo Acrílico.
+
+/**
+ * ID del contenedor de Google Tag Manager (GA4 y demás etiquetas se configuran
+ * dentro del contenedor). Por defecto TA_GTM_DEFAULT_ID; se cambia en
+ * Personalizar → Analítica. Vacío = GTM desactivado.
+ */
+function ta_get_gtm_id() {
+	$id = (string) get_theme_mod( 'ta_gtm_id', TA_GTM_DEFAULT_ID );
+	$id = (string) apply_filters( 'ta_gtm_id', $id );
+	return preg_match( '/^GTM-[A-Z0-9]{4,12}$/', $id ) ? $id : '';
+}
+
+function ta_sanitize_gtm_id( $value ) {
+	$value = strtoupper( trim( (string) $value ) );
+	return preg_match( '/^GTM-[A-Z0-9]{4,12}$/', $value ) ? $value : '';
+}
+
+define( 'TA_GA4_DEFAULT_ID', 'G-2KL8SPE9DY' ); // ID de medición de Google Analytics 4 de Todo Acrílico.
+
+/**
+ * ID de medición de GA4, cargado directamente con gtag.js (no a través de GTM).
+ * Por defecto TA_GA4_DEFAULT_ID; se cambia en Personalizar → Analítica. Vacío =
+ * GA4 desactivado. Importante: no configurar además GA4 dentro del contenedor de
+ * GTM, o cada visita se contaría dos veces.
+ */
+function ta_get_ga4_id() {
+	$id = (string) get_theme_mod( 'ta_ga4_id', TA_GA4_DEFAULT_ID );
+	$id = (string) apply_filters( 'ta_ga4_id', $id );
+	return preg_match( '/^G-[A-Z0-9]{6,12}$/', $id ) ? $id : '';
+}
+
+function ta_sanitize_ga4_id( $value ) {
+	$value = strtoupper( trim( (string) $value ) );
+	return preg_match( '/^G-[A-Z0-9]{6,12}$/', $value ) ? $value : '';
+}
+
+/** Hay banner de cookies si al menos una herramienta de analítica está configurada. */
+function ta_analytics_enabled() {
+	return (bool) ( ta_get_clarity_id() || ta_get_gtm_id() || ta_get_ga4_id() );
+}
+
+/**
+ * ¿Es una página privada de la empresa? Login y panel del plugin JWT Gallery
+ * (shortcodes [jwt_gallery] y [jwt_gallery_panel]). Se detecta por el
+ * shortcode y no por el slug (CLAUDE.md, regla 5): sirve igual en local y en
+ * producción. En estas páginas NO se carga la analítica ni se muestra el
+ * banner de cookies: son de uso interno para mantener el sitio (pedido del
+ * cliente) y no se debe grabar al personal. Filtro: `ta_is_private_page`.
+ */
+function ta_is_private_page() {
+	$private = false;
+	if ( is_singular() ) {
+		$content = (string) get_post_field( 'post_content', get_queried_object_id() );
+		$private = has_shortcode( $content, 'jwt_gallery' ) || has_shortcode( $content, 'jwt_gallery_panel' );
+	}
+	return (bool) apply_filters( 'ta_is_private_page', $private );
+}
+
+/**
+ * Analítica y banner de cookies: solo si hay alguna herramienta configurada y
+ * la página no es privada.
+ */
+function ta_should_load_analytics() {
+	return ta_analytics_enabled() && ! ta_is_private_page();
+}
+
+function ta_sanitize_clarity_id( $value ) {
+	$value = strtolower( trim( (string) $value ) );
+	return preg_match( '/^[a-z0-9]{6,20}$/', $value ) ? $value : '';
+}
+
+/**
+ * Banner de consentimiento de cookies de analítica. Se imprime oculto (hidden)
+ * y ta-consent.js lo muestra si el visitante aún no decidió.
+ */
+function ta_render_consent_banner() {
+	if ( ! ta_should_load_analytics() ) {
+		return;
+	}
+	$tools = array_filter(
+		array(
+			ta_get_clarity_id() ? '<strong>Microsoft Clarity</strong>' : '',
+			( ta_get_ga4_id() || ta_get_gtm_id() ) ? '<strong>Google Analytics</strong>' : '',
+		)
+	);
+	// "Más información" lleva a la Política de cookies; si no existe, a la
+	// sección 8 de la Política de Privacidad.
+	$cookies_page = ta_get_cookies_page();
+	$privacy_page = ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) );
+	if ( $cookies_page ) {
+		$info_url = get_permalink( $cookies_page );
+	} else {
+		$info_url = ( $privacy_page ? get_permalink( $privacy_page ) : home_url( '/' ) ) . '#seccion-9';
+	}
+	?>
+	<div class="ta-consent" id="ta-consent" role="region" aria-label="Preferencias de cookies" hidden>
+		<div class="ta-consent-inner">
+			<p class="ta-consent-text">
+				Usamos cookies de analítica de <?php echo wp_kses( implode( ' y ', $tools ), array( 'strong' => array() ) ); ?> para entender cómo se usa el sitio y mejorarlo. Solo se activan si las aceptas. Los datos que escribes en el formulario de cotización nunca se graban.
+				<a href="<?php echo esc_url( $info_url ); ?>">Más información</a>
+			</p>
+			<div class="ta-consent-actions">
+				<button type="button" class="ta-button ta-consent-btn ta-consent-btn--reject" data-ta-consent="reject">Rechazar</button>
+				<button type="button" class="ta-button ta-button--dark ta-consent-btn" data-ta-consent="accept">Aceptar</button>
+			</div>
+		</div>
+	</div>
+	<?php
+}
+add_action( 'wp_footer', 'ta_render_consent_banner', 5 );
+
+/**
+ * Título del documento para las páginas de Catálogo y Cotizar.
+ *
+ * El tema usa add_theme_support( 'title-tag' ), así que WordPress imprime el
+ * <title> desde wp_head() (§header.php). Para cambiarlo no se edita el header
+ * sino este filtro: en las páginas con slug "catalogo" y "cotizar" se muestra
+ * exactamente "TODO acrílico"; en cualquier otra página se deja el título normal.
+ */
+function ta_document_title( $title ) {
+	$catalogo_page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+	$cotizar_page  = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
+
+	$custom_pages = array_filter( array( $catalogo_page, $cotizar_page ) );
+
+	foreach ( $custom_pages as $page ) {
+		if ( is_page( $page->ID ) ) {
+			return 'TODO acrílico';
+		}
+	}
+
+	return $title;
+}
+add_filter( 'pre_get_document_title', 'ta_document_title' );
+
+/**
+ * Metadescripción para SEO via el filtro correcto de WordPress.
+ */
+function ta_meta_description() {
+	if ( is_admin() ) {
+		return;
+	}
+
+	$description = 'TODO Acrílico - Soluciones en acrílico de alta calidad. Diseño, fabricación e instalación.';
+
+	if ( is_singular() ) {
+		$post = get_queried_object();
+		if ( $post && ! empty( $post->post_excerpt ) ) {
+			$description = substr( wp_strip_all_tags( $post->post_excerpt ), 0, 160 );
+		} elseif ( $post && ! empty( $post->post_content ) ) {
+			$description = substr( wp_strip_all_tags( $post->post_content ), 0, 160 );
+		}
+	} elseif ( is_home() || is_front_page() ) {
+		$blogdesc = get_bloginfo( 'description' );
+		if ( ! empty( $blogdesc ) ) {
+			$description = $blogdesc;
+		}
+	}
+
+	printf( '<meta name="description" content="%s">' . "\n", esc_attr( $description ) );
+}
+add_action( 'wp_head', 'ta_meta_description', 1 );
+
+/**
+ * Lazy loading nativo para imágenes (mejora rendimiento).
+ * Agrega loading="lazy" a todas las imágenes del contenido.
+ */
+function ta_lazy_load_images( $html, $id, $attachment_id, $size, $icon ) {
+	if ( strpos( $html, 'loading=' ) === false ) {
+		$html = str_replace( '<img ', '<img loading="lazy" ', $html );
+	}
+	return $html;
+}
+add_filter( 'wp_get_attachment_image', 'ta_lazy_load_images', 10, 5 );
+
+/**
+ * Cache headers para mejor rendimiento.
+ * Configura tiempos de expiración para assets estáticos.
+ */
+function ta_cache_headers() {
+	if ( ! is_admin() ) {
+		if ( preg_match( '/\.(js|css|png|jpg|jpeg|gif|webp|svg|woff|woff2|ttf|eot)(\?.*)?$/i', $_SERVER['REQUEST_URI'] ) ) {
+			header( 'Cache-Control: public, max-age=31536000' );
+			header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 31536000 ) . ' GMT' );
+		} elseif ( ! is_user_logged_in() ) {
+			header( 'Cache-Control: public, max-age=3600' );
+			header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 3600 ) . ' GMT' );
+		}
+	}
+}
+add_action( 'send_headers', 'ta_cache_headers' );
 
 /**
  * Botón reutilizable (CTA). Variantes: 'accent' (teal, la de siempre), 'dark' (relleno oscuro)
@@ -79,6 +314,71 @@ function ta_customize_register( $wp_customize ) {
 			)
 		)
 	);
+
+	$wp_customize->add_section(
+		'ta_analytics',
+		array(
+			'title'       => 'Analítica (Clarity, Google Analytics y Tag Manager)',
+			'description' => 'IDs de Microsoft Clarity, Google Analytics 4 y Google Tag Manager. Deja un campo vacío para desactivar esa herramienta. Todas se cargan solo si el visitante acepta las cookies de analítica en el banner. No configures GA4 también dentro de GTM: contaría cada visita dos veces.',
+			'priority'    => 160,
+		)
+	);
+
+	$wp_customize->add_setting(
+		'ta_clarity_id',
+		array(
+			'default'           => TA_CLARITY_DEFAULT_ID,
+			'sanitize_callback' => 'ta_sanitize_clarity_id',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		'ta_clarity_id',
+		array(
+			'label'   => 'ID del proyecto de Clarity',
+			'section' => 'ta_analytics',
+			'type'    => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'ta_gtm_id',
+		array(
+			'default'           => TA_GTM_DEFAULT_ID,
+			'sanitize_callback' => 'ta_sanitize_gtm_id',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		'ta_gtm_id',
+		array(
+			'label'       => 'ID del contenedor de Google Tag Manager',
+			'description' => 'Formato GTM-XXXXXXX (tagmanager.google.com).',
+			'section'     => 'ta_analytics',
+			'type'        => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'ta_ga4_id',
+		array(
+			'default'           => TA_GA4_DEFAULT_ID,
+			'sanitize_callback' => 'ta_sanitize_ga4_id',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		'ta_ga4_id',
+		array(
+			'label'       => 'ID de medición de Google Analytics 4',
+			'description' => 'Formato G-XXXXXXXXXX (Analytics → Administrar → Flujos de datos → Web).',
+			'section'     => 'ta_analytics',
+			'type'        => 'text',
+		)
+	);
 }
 add_action( 'customize_register', 'ta_customize_register' );
 
@@ -87,14 +387,26 @@ function ta_get_hero_image_url() {
     // y bajo la que WP realmente guarda el valor (ver theme_mods_todo-acrilico en
     // wp_options). Antes leía 'ta_hero_image' (sin "_url"), una key que nunca se
     // escribe, así que cambiar la imagen desde Personalizar nunca tenía efecto.
-    return get_theme_mod( 'ta_hero_image_url', 'https://i.postimg.cc/TYX3CTrK/home.webp' );
+    $stored = get_theme_mod( 'ta_hero_image_url', '' );
+
+    // Imagen de portada local (pedido del usuario: nada de enlaces externos).
+    // El valor por defecto antiguo apuntaba a un hosting externo (i.postimg.cc);
+    // si está guardado ese mismo, se ignora y se usa la local.
+    $local = get_template_directory_uri() . '/assets/img/home/home.webp';
+
+    if ( '' === $stored || 'https://i.postimg.cc/TYX3CTrK/home.webp' === $stored ) {
+        return $local;
+    }
+
+    return $stored;
 }
 /**
  * Ícono SVG en línea (trazo, sin relleno) para las tarjetas de ta_render_feature_grid(),
  * el footer y la página de Contacto/Cuidados. Nombres disponibles: 'grid', 'eye', 'shield',
  * 'info', 'pane', 'pin', 'mail', 'clock', 'paperclip', 'thermometer', 'prohibited', 'spray',
- * 'circular'. Cualquier otro nombre devuelve un ícono genérico (círculo) para que nunca se
- * quede algo sin ícono. `$size` (default 28) controla el `width`/`height` del SVG devuelto.
+ * 'circular', 'instagram', 'linkedin'. Cualquier otro nombre devuelve un ícono genérico
+ * (círculo) para que nunca se quede algo sin ícono. `$size` (default 28) controla el
+ * `width`/`height` del SVG devuelto.
  */
 function ta_icon( $name, $size = 28 ) {
 	$icons = array(
@@ -111,6 +423,8 @@ function ta_icon( $name, $size = 28 ) {
 		'prohibited' => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.5" y1="5.5" x2="18.5" y2="18.5"/></svg>',
 		'spray'      => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="9" width="7" height="12" rx="1"/><path d="M10 9V6a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1v3"/><path d="M15 5h3"/><path d="M16 8h3"/><path d="M17 3h2"/></svg>',
 		'circular'   => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 1 3.5 7.1"/><path d="M3 17v-5h5"/></svg>',
+		'instagram'  => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37Z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>',
+		'linkedin'   => '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>',
 	);
 
 	$svg = isset( $icons[ $name ] ) ? $icons[ $name ] : '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg>';
@@ -129,10 +443,12 @@ function ta_icon( $name, $size = 28 ) {
  * informativas, ej. la guía de cuidados). $description (opcional) agrega un párrafo entre
  * el título de la sección y la grilla. Usado en front-page.php para las 4 categorías
  * destacadas y en page-cuidados-del-acrilico.php para la guía de mantenimiento.
+ * $class (opcional) agrega una clase al <section> (p. ej. 'ta-features--white').
  */
-function ta_render_feature_grid( $eyebrow, $title, $items, $description = '' ) {
+function ta_render_feature_grid( $eyebrow, $title, $items, $description = '', $class = '' ) {
+    $section_class = 'ta-features' . ( $class ? ' ' . esc_attr( $class ) : '' );
     ?>
-    <section class="ta-features">
+    <section class="<?php echo $section_class; ?>">
         <div class="ta-container">
             <p class="ta-features-eyebrow"><?php echo esc_html( $eyebrow ); ?></p>
             <h2 class="ta-features-title"><?php echo esc_html( $title ); ?></h2>
@@ -337,10 +653,17 @@ function ta_render_cta_section( $title, $description, $button_label, $button_url
  * §1.10). Filtrable con `ta_contact_email` para no tener que tocar código si cambia.
  */
 function ta_get_contact_email() {
-	return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
+	 return apply_filters( 'ta_contact_email', 'contacto@todoacrilico.cl' );
+	//return apply_filters( 'ta_contact_email', 'rodolfo.parada.gonzalez@gmail.com' );
 }
 
-define( 'TA_CONTACT_MAX_FILE_SIZE', 5 * 1024 * 1024 ); // 5 MB.
+
+define( 'TA_CONTACT_MAX_FILE_SIZE', 5 * 1024 * 1024 ); // 5 MB por adjunto.
+define( 'TA_CONTACT_MAX_FILES', 5 ); // Hasta 5 archivos adjuntos.
+define( 'TA_CONTACT_NAME_MIN', 2 ); // Mínimo 2 caracteres en nombre.
+define( 'TA_CONTACT_NAME_MAX', 100 ); // Máximo 100 caracteres en nombre.
+define( 'TA_CONTACT_DESC_MIN', 20 ); // Mínimo 20 caracteres en descripción.
+define( 'TA_CONTACT_RATE_LIMIT', 60 ); // Rate limit: 60 segundos entre envíos.
 
 /**
  * Manejador del formulario de Contacto. Registrado tanto para visitantes sin sesión
@@ -354,19 +677,67 @@ add_action( 'admin_post_nopriv_ta_contact_submit', 'ta_handle_contact_submit' );
 add_action( 'admin_post_ta_contact_submit', 'ta_handle_contact_submit' );
 
 function ta_handle_contact_submit() {
-	$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/contacto/' );
+	$redirect_to = isset( $_POST['redirect_to'] ) ? esc_url_raw( wp_unslash( $_POST['redirect_to'] ) ) : home_url( '/cotizar/' );
 
-	$fail = function ( $reason ) use ( $redirect_to ) {
-		wp_safe_redirect(
-			add_query_arg(
+	$adjunto_paths = array();
+	$attachments    = array();
+
+	// Detectar si es solicitud AJAX
+	$is_ajax = ! empty( $_SERVER['HTTP_X_REQUESTED_WITH'] ) && 'XMLHttpRequest' === sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REQUESTED_WITH'] ) );
+
+	// Mensajes de error mapeados
+	$error_messages = array(
+		'campos'          => 'Completa tu nombre (mín. 2 caracteres) y descripción del proyecto (mín. 20 caracteres).',
+		'nombre_corto'    => 'El nombre debe tener al menos 2 caracteres.',
+		'nombre_largo'    => 'El nombre no puede exceder 100 caracteres.',
+		'nombre_numerico' => 'Ingrese su nombre y apellidos (sin números).',
+		'nombre_invalido' => 'Ingresa al menos un nombre y un apellido.',
+		'desc_corta'      => 'La descripción del proyecto debe tener al menos 20 caracteres.',
+		'email_vacio'     => 'Por favor ingresa tu correo electrónico.',
+		'email_invalido'  => 'El correo electrónico no tiene un formato válido.',
+		'email_caracteres'=> 'El correo no puede comenzar con caracteres especiales (ej: no puede ser ".user@..."). Intenta nuevamente.',
+		'email_dominio'   => 'Usa un correo permitido: gmail.com, outlook.com, hotmail.com, live.cl, yahoo.com, icloud.com o dominios .cl, .org y .net',
+		'email_patron'    => 'El correo tiene un formato inválido (no puede tener "@." o comenzar con punto).',
+		'celular'         => 'Ingrese un teléfono válido de 8 dígitos.',
+		'archivo'         => 'No se pudo procesar el archivo adjunto. Intenta de nuevo.',
+		'archivo_grande'  => 'El archivo adjunto no puede superar los 5 MB.',
+		'archivo_tipo'    => 'El archivo adjunto debe ser una imagen (JPG, PNG, GIF o WEBP) o un PDF.',
+		'archivos_muchos' => 'Puedes adjuntar hasta 5 archivos.',
+		'terminos'        => 'Debes aceptar la Política de Privacidad y los Términos y condiciones para continuar.',
+		'nonce'           => 'Tu sesión expiró, vuelve a intentarlo.',
+		'rate_limit'      => 'Espera un momento antes de enviar otro mensaje.',
+		'envio'           => 'No se pudo enviar el mensaje. Intenta de nuevo más tarde.',
+	);
+
+	$fail = function ( $reason ) use ( $redirect_to, &$adjunto_paths, $is_ajax, $error_messages ) {
+		foreach ( $adjunto_paths as $adjunto_path ) {
+			if ( $adjunto_path && file_exists( $adjunto_path ) ) {
+				wp_delete_file( $adjunto_path );
+			}
+		}
+
+		if ( $is_ajax ) {
+			// Responder con JSON para AJAX
+			wp_send_json(
 				array(
-					'ta_contact' => 'error',
-					'reason'     => $reason,
-				),
-				$redirect_to
-			)
-		);
-		exit;
+					'success' => false,
+					'reason'  => $reason,
+					'message' => $error_messages[ $reason ] ?? 'Ocurrió un error. Intenta de nuevo.',
+				)
+			);
+		} else {
+			// Redirigir para POST tradicional (sin JavaScript)
+			wp_safe_redirect(
+				add_query_arg(
+					array(
+						'ta_contact' => 'error',
+						'reason'     => $reason,
+					),
+					$redirect_to
+				)
+			);
+			exit;
+		}
 	};
 
 	if ( ! isset( $_POST['ta_contact_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ta_contact_nonce'] ) ), 'ta_contact_submit' ) ) {
@@ -376,40 +747,164 @@ function ta_handle_contact_submit() {
 	// Honeypot: un campo oculto que solo un bot completaría. Si viene lleno, se
 	// descarta en silencio simulando éxito — no le da pistas a quien lo esté probando.
 	if ( ! empty( $_POST['ta_contact_website'] ) ) {
-		wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
-		exit;
+		if ( $is_ajax ) {
+			wp_send_json( array( 'success' => true, 'message' => 'Mensaje recibido.' ) );
+		} else {
+			wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
+			exit;
+		}
+	}
+
+	// Aceptación obligatoria de la Política de Privacidad y los Términos y
+	// condiciones: sin el checkbox marcado no se envía la cotización.
+	if ( empty( $_POST['acepto_terminos'] ) ) {
+		$fail( 'terminos' );
 	}
 
 	$nombre      = isset( $_POST['nombre'] ) ? sanitize_text_field( wp_unslash( $_POST['nombre'] ) ) : '';
 	$email       = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+	$celular     = isset( $_POST['celular'] ) ? sanitize_text_field( wp_unslash( $_POST['celular'] ) ) : '';
 	$descripcion = isset( $_POST['descripcion'] ) ? sanitize_textarea_field( wp_unslash( $_POST['descripcion'] ) ) : '';
+	$acepta_ofertas = empty( $_POST['acepta_ofertas'] ) ? '0' : '1';
+
+	// Rate limiting: máximo 1 envío por IP cada TA_CONTACT_RATE_LIMIT segundos.
+	$client_ip      = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+	$rate_limit_key = '';
+	if ( $client_ip ) {
+		$rate_limit_key = 'ta_contact_rate_' . md5( $client_ip );
+		$last_submit     = get_transient( $rate_limit_key );
+		if ( $last_submit ) {
+			$fail( 'rate_limit' );
+		}
+	}
+	$adjunto_ref = isset( $_POST['adjunto_referencia'] ) ? esc_url_raw( wp_unslash( $_POST['adjunto_referencia'] ) ) : '';
+	$adjunto_ref = ( $adjunto_ref && wp_http_validate_url( $adjunto_ref ) ) ? $adjunto_ref : '';
+	$adjunto_tit  = isset( $_POST['adjunto_titulo'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_titulo'] ) ) : '';
+	$adjunto_tit  = $adjunto_tit ? wp_strip_all_tags( trim( $adjunto_tit ) ) : '';
+	$adjunto_desc = isset( $_POST['adjunto_descripcion'] ) ? sanitize_textarea_field( wp_unslash( $_POST['adjunto_descripcion'] ) ) : '';
+	$adjunto_desc = $adjunto_desc ? wp_strip_all_tags( trim( $adjunto_desc ) ) : '';
+	$adjunto_med  = isset( $_POST['adjunto_medidas'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_medidas'] ) ) : '';
+	$adjunto_med  = $adjunto_med ? trim( $adjunto_med ) : '';
+	$adjunto_uso  = isset( $_POST['adjunto_uso'] ) ? sanitize_text_field( wp_unslash( $_POST['adjunto_uso'] ) ) : '';
+	$adjunto_uso  = $adjunto_uso ? trim( $adjunto_uso ) : '';
 
 	if ( '' === $nombre || '' === $descripcion ) {
 		$fail( 'campos' );
 	}
 
-	if ( '' === $email || ! is_email( $email ) ) {
-		$fail( 'email' );
+	$nombre_length = mb_strlen( $nombre );
+	if ( $nombre_length < TA_CONTACT_NAME_MIN ) {
+		$fail( 'nombre_corto' );
+	}
+	if ( $nombre_length > TA_CONTACT_NAME_MAX ) {
+		$fail( 'nombre_largo' );
 	}
 
-	$attachments  = array();
-	$adjunto_path = '';
+	// Anti-spam: rechazar nombres que contienen números.
+	if ( preg_match( '/\d/', $nombre ) ) {
+		$fail( 'nombre_numerico' );
+	}
 
-	if ( ! empty( $_FILES['adjunto'] ) && UPLOAD_ERR_NO_FILE !== $_FILES['adjunto']['error'] ) {
-		if ( UPLOAD_ERR_OK !== $_FILES['adjunto']['error'] ) {
+	// Nombre completo: al menos nombre y apellido, cada palabra de 2+ letras.
+	if ( ! preg_match( "/^\p{L}[\p{L}'’-]*\p{L}(\s+\p{L}[\p{L}'’-]*\p{L})+$/u", trim( $nombre ) ) ) {
+		$fail( 'nombre_invalido' );
+	}
+
+	$desc_length = strlen( $descripcion );
+	if ( $desc_length < TA_CONTACT_DESC_MIN ) {
+		$fail( 'desc_corta' );
+	}
+
+	if ( '' === $email ) {
+		$fail( 'email_vacio' );
+	}
+
+	if ( ! is_email( $email ) ) {
+		$fail( 'email_invalido' );
+	}
+
+	// Validación mejorada de email: rechazar si empieza con caracteres especiales.
+	if ( preg_match( '/^[^a-z0-9]/i', $email ) ) {
+		$fail( 'email_caracteres' );
+	}
+
+	// Validación: email no puede tener patrón inválido como ".@" o ".fadf@".
+	if ( preg_match( '/^\./i', $email ) || strpos( $email, '@.' ) !== false ) {
+		$fail( 'email_patron' );
+	}
+
+	// El dominio del correo debe estar dentro de los permitidos.
+	// Solo: dominios específicos (gmail, outlook, hotmail, etc.) + dominios .cl
+	$email_domain = strtolower( substr( strrchr( $email, '@' ), 1 ) );
+	$allowed_domains = array( 'gmail.com', 'outlook.com', 'hotmail.com', 'live.cl', 'yahoo.com', 'icloud.com' );
+	$has_allowed_domain = in_array( $email_domain, $allowed_domains, true ) || preg_match( '/\.(cl|org|net)$/', $email_domain );
+	if ( ! $has_allowed_domain ) {
+		$fail( 'email_dominio' );
+	}
+
+	// Celular chileno obligatorio: ocho dígitos móviles tras el prefijo +56 9.
+	// El campo del formulario entrega 8 dígitos (sin el 9, que va en el prefijo);
+	// por compatibilidad se tolera también el formato con 9 inicial.
+	$celular_digits = preg_replace( '/[^\d]/', '', $celular );
+	// Acepta los 8 dígitos solos o con prefijo 9 / 569; solo se quita el prefijo si sobra largo.
+	if ( 11 === strlen( $celular_digits ) && 0 === strpos( $celular_digits, '569' ) ) {
+		$celular_digits = substr( $celular_digits, 3 );
+	} elseif ( 9 === strlen( $celular_digits ) && '9' === $celular_digits[0] ) {
+		$celular_digits = substr( $celular_digits, 1 );
+	}
+	// Móviles vigentes en Chile: tras el 9, el número comienza con 3, 4, 5, 6, 7, 8 o 9.
+	if ( ! preg_match( '/^[3-9]\d{7}$/', $celular_digits ) ) {
+		$fail( 'celular' );
+	}
+	$celular = '+56 9 ' . $celular_digits;
+
+	// Adjuntos opcionales (varias imágenes o PDFs). Con el input `multiple`, PHP
+	// recibe $_FILES['adjunto'] como arrays. Se normaliza a una lista de archivos
+	// y se valida cada uno (extensión + contenido real: getimagesize para
+	// imágenes, MIME %PDF para los PDF).
+	$submit_files = array();
+	if ( isset( $_FILES['adjunto'] ) && is_array( $_FILES['adjunto']['name'] ) ) {
+		for ( $i = 0, $n = count( $_FILES['adjunto']['name'] ); $i < $n; $i++ ) {
+			if ( UPLOAD_ERR_NO_FILE === $_FILES['adjunto']['error'][ $i ] ) {
+				continue;
+			}
+			$submit_files[] = array(
+				'name'  => $_FILES['adjunto']['name'][ $i ],
+				'tmp'   => $_FILES['adjunto']['tmp_name'][ $i ],
+				'error' => $_FILES['adjunto']['error'][ $i ],
+				'size'  => $_FILES['adjunto']['size'][ $i ],
+			);
+		}
+	}
+
+	if ( count( $submit_files ) > TA_CONTACT_MAX_FILES ) {
+		$fail( 'archivos_muchos' );
+	}
+
+	$allowed_ext = array( 'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf' );
+
+	foreach ( $submit_files as $f ) {
+		if ( UPLOAD_ERR_OK !== $f['error'] ) {
 			$fail( 'archivo' );
 		}
 
-		if ( $_FILES['adjunto']['size'] > TA_CONTACT_MAX_FILE_SIZE ) {
+		if ( $f['size'] > TA_CONTACT_MAX_FILE_SIZE ) {
 			$fail( 'archivo_grande' );
 		}
 
-		$allowed_ext = array( 'jpg', 'jpeg', 'png', 'gif', 'webp' );
-		$ext         = strtolower( pathinfo( $_FILES['adjunto']['name'], PATHINFO_EXTENSION ) );
+		$ext = strtolower( pathinfo( sanitize_file_name( $f['name'] ), PATHINFO_EXTENSION ) );
 
-		// Extensión Y contenido real (getimagesize falla si no es una imagen de verdad,
-		// aunque alguien le haya puesto extensión .jpg a otra cosa).
-		if ( ! in_array( $ext, $allowed_ext, true ) || ! @getimagesize( $_FILES['adjunto']['tmp_name'] ) ) {
+		if ( ! in_array( $ext, $allowed_ext, true ) ) {
+			$fail( 'archivo_tipo' );
+		}
+
+		// Contenido real: una imagen con getimagesize; un PDF por su cabecera %PDF.
+		if ( 'pdf' === $ext ) {
+			$mime = function_exists( 'mime_content_type' ) ? mime_content_type( $f['tmp'] ) : '';
+			if ( stripos( (string) $mime, 'application/pdf' ) === false ) {
+				$fail( 'archivo_tipo' );
+			}
+		} elseif ( ! @getimagesize( $f['tmp'] ) ) {
 			$fail( 'archivo_tipo' );
 		}
 
@@ -419,41 +914,150 @@ function ta_handle_contact_submit() {
 			wp_mkdir_p( $target_dir );
 		}
 
-		$adjunto_path = $target_dir . wp_unique_filename( $target_dir, sanitize_file_name( $_FILES['adjunto']['name'] ) );
+		$adjunto_path = $target_dir . wp_unique_filename( $target_dir, sanitize_file_name( $f['name'] ) );
 
-		// move_uploaded_file() verifica por su cuenta que el archivo venga de una subida
-		// HTTP real — no acepta rutas arbitrarias aunque alguien falsifique $_FILES.
-		if ( ! move_uploaded_file( $_FILES['adjunto']['tmp_name'], $adjunto_path ) ) {
+		// move_uploaded_file() verifica por su cuenta que el archivo venga de una
+		// subida HTTP real — no acepta rutas arbitrarias aunque alguien falsifique $_FILES.
+		if ( ! move_uploaded_file( $f['tmp'], $adjunto_path ) ) {
 			$fail( 'archivo' );
 		}
 
-		$attachments[] = $adjunto_path;
+		$attachments[]  = $adjunto_path;
+		$adjunto_paths[] = $adjunto_path;
 	}
 
 	$subject = sprintf( 'Nuevo mensaje de contacto — %s', $nombre );
-	$body    = "Nombre: {$nombre}\n" .
-		"Correo: {$email}\n\n" .
-		"Descripción del proyecto:\n{$descripcion}\n";
 
-	// Sin "From" propio a propósito: dejarlo así es lo que hace que un plugin SMTP
-	// (WP Mail SMTP, etc.) controle el remitente sin que este código le compita.
+	// Cuerpo HTML con el estilo de email definido (tablas de 600px, tonos
+	// neutros). Todos los valores dinámicos van escapados (esc_html / esc_url /
+	// esc_attr); la imagen de la pieza a cotizar se incrusta por su URL pública
+	// ya validada con wp_http_validate_url() — más seguro y compatible con
+	// webmail que un CID, y sin datos personales incrustados.
+	$html_body = '<!DOCTYPE html>'
+		. '<html lang="es"><head><meta charset="UTF-8">'
+		. '<meta name="viewport" content="width=device-width, initial-scale=1.0">'
+		. '<title>Nuevo mensaje de contacto</title></head>'
+		. '<body style="margin: 0; padding: 20px; background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Helvetica, Arial, sans-serif; color: #333333;">'
+		// Contenedor principal.
+		. '<table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">'
+		// Encabezado / título.
+		. '<tr><td style="padding: 24px 24px 16px 24px;">'
+		. '<h2 style="margin: 0; font-size: 20px; font-weight: 700; color: #0f172a;">Nuevo mensaje de contacto — <span style="font-weight: 400;">' . esc_html( $nombre ) . '</span></h2>'
+		. '</td></tr>'
+		// DATOS DEL CLIENTE.
+		. '<tr><td style="padding: 0 24px 20px 24px;">'
+		. '<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">DATOS DEL CLIENTE</p>'
+		. '<table border="0" cellpadding="0" cellspacing="0" width="100%" style="border-collapse: collapse; border-top: 1px solid #e2e8f0;">'
+		. '<tr style="border-bottom: 1px solid #f1f5f9;"><td width="28%" style="padding: 10px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">NOMBRE</td>'
+		. '<td style="padding: 10px 0; font-size: 14px; color: #1e293b;">' . esc_html( $nombre ) . '</td></tr>'
+		. '<tr style="border-bottom: 1px solid #f1f5f9;"><td width="28%" style="padding: 10px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">CELULAR</td>'
+		. '<td style="padding: 10px 0; font-size: 14px; color: #1e293b;">' . esc_html( $celular ) . '</td></tr>'
+		. '<tr style="border-bottom: 1px solid #f1f5f9;"><td width="28%" style="padding: 10px 0; font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase;">CORREO</td>'
+		. '<td style="padding: 10px 0; font-size: 14px; color: #1e293b;">' . esc_html( $email ) . '</td></tr>'
+		. '</table>'
+		// Consentimiento: la línea siempre se muestra, con check (aceptó) o cruz
+		// (no aceptó). Verde si aceptó, gris neutro si no.
+		. '<p style="margin: 8px 0 0 0; font-size: 12px; color: ' . ( '1' === $acepta_ofertas ? '#15903e' : '#64748b' ) . ';">'
+		. ( '1' === $acepta_ofertas ? '✓ Aceptó recibir ofertas y comunicaciones comerciales.' : '✗ No aceptó recibir ofertas y comunicaciones comerciales.' )
+		. '</p>'
+		. '</td></tr>'
+		// DESCRIPCIÓN DEL PROYECTO.
+		. '<tr><td style="padding: 0 24px 24px 24px;">'
+		. '<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">DESCRIPCIÓN DEL PROYECTO</p>'
+		. '<div style="font-size: 14px; line-height: 1.5; color: #334155;">' . nl2br( esc_html( $descripcion ) ) . '</div>'
+		. '</td></tr>';
+
+	// Información de la pieza a cotizar, pasada automáticamente al hacer clic en
+	// "Cotizar esta pieza" en el catálogo (page-nuestras-soluciones.php).
+	if ( $adjunto_ref || $adjunto_tit || $adjunto_desc || $adjunto_med ) {
+		$html_body .= '<tr><td style="padding: 0 24px 24px 24px;">'
+			. '<p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px; text-transform: uppercase;">PIEZA A COTIZAR</p>';
+		if ( $adjunto_tit ) {
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Título:</strong> ' . esc_html( $adjunto_tit ) . '</p>';
+		}
+		if ( $adjunto_uso ) {
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Uso:</strong> ' . esc_html( $adjunto_uso ) . '</p>';
+		}
+		if ( $adjunto_med ) {
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Medidas:</strong> ' . esc_html( $adjunto_med ) . '</p>';
+		}
+		if ( $adjunto_desc ) {
+			$html_body .= '<p style="margin: 0 0 4px; font-size: 14px; color: #334155;"><strong style="color:#0f172a;">Descripción:</strong> ' . nl2br( esc_html( $adjunto_desc ) ) . '</p>';
+		}
+		if ( $adjunto_ref ) {
+			$html_body .= '<div style="margin-top: 8px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0; background-color: #000000; text-align: center;">'
+				. '<img src="' . esc_url( $adjunto_ref ) . '" alt="' . esc_attr( $adjunto_tit ? $adjunto_tit : 'Imagen de la pieza a cotizar' ) . '" style="display: block; width: 100%; max-width: 100%; height: auto;">'
+				. '<div style="padding: 8px 12px; background-color: #ffffff; text-align: left; font-size: 12px; color: #475569; border-top: 1px solid #e2e8f0;">' . esc_html( $adjunto_tit ? $adjunto_tit : 'Imagen de la pieza a cotizar' ) . '</div>'
+				. '</div>'
+				. '<p style="margin: 8px 0 0; font-size: 12px; color: #64748b;">Ver imagen: <a href="' . esc_url( $adjunto_ref ) . '" style="color: #15903e;">' . esc_html( $adjunto_ref ) . '</a></p>';
+		}
+		$html_body .= '</td></tr>';
+	}
+
+	// Archivos adjuntos del formulario: resumen estilizado (los archivos reales
+	// viajan adjuntos al correo con wp_mail(); no se incrustan en línea).
+	if ( $adjunto_paths ) {
+		$html_body .= '<tr><td style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background-color: #fafbfc;">'
+			. '<p style="margin: 0; font-size: 12px; color: #64748b;">📎 <strong>' . count( $adjunto_paths ) . ( count( $adjunto_paths ) === 1 ? ' archivo adjunto' : ' archivos adjuntos' ) . '</strong> &nbsp;·&nbsp; Analizados automáticamente</p>'
+			. '<p style="margin: 6px 0 0; font-size: 12px; color: #475569;">' . esc_html( implode( ' · ', array_map( 'basename', $adjunto_paths ) ) ) . '</p>'
+			. '</td></tr>';
+	}
+
+	// Cierre del contenedor.
+	$html_body .= '</table></body></html>';
+
+	// Headers del email — usar sanitización para evitar problemas
 	$headers = array(
-		'Content-Type: text/plain; charset=UTF-8',
-		'Reply-To: ' . $nombre . ' <' . $email . '>',
+		'Content-Type: text/html; charset=UTF-8',
 	);
 
-	$sent = wp_mail( ta_get_contact_email(), $subject, $body, $headers, $attachments );
+	// Reply-To: solo agregar si el email es válido
+	if ( is_email( $email ) ) {
+		$nombre_clean = sanitize_text_field( $nombre );
+		$headers[] = 'Reply-To: ' . $nombre_clean . ' <' . $email . '>';
+	}
 
-	if ( $adjunto_path && file_exists( $adjunto_path ) ) {
-		wp_delete_file( $adjunto_path );
+	$sent = wp_mail( ta_get_contact_email(), $subject, $html_body, $headers, $attachments );
+
+	// Debug: registrar en logs si el email falló
+	if ( ! $sent ) {
+		error_log( 'TA Contact Form - wp_mail() falló. ' .
+			'Destinatario: ' . ta_get_contact_email() . ', ' .
+			'Asunto: ' . $subject . ', ' .
+			'Headers: ' . json_encode( $headers ) . ', ' .
+			'Archivos: ' . count( $attachments ) . ', ' .
+			'Remitente: ' . $email
+		);
+	}
+
+	foreach ( $adjunto_paths as $adjunto_path ) {
+		if ( $adjunto_path && file_exists( $adjunto_path ) ) {
+			wp_delete_file( $adjunto_path );
+		}
 	}
 
 	if ( ! $sent ) {
 		$fail( 'envio' );
 	}
 
-	wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
-	exit;
+	if ( $rate_limit_key ) {
+		set_transient( $rate_limit_key, time(), TA_CONTACT_RATE_LIMIT );
+	}
+
+	if ( $is_ajax ) {
+		// Responder con JSON para AJAX
+		wp_send_json(
+			array(
+				'success'      => true,
+				'message'      => '¡Gracias! Recibimos tu mensaje y te responderemos entre 24 y 48 horas hábiles.',
+				'redirect_url' => add_query_arg( 'ta_contact', 'success', $redirect_to ),
+			)
+		);
+	} else {
+		// Redirigir para POST tradicional (sin JavaScript)
+		wp_safe_redirect( add_query_arg( 'ta_contact', 'success', $redirect_to ) );
+		exit;
+	}
 }
 
 /**
@@ -466,6 +1070,45 @@ function ta_handle_contact_submit() {
  *
  * @return array<int, array{name: string, slug: string, images: array<int, array{title: string, description: string, images: array<int, string>}>}>
  */
+/**
+ * Categorías del catálogo para el desplegable "Catálogo" del menú: TODAS las
+ * categorías del plugin, tengan o no piezas publicadas (pedido del cliente:
+ * al crear o borrar una categoría en el panel, aparece o desaparece del menú
+ * en la siguiente carga). Mismo criterio que las pestañas del catálogo
+ * (page-nuestras-soluciones.php, hide_empty false). Una sola consulta liviana
+ * por carga de página (caché estática).
+ *
+ * @return array<int, array{name: string, slug: string}>
+ */
+function ta_get_catalog_categories() {
+	static $categories = null;
+	if ( null !== $categories ) {
+		return $categories;
+	}
+	$categories = array();
+	if ( ! taxonomy_exists( 'jg_gallery_category' ) ) {
+		return $categories;
+	}
+	$terms = get_terms(
+		array(
+			'taxonomy'   => 'jg_gallery_category',
+			'hide_empty' => false,
+			'orderby'    => 'name',
+			'order'      => 'ASC',
+		)
+	);
+	if ( is_wp_error( $terms ) ) {
+		return $categories;
+	}
+	foreach ( $terms as $term ) {
+		$categories[] = array(
+			'name' => $term->name,
+			'slug' => $term->slug,
+		);
+	}
+	return $categories;
+}
+
 function ta_get_solutions_by_category() {
 	if ( ! post_type_exists( 'jg_gallery_image' ) || ! taxonomy_exists( 'jg_gallery_category' ) ) {
 		return array();
@@ -537,26 +1180,307 @@ function ta_get_solutions_by_category() {
 }
 
 /**
- * Walker del menú principal: le agrega al ítem "Catálogo" (el que apunta a
- * "Nuestras Soluciones") un desplegable con un link por cada categoría de
- * `ta_get_solutions_by_category()` — las mismas categorías con imágenes
- * publicadas que arma las secciones de esa página (con id="categoria-{slug}",
- * page-nuestras-soluciones.php §1.8). Al reusar esa función, el desplegable
- * queda siempre sincronizado con el plugin sin tocar el menú a mano: una
- * categoría nueva con al menos una imagen publicada aparece sola, y una que
- * se vacía o se borra desaparece sola, en la siguiente carga de página.
+ * Pestañas reutilizables para filtrar contenido por URL. Cada pestaña debe incluir
+ * `label` y `value`; `value` se envía en el parámetro indicado y reinicia la página.
+ *
+ * @param array<int, array{label: string, value: string}> $tabs
+ * @param string                                        $active_value
+ * @param string                                        $query_arg
  */
+function ta_render_filter_tabs( $tabs, $active_value, $query_arg = 'categoria' ) {
+	if ( empty( $tabs ) ) {
+		return;
+	}
+
+	?>
+	<nav class="ta-filter-tabs" aria-label="Filtrar catálogo por categoría">
+		<?php foreach ( $tabs as $tab ) : ?>
+			<?php
+			$url = add_query_arg(
+				array_filter(
+					array(
+						$query_arg => $tab['value'] ?: null,
+						'pagina'   => null,
+					)
+				),
+				get_permalink()
+			);
+			$is_active = $active_value === $tab['value'];
+			?>
+			<a class="ta-filter-tabs__tab<?php echo $is_active ? ' is-active' : ''; ?>" href="<?php echo esc_url( $url ); ?>"<?php echo $is_active ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $tab['label'] ); ?></a>
+		<?php endforeach; ?>
+	</nav>
+	<?php
+}
+
+/**
+ * Renderiza el mismo patrón de páginas que el panel JWT Gallery: todas hasta
+ * siete; después primera, página anterior/siguiente, última y elipsis.
+ *
+ * @return array<int, int|string>
+ */
+function ta_get_pagination_pages( $current, $total ) {
+	$current = max( 1, (int) $current );
+	$total   = max( 1, (int) $total );
+
+	if ( $total <= 7 ) {
+		return range( 1, $total );
+	}
+
+	$pages = array( 1 );
+	$start = max( 2, $current - 1 );
+	$end   = min( $total - 1, $current + 1 );
+
+	if ( $start > 2 ) {
+		$pages[] = '…';
+	}
+	for ( $number = $start; $number <= $end; $number++ ) {
+		$pages[] = $number;
+	}
+	if ( $end < $total - 1 ) {
+		$pages[] = '…';
+	}
+	$pages[] = $total;
+
+	return $pages;
+}
+
+/**
+ * Normaliza un texto para compararlo sin depender de mayúsculas ni
+ * acentos: "Cuidados del Acrílico" == "cuidados del acrilico".
+ *
+ * @param string $text
+ * @return string
+ */
+function ta_normalize_text( $text ) {
+	return strtolower(
+		strtr(
+			(string) $text,
+			array(
+				'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u',
+				'ñ' => 'n', 'ü' => 'u',
+				'Á' => 'a', 'É' => 'e', 'Í' => 'i', 'Ó' => 'o', 'Ú' => 'u',
+				'Ñ' => 'n', 'Ü' => 'u',
+			)
+		)
+	);
+}
+
+/**
+ * Resuelve una página del sitio sin depender de que conserve el slug "de
+ * apariencia". Tras una migración (p. ej. Softaculous) las páginas suelen
+ * conservar su título pero cambiar de slug ("Nuestras soluciones" → services),
+ * lo que dejaba al tema sin enlaces, sin desplegable ni sin plantillas.
+ * Estrategia:
+ *
+ *  1. Coincidencia exacta por slug canónico (`get_page_by_path`).
+ *  2. Entre las páginas publicadas, la primera cuyo título o slug contenga
+ *     (sin mayúsculas ni acentos) alguna de las palabras clave dadas.
+ *
+ * Primero se prueban todos los slugs canónicos y después, por cada palabra
+ * clave, las páginas ordenadas por título. Devuelve `null` si no coincide nada.
+ *
+ * @param string|string[] $needles Slug(s) canónico(s) y/o palabra(s) clave de título.
+ * @return WP_Post|null
+ */
+function ta_find_page( $needles ) {
+	$needles = (array) $needles;
+
+	foreach ( $needles as $slug ) {
+		$page = get_page_by_path( $slug, OBJECT, 'page' );
+		if ( $page && 'page' === $page->post_type ) {
+			return $page;
+		}
+	}
+
+	$haystacks = array();
+	foreach ( get_pages( array( 'post_status' => 'publish', 'sort_column' => 'post_title' ) ) as $page ) {
+		$haystacks[] = (object) array(
+			'page' => $page,
+			'key'  => ta_normalize_text( $page->post_title . ' ' . $page->post_name ),
+		);
+	}
+
+	foreach ( $needles as $needle ) {
+		$needle = ta_normalize_text( $needle );
+		if ( '' === $needle ) {
+			continue;
+		}
+		foreach ( $haystacks as $haystack ) {
+			if ( false !== strpos( $haystack->key, $needle ) ) {
+				return $haystack->page;
+			}
+		}
+	}
+
+	return null;
+}
+
+/**
+ * Asigna la plantilla dedicada de cada página (Catálogo, Cuidados, Contacto)
+ * aunque su slug no sea el "de apariencia". WordPress elige plantilla con la
+ * jerarquía `page-{slug}.php` antes que `page.php`, así que tras una migración
+ * con slugs distintos ("Nuestras soluciones" → services, "Contacto" → contact)
+ * esas páginas caían en la plantilla genérica y se veían como una entrada de
+ * blog vacía en vez del diseño real (pestañas del catálogo, formulario, íconos).
+ *
+ * Este filtro solo interviene cuando WordPress ya resolvió `page.php` — si el
+ * administrador asignó una plantilla a mano, esa gana. La página se identifica
+ * con `ta_find_page()` (misma resolución del nav, §4.101), no por su slug.
+ *
+ * Excepción (versión 1.18.65): también reemplaza las plantillas en blanco de
+ * Elementor ("Elementor Canvas" / "Elementor Header Footer"). Estas no son un
+ * diseño elegido por el usuario para el sitio, sino el valor por defecto que
+ * deja el constructor cuando edita una página, y bloqueaban la plantilla del
+ * tema en /cuidados/. Se puede desactivar con el filtro
+ * `ta_override_elementor_templates` (devolver `false`) si alguna vez se quiere
+ * respetar la de Elementor.
+ */
+function ta_page_template_by_role( $template ) {
+	if ( ! is_page() || is_front_page() ) {
+		return $template;
+	}
+
+	$is_generic   = 'page.php' === basename( $template );
+	$is_elementor = false !== strpos( $template, '/plugins/elementor/' );
+
+	// Cualquier otra plantilla (las del propio tema, las blank-page.php del
+	// plugin de galería, una elegida a mano) se respeta.
+	if ( ! $is_generic && ! ( $is_elementor && apply_filters( 'ta_override_elementor_templates', true ) ) ) {
+		return $template;
+	}
+
+	$current = get_queried_object_id();
+
+	$map = array(
+		array( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ), 'page-nuestras-soluciones.php' ),
+		array( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ), 'page-cuidados-del-acrilico.php' ),
+		array( array( 'cotizar', 'contacto', 'contact' ), 'page-contacto.php' ),
+	);
+
+	foreach ( $map as $entry ) {
+		$page = ta_find_page( $entry[0] );
+
+		if ( $page && (int) $page->ID === (int) $current ) {
+			return get_template_directory() . '/' . $entry[1];
+		}
+	}
+
+	return $template;
+}
+add_filter( 'template_include', 'ta_page_template_by_role', 20 );
+
+/**
+ * Menú de reserva del header: si en Apariencia → Menús no hay ningún menú
+ * asignado a la ubicación "Menú principal" (lo típico después de una
+ * migración, porque `nav_menu_locations` no siempre se copia), `wp_nav_menu()`
+ * no dibujaría absolutamente nada. Con este fallback el nav muestra SIEMPRE
+ * los cuatro destinos del sitio — Inicio, Catálogo, Cuidados y Cotizar — con
+ * las mismas clases que usa el menú real, incluido el desplegable de
+ * categorías en "Catálogo" (misma lógica que `TA_Nav_Walker`). Las páginas se
+ * resuelven con `ta_find_page()`: da igual cuál sea su slug, basta con que el
+ * título de la página siga mencionando soluciones / cuidados / contacto. Y si
+ * ni siquiera así se encuentra, el ítem se muestra igual apuntando a la
+ * portada — un menú con solo Inicio no debería ocurrir.
+ *
+ * @param array $args Argumentos que entrega `wp_nav_menu()`.
+ */
+function ta_nav_menu_fallback( $args ) {
+	$menu_class = isset( $args['menu_class'] ) ? $args['menu_class'] : 'ta-nav-list';
+
+	$catalog_page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+	$care_page    = ta_find_page( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ) );
+	$contact_page = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
+
+	// Los cuatro destinos se muestran SIEMPRE. Si la página no se encuentra
+	// (título y slug muy distintos tras una migración), el ítem apunta a la
+	// portada en vez de desaparecer.
+	$items = array(
+		array(
+			'label'   => esc_html__( 'Inicio', 'todo-acrilico' ),
+			'url'     => home_url( '/' ),
+			'current' => is_front_page(),
+		),
+		array(
+			'label'   => esc_html__( 'Catálogo', 'todo-acrilico' ),
+			'url'     => $catalog_page ? get_permalink( $catalog_page ) : home_url( '/' ),
+			'current' => $catalog_page ? is_page( $catalog_page->ID ) : false,
+			'caret'   => true,
+		),
+		array(
+			'label'   => esc_html__( 'Cuidados', 'todo-acrilico' ),
+			'url'     => $care_page ? get_permalink( $care_page ) : home_url( '/' ),
+			'current' => $care_page ? is_page( $care_page->ID ) : false,
+		),
+		array(
+			'label'   => esc_html__( 'Cotizar', 'todo-acrilico' ),
+			'url'     => $contact_page ? get_permalink( $contact_page ) : home_url( '/' ),
+			'current' => $contact_page ? is_page( $contact_page->ID ) : false,
+			'cta'     => true,
+		),
+	);
+
+	$html = '<ul class="' . esc_attr( $menu_class ) . '">';
+
+	foreach ( $items as $item ) {
+		$classes = array( 'menu-item', 'menu-item-type-post_type', 'menu-item-object-page' );
+
+		if ( ! empty( $item['current'] ) ) {
+			$classes[] = 'current-menu-item';
+			$classes[] = 'current_page_item';
+		}
+
+		$groups = array();
+
+		if ( ! empty( $item['caret'] ) ) {
+			$groups = ta_get_catalog_categories();
+
+			if ( ! empty( $groups ) ) {
+				$classes[] = 'ta-nav-has-caret';
+			}
+		}
+
+		if ( ! empty( $item['cta'] ) ) {
+			$classes[] = 'ta-nav-cta';
+		}
+
+		$html .= '<li class="' . esc_attr( implode( ' ', $classes ) ) . '">';
+		$html .= '<a href="' . esc_url( $item['url'] ) . '">' . esc_html( $item['label'] ) . '</a>';
+
+		if ( ! empty( $groups ) ) {
+			$html .= '<button type="button" class="ta-nav-caret-toggle" aria-expanded="false" aria-label="' . esc_attr__( 'Mostrar categorías de catálogo', 'todo-acrilico' ) . '"></button>';
+			$html .= '<ul class="ta-nav-dropdown">';
+			$html .= '<li><a href="' . esc_url( $item['url'] ) . '">' . esc_html__( 'Todas las piezas', 'todo-acrilico' ) . '</a></li>';
+
+			foreach ( $groups as $group ) {
+				$html .= '<li><a href="' . esc_url( add_query_arg( 'categoria', $group['slug'], $item['url'] ) ) . '">' . esc_html( $group['name'] ) . '</a></li>';
+			}
+
+			$html .= '</ul>';
+		}
+
+		$html .= '</li>';
+	}
+
+	$html .= '</ul>';
+
+	echo $html;
+}
+
 /**
  * Walker del menú principal: le agrega al ítem "Catálogo" (el que apunta a
- * "Nuestras Soluciones") un desplegable con un link por cada categoría de
- * `ta_get_solutions_by_category()`.
+ * "Nuestras Soluciones") un desplegable con "Todas las piezas" y un link por
+ * cada categoría de `ta_get_catalog_categories()`: TODAS las categorías del
+ * plugin, también las que aún no tienen piezas. Se sincroniza solo con el
+ * panel: una categoría creada aparece y una borrada desaparece en la
+ * siguiente carga de página, sin tocar el menú de WordPress.
  */
 class TA_Nav_Walker extends Walker_Nav_Menu {
-    private ?int $solutions_page_id = null;
+    private $solutions_page_id = null;
 
     private function get_solutions_page_id() {
         if ( null === $this->solutions_page_id ) {
-            $page                    = get_page_by_path( 'nuestras-soluciones' );
+            $page                    = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
             $this->solutions_page_id = $page ? $page->ID : 0;
         }
         return $this->solutions_page_id;
@@ -565,7 +1489,7 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
     // 1. Agregamos la clase 'ta-nav-has-caret' al <li> de Catálogo si tiene categorías
     public function start_el( &$output, $item, $depth = 0, $args = null, $id = 0 ) {
         if ( 0 === $depth && 'page' === $item->object && (int) $item->object_id === $this->get_solutions_page_id() ) {
-            $groups = ta_get_solutions_by_category();
+            $groups = ta_get_catalog_categories();
             if ( ! empty( $groups ) ) {
                 $item->classes[] = 'ta-nav-has-caret';
             }
@@ -576,16 +1500,22 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
     // 2. Inyectamos el botón flecha y el desplegable <ul class="ta-nav-dropdown">
     public function end_el( &$output, $item, $depth = 0, $args = null ) {
         if ( 0 === $depth && 'page' === $item->object && (int) $item->object_id === $this->get_solutions_page_id() ) {
-            $groups = ta_get_solutions_by_category();
+            $groups = ta_get_catalog_categories();
 
             if ( ! empty( $groups ) ) {
+                $catalog_url = get_permalink( $this->get_solutions_page_id() );
+
                 $output .= '<button type="button" class="ta-nav-caret-toggle" aria-expanded="false" aria-label="Mostrar categorías de catálogo"></button>';
                 $output .= '<ul class="ta-nav-dropdown">';
+                $output .= sprintf(
+                    '<li><a href="%1$s">%2$s</a></li>',
+                    esc_url( $catalog_url ),
+                    esc_html__( 'Todas las piezas', 'todo-acrilico' )
+                );
                 foreach ( $groups as $group ) {
                     $output .= sprintf(
-                        '<li><a href="%1$s#categoria-%2$s">%3$s</a></li>',
-                        esc_url( get_permalink( $this->get_solutions_page_id() ) ),
-                        esc_attr( $group['slug'] ),
+                        '<li><a href="%1$s">%2$s</a></li>',
+                        esc_url( add_query_arg( 'categoria', $group['slug'], $catalog_url ) ),
                         esc_html( $group['name'] )
                     );
                 }
@@ -595,4 +1525,245 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
 
         parent::end_el( $output, $item, $depth, $args );
     }
+}
+
+/**
+ * Páginas legales (Política de Privacidad, Términos y Condiciones) mostradas como
+ * acordeón con índice lateral. El contenido se sigue editando en WordPress como
+ * texto normal: cada <h2> se convierte en una sección plegable al mostrarse.
+ */
+/**
+ * Página "Política de cookies" (se edita en WordPress como texto con secciones
+ * <h2>N. Título</h2>, igual que la Política de Privacidad). Búsqueda flexible,
+ * no por slug exacto (CLAUDE.md, regla 5). Devuelve null si no existe: en ese
+ * caso el footer vuelve a mostrar el botón "Preferencias de cookies".
+ */
+function ta_get_cookies_page() {
+	return ta_find_page( array( 'politica-de-cookies', 'politica-cookies', 'cookies' ) );
+}
+
+/**
+ * ¿La página actual es la Política de cookies?
+ */
+function ta_is_cookies_page() {
+	$page = is_page() ? ta_get_cookies_page() : null;
+	return $page && (int) $page->ID === (int) get_queried_object_id();
+}
+
+/*
+ * ---- Textos legales versionados con el tema ----
+ *
+ * Pedido del cliente: local y producción deben verse iguales. Los textos de
+ * Privacidad, Términos y Política de cookies viven en la base de datos (no
+ * viajan en el ZIP), así que el tema los lleva en legal/*.html y los aplica
+ * UNA vez por cada TA_LEGAL_VERSION: crea la página si falta y reemplaza el
+ * contenido si cambió. WordPress guarda la versión anterior como revisión.
+ *
+ * Para cambiar un texto legal: edita legal/<archivo>.html Y sube
+ * TA_LEGAL_VERSION. Lo que se edite a mano en WordPress se reemplaza en la
+ * siguiente versión de los textos (CLAUDE.md, regla 5).
+ */
+define( 'TA_LEGAL_VERSION', '2026-11-04.1' );
+
+/**
+ * Documentos legales: archivo, título y slug con que se crea si falta, y los
+ * candidatos de búsqueda (flexible, no por slug exacto; regla 5).
+ */
+function ta_legal_documents() {
+	return array(
+		'privacidad' => array(
+			'file'    => 'politica-de-privacidad.html',
+			'title'   => 'Política de Privacidad',
+			'slug'    => 'politica-de-privacidad',
+			'needles' => array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ),
+		),
+		'terminos'   => array(
+			'file'    => 'terminos-y-condiciones.html',
+			'title'   => 'Términos y Condiciones',
+			'slug'    => 'terminos-y-condiciones',
+			'needles' => array( 'terminos-y-condiciones', 'termino-y-condiciones', 'termino' ),
+		),
+		'cookies'    => array(
+			'file'    => 'politica-de-cookies.html',
+			'title'   => 'Política de cookies',
+			'slug'    => 'politica-de-cookies',
+			'needles' => array( 'politica-de-cookies', 'politica-cookies', 'cookies' ),
+		),
+	);
+}
+
+function ta_sync_legal_pages() {
+	if ( get_option( 'ta_legal_version' ) === TA_LEGAL_VERSION ) {
+		return;
+	}
+	// Evita que dos visitas simultáneas creen la página dos veces.
+	if ( get_transient( 'ta_legal_sync_lock' ) ) {
+		return;
+	}
+	set_transient( 'ta_legal_sync_lock', 1, MINUTE_IN_SECONDS );
+
+	$log = array();
+	$ok  = true;
+
+	foreach ( ta_legal_documents() as $key => $doc ) {
+		$path = get_template_directory() . '/legal/' . $doc['file'];
+		if ( ! is_readable( $path ) ) {
+			$ok          = false;
+			$log[ $key ] = 'falta el archivo';
+			continue;
+		}
+		$content = trim( (string) file_get_contents( $path ) );
+		$page    = ta_find_page( $doc['needles'] );
+
+		if ( $page ) {
+			if ( trim( $page->post_content ) === $content ) {
+				$log[ $key ] = 'sin cambios (ID ' . $page->ID . ')';
+				continue;
+			}
+			$result = wp_update_post(
+				wp_slash(
+					array(
+						'ID'           => $page->ID,
+						'post_content' => $content,
+					)
+				),
+				true
+			);
+			$log[ $key ] = is_wp_error( $result ) ? 'error: ' . $result->get_error_message() : 'actualizada (ID ' . $page->ID . ')';
+		} else {
+			$result = wp_insert_post(
+				wp_slash(
+					array(
+						'post_type'    => 'page',
+						'post_status'  => 'publish',
+						'post_title'   => $doc['title'],
+						'post_name'    => $doc['slug'],
+						'post_content' => $content,
+					)
+				),
+				true
+			);
+			$log[ $key ] = is_wp_error( $result ) ? 'error: ' . $result->get_error_message() : 'creada (ID ' . $result . ')';
+		}
+
+		if ( is_wp_error( $result ) ) {
+			$ok = false;
+		}
+	}
+
+	update_option(
+		'ta_legal_sync_log',
+		array(
+			'version' => TA_LEGAL_VERSION,
+			'date'    => current_time( 'mysql' ),
+			'result'  => $log,
+		),
+		false
+	);
+	// Solo se marca como aplicada si todo salió bien; si no, se reintenta.
+	if ( $ok ) {
+		update_option( 'ta_legal_version', TA_LEGAL_VERSION, true );
+	}
+	delete_transient( 'ta_legal_sync_lock' );
+}
+// "init" y no "after_switch_theme": al reemplazar el tema por ZIP con la
+// misma carpeta no se dispara after_switch_theme. Tras la primera vez, el
+// costo es una sola lectura de opción (autocargada).
+add_action( 'init', 'ta_sync_legal_pages', 20 );
+
+function ta_is_legal_page() {
+	if ( ! is_page() ) {
+		return false;
+	}
+
+	// Por búsqueda flexible y no por slug exacto: en local son `politica-de-privacidad`
+	// y `terminos-y-condiciones`, en producción `politica-privacidad` y `termino-y-condiciones`.
+	$legal_pages = array(
+		ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) ),
+		ta_find_page( array( 'terminos-y-condiciones', 'termino-y-condiciones', 'termino' ) ),
+		ta_get_cookies_page(),
+	);
+
+	foreach ( $legal_pages as $page ) {
+		if ( $page && (int) $page->ID === (int) get_queried_object_id() ) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+function ta_render_legal_accordion( $html ) {
+	$parts = preg_split( '/(<h2[^>]*>.*?<\/h2>)/is', $html, -1, PREG_SPLIT_DELIM_CAPTURE );
+	$intro = trim( array_shift( $parts ) );
+
+	$sections = array();
+	for ( $i = 0; $i < count( $parts ); $i += 2 ) {
+		$title  = trim( wp_strip_all_tags( $parts[ $i ] ) );
+		$number = count( $sections ) + 1;
+		if ( preg_match( '/^(\d+)\.\s*(.+)$/u', $title, $m ) ) {
+			$number = (int) $m[1];
+			$title  = $m[2];
+		}
+		$sections[] = array(
+			'id'     => 'seccion-' . $number,
+			'number' => $number,
+			'title'  => $title,
+			'body'   => isset( $parts[ $i + 1 ] ) ? trim( $parts[ $i + 1 ] ) : '',
+		);
+	}
+
+	if ( ! $sections ) {
+		return $html;
+	}
+
+	ob_start();
+	?>
+	<div class="ta-legal">
+		<nav class="ta-legal-toc" aria-label="Contenido">
+			<p class="ta-legal-toc-title">Contenido</p>
+			<ol>
+				<?php foreach ( $sections as $s ) : ?>
+					<li><a href="#<?php echo esc_attr( $s['id'] ); ?>"><span class="ta-legal-toc-num"><?php echo (int) $s['number']; ?></span><span><?php echo esc_html( $s['title'] ); ?></span></a></li>
+				<?php endforeach; ?>
+			</ol>
+		</nav>
+		<div class="ta-legal-main">
+			<?php if ( $intro ) : ?>
+				<div class="ta-legal-intro"><?php echo $intro; // phpcs:ignore WordPress.Security.EscapeOutput -- contenido del post ya filtrado por the_content. ?></div>
+			<?php endif; ?>
+			<?php foreach ( $sections as $s ) : ?>
+				<details class="ta-legal-item" id="<?php echo esc_attr( $s['id'] ); ?>">
+					<summary>
+						<span class="ta-legal-num"><?php echo (int) $s['number']; ?></span>
+						<h2 class="ta-legal-heading"><?php echo esc_html( $s['title'] ); ?></h2>
+						<span class="ta-legal-chevron" aria-hidden="true"></span>
+					</summary>
+					<div class="ta-legal-body"><?php echo $s['body']; // phpcs:ignore WordPress.Security.EscapeOutput -- contenido del post ya filtrado por the_content. ?></div>
+				</details>
+			<?php endforeach; ?>
+		</div>
+	</div>
+	<script>
+	(function () {
+		function openFromHash() {
+			if (!location.hash) return;
+			var item = document.getElementById(location.hash.slice(1));
+			if (item && item.tagName === 'DETAILS') {
+				item.open = true;
+				item.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}
+		document.querySelectorAll('.ta-legal-toc a').forEach(function (a) {
+			a.addEventListener('click', function () {
+				var item = document.getElementById(a.getAttribute('href').slice(1));
+				if (item) item.open = true;
+			});
+		});
+		window.addEventListener('hashchange', openFromHash);
+		openFromHash();
+	})();
+	</script>
+	<?php
+	return ob_get_clean();
 }

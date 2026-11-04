@@ -5,9 +5,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$solutions_page  = get_page_by_path( 'nuestras-soluciones' );
+$solutions_page  = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
 $solutions_url   = $solutions_page ? get_permalink( $solutions_page ) : home_url( '/' );
-$contacto_page   = get_page_by_path( 'contacto' );
+$contacto_page   = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
 $contacto_url    = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/' );
 $hero_image_url  = ta_get_hero_image_url();
 ?>
@@ -98,17 +98,17 @@ ta_render_showcase_grid(
 		array(
 			'title'       => 'Buzón',
 			'description' => 'Buzón transparente para sugerencias, votaciones o sorteos.',
-			'image_url'   => 'https://i.postimg.cc/fbkX7YdT/buzon-acrilico-transparente.webp',
+			'image_url'   => get_template_directory_uri() . '/assets/img/home/buzon-acrilico-transparente.webp',
 		),
 		array(
 			'title'       => 'Organizador de escritorio',
 			'description' => 'Compartimentos abiertos para papelería y accesorios.',
-			'image_url'   => 'https://i.postimg.cc/qqcCBwf4/organizador-de-escritorio.webp',
+			'image_url'   => get_template_directory_uri() . '/assets/img/home/organizador-de-escritorio.webp',
 		),
 		array(
 			'title'       => 'Bandeja modular',
 			'description' => 'Bandejas apilables para separar productos o insumos.',
-			'image_url'   => 'https://i.postimg.cc/jjGWzmtK/bandeja-modular.webp',
+			'image_url'   => get_template_directory_uri() . '/assets/img/home/bandeja-modular.webp',
 		),
 	),
 	array(
@@ -135,7 +135,8 @@ ta_render_story_section(
 				'label' => 'Años de experiencia',
 			),
 		),
-		'image_url'  => 'https://i.postimg.cc/t4c7jw1W/equipo-todo-acrilico.webp',
+		'image_url'  => get_template_directory_uri() . '/assets/img/home/equipo-todo-acrilico.webp',
+		'show_logo_badge' => false,
 	)
 );
 

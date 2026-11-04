@@ -3,14 +3,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$ta_footer_solutions = get_page_by_path( 'nuestras-soluciones' );
-$ta_footer_cuidados  = get_page_by_path( 'cuidados-del-acrilico' );
-$ta_footer_contacto  = get_page_by_path( 'contacto' );
+$ta_footer_solutions = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones', 'solucione', 'pieza' ) );
+$ta_footer_cuidados  = ta_find_page( array( 'cuidados', 'cuidado', 'cuidados-del-acrilico' ) );
+$ta_footer_contacto  = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
+$ta_footer_terminos  = ta_find_page( array( 'terminos-y-condiciones', 'termino' ) );
+$ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacidad' ) );
 ?>
 </main>
 
 <footer class="ta-footer">
-	<div class="ta-footer-top">
+	<div class="ta-container ta-footer-top">
 		<div class="ta-footer-col ta-footer-brand">
 			<img
 				src="<?php echo esc_url( get_template_directory_uri() . '/assets/img/logo.webp' ); ?>"
@@ -28,7 +30,7 @@ $ta_footer_contacto  = get_page_by_path( 'contacto' );
 				<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>">Inicio</a></li>
 				<li><a href="<?php echo esc_url( $ta_footer_solutions ? get_permalink( $ta_footer_solutions ) : home_url( '/' ) ); ?>">Catálogo</a></li>
 				<li><a href="<?php echo esc_url( $ta_footer_cuidados ? get_permalink( $ta_footer_cuidados ) : home_url( '/' ) ); ?>">Cuidados</a></li>
-				<li><a href="<?php echo esc_url( $ta_footer_contacto ? get_permalink( $ta_footer_contacto ) : home_url( '/' ) ); ?>">Contacto</a></li>
+				<li><a href="<?php echo esc_url( $ta_footer_contacto ? get_permalink( $ta_footer_contacto ) : home_url( '/' ) ); ?>">Cotizar</a></li>
 			</ul>
 		</div>
 
@@ -41,7 +43,7 @@ $ta_footer_contacto  = get_page_by_path( 'contacto' );
 				</li>
 				<li>
 					<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'mail', 18 ); ?></span>
-					<a href="mailto:hola@todoacrilico.cl">hola@todoacrilico.cl</a>
+					<a href="mailto:contacto@todoacrilico.cl">contacto@todoacrilico.cl</a>
 				</li>
 				<li>
 					<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'clock', 18 ); ?></span>
@@ -49,12 +51,40 @@ $ta_footer_contacto  = get_page_by_path( 'contacto' );
 				</li>
 			</ul>
 		</div>
+
+		<div class="ta-footer-col">
+			<h3 class="ta-footer-heading">Síguenos</h3>
+			<ul class="ta-footer-social">
+				<li>
+					<a href="https://www.instagram.com/todoacrilico_cl/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Todo Acrílico">
+						<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'instagram', 20 ); ?></span>
+					</a>
+				</li>
+				<li>
+					<a href="https://www.linkedin.com/company/todo-acrílico/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn de Todo Acrílico">
+						<span class="ta-footer-icon" aria-hidden="true"><?php echo ta_icon( 'linkedin', 20 ); ?></span>
+					</a>
+				</li>
+			</ul>
+		</div>
 	</div>
 
-	<div class="ta-footer-bottom">
+	<div class="ta-container ta-footer-bottom">
 		<p class="ta-footer-copy">&copy; <?php echo esc_html( gmdate( 'Y' ) ); ?> TODO Acrílico SpA</p>
 		<div class="ta-footer-legal">
-			<a href="#">Términos y condiciones</a>
+			<a href="<?php echo esc_url( $ta_footer_privacidad ? get_permalink( $ta_footer_privacidad ) : home_url( '/' ) ); ?>">Política de privacidad</a>
+			<a href="<?php echo esc_url( $ta_footer_terminos ? get_permalink( $ta_footer_terminos ) : home_url( '/' ) ); ?>">Términos y condiciones</a>
+			<?php
+			// "Política de cookies" reemplaza a "Preferencias de cookies": la página
+			// incluye el botón para cambiar o retirar el consentimiento. Si la página
+			// aún no existe, se mantiene el botón para no perder la revocación.
+			$ta_footer_cookies = ta_get_cookies_page();
+			if ( $ta_footer_cookies ) :
+				?>
+				<a href="<?php echo esc_url( get_permalink( $ta_footer_cookies ) ); ?>">Política de cookies</a>
+			<?php elseif ( ta_analytics_enabled() ) : ?>
+				<button type="button" class="ta-footer-consent" data-ta-consent-open>Preferencias de cookies</button>
+			<?php endif; ?>
 			<span>Diseñado con foco en usabilidad</span>
 		</div>
 	</div>

@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 get_header();
 
-$contacto_page = get_page_by_path( 'contacto' );
+$contacto_page = ta_find_page( array( 'cotizar', 'contacto', 'contact' ) );
 $contacto_url  = $contacto_page ? get_permalink( $contacto_page ) : home_url( '/' );
 ?>
 
@@ -35,9 +35,10 @@ ta_render_feature_grid(
             'description' => 'Aplica cera de pulir y frota <br>suavemente en movimientos <br>circulares.',
         ),
     ),
-    'El acrílico es un material noble y duradero que requiere de atenciones específicas para <br> 
-	 conservar su transparencia y brillo original por décadas. Sigue estas recomendaciones <br>
-	 arquitectónicas para su correcta preservación.'
+'El acrílico es un material noble y duradero que requiere de atenciones específicas para <br> 
+ 	 conservar su transparencia y brillo original por décadas. Sigue estas recomendaciones <br>
+ 	 arquitectónicas para su correcta preservación.',
+    'ta-features--white ta-features--hero-title'
 );
 
 ta_render_story_section(
@@ -53,7 +54,7 @@ ta_render_story_section(
 			 permanentemente la superficie.',
         ),
         'stats'           => array(),
-        'image_url'       => 'https://i.postimg.cc/Kj93gzYt/cuidados.webp',
+        'image_url'       => get_template_directory_uri() . '/assets/img/cuidados/cuidados.webp',
         'show_logo_badge' => false,
         'media_position'  => 'right',
         'panel'           => true,
