@@ -10,6 +10,7 @@ Este documento describe la política de **Generative Engine Optimization (GEO)**
 > | `.well-known/ai.json` | Existe en la raíz de `proyecto3` | ❌ **404** en `/.well-known/ai.json` y en `/wp/.well-known/ai.json` |
 > | Metas GEO en `header.php` | ✅ | ✅ Presentes, pero `<link rel="ai-policy" href="/.well-known/ai.json">` apunta a una URL que da 404 |
 > | `sitemap.xml` | Servido desde el tema por `.htaccess` | Redirige (301) |
+> | Sitemap de WordPress (el que se envía a Search Console) | `wp-sitemap.xml` | ✅ `https://todoacrilico.cl/wp/wp-sitemap.xml`. Verificado el 2026-11-04: `wp-sitemap-posts-page-1.xml` lista 9 páginas, incluida `politica-de-cookies`. También lista `/galeria/` y `/galeria-panel/` (páginas privadas del panel); conviene excluirlas, pendiente de confirmar con el cliente |
 >
 > **Para activarlo en producción:** copiar las reglas de `robots.txt` y `sitemap.xml` al `.htaccess` de producción (ajustando la ruta del tema) y subir `.well-known/ai.json` a la raíz del dominio. Si no, cambiar el `href` del `<link>` en `header.php`. Además, `ai.json` usa `info@todoacrilico.cl`, mientras el sitio y el formulario usan **`contacto@todoacrilico.cl`**: unificarlos si el cliente lo confirma.
 >
@@ -144,16 +145,14 @@ El sitio está configurado para permitir acceso a los siguientes agentes:
 
 ## 🔒 Cumplimiento Legal
 
-El sitio cumple con:
-- ✅ **GDPR** (Regulación General de Protección de Datos)
-- ✅ **CCPA** (California Consumer Privacy Act)
-- ✅ **Estándares éticos de IA** (Anthropic, OpenAI)
+El sitio se rige por la **Ley N° 19.628, sobre Protección de los Datos Personales, modificada por la Ley N° 21.719** (Chile; vigencia plena desde el 1 de diciembre de 2026). No se declara cumplimiento de GDPR ni de CCPA, porque el sitio no se evaluó contra esas normas.
 
-**Datos protegidos:**
-- No se comparte información de usuarios
-- No se comparte credenciales
-- No se comparte datos personales
-- Solo contenido público es accesible
+- **Páginas legales:** Política de Privacidad, Términos y Condiciones y **Política de cookies**. El texto vive en el tema (`legal/*.html`) y se aplica igual en local y en producción (CLAUDE.md, regla 5).
+- **Analítica** (Clarity, GA4 y GTM): solo con consentimiento previo en el banner. Nunca en el panel privado.
+- **Datos protegidos:**
+  - No se comparten credenciales ni datos personales.
+  - El formulario de cotización está excluido de las grabaciones de Clarity.
+  - Solo el contenido público es accesible para los bots.
 
 ---
 

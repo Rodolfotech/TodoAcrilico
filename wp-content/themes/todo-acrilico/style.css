@@ -2,7 +2,7 @@
 Theme Name:   TodoAcrílico
 Description:  Tema a medida para Todo Acrílico — inicio, nuestras soluciones (categorías e imágenes de la galería), cuidados del acrílico y contacto.
 Author:       TodoAcrilicoTheme
-Version:      2.3.0
+Version:      2.3.3
 Requires at least: 6.0
 Requires PHP: 7.2.24
 License:      GPL-2.0-or-later
@@ -2521,6 +2521,31 @@ color: var(--ta-muted); /*fondo del logo que esta a pie de la imagen*/
 .ta-footer-consent:hover,
 .ta-footer-consent:focus-visible {
 	color: var(--ta-ink);
+}
+
+/* Bloque "Cambiar preferencias de cookies" al final de la Política de cookies. */
+.ta-cookie-prefs {
+	margin-top: 32px;
+	padding: 24px;
+	border: 1px solid var(--ta-border);
+	border-radius: 16px;
+	background: var(--ta-bg);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px 24px;
+	flex-wrap: wrap;
+}
+
+.ta-page-content .entry-content .ta-cookie-prefs p {
+	margin: 0;
+	flex: 1 1 280px;
+	font-size: 15px;
+	color: var(--ta-muted);
+}
+
+.ta-cookie-prefs .ta-button {
+	cursor: pointer;
 }
 
 /* ---- Banner de consentimiento (Microsoft Clarity) ----

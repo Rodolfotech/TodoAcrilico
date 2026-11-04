@@ -30,6 +30,17 @@ class JG_Shortcode {
 				'restUrl'  => esc_url_raw( rest_url( 'jwt-gallery/v1' ) ),
 				'loginUrl' => esc_url_raw( self::resolve_page_url( self::LOGIN_PAGE_SLUG, home_url( '/' ) ) ),
 				'panelUrl' => esc_url_raw( self::resolve_page_url( self::PANEL_PAGE_SLUG, home_url( '/' ) ) ),
+				// Límites reales del servidor (JG_REST): los usan el maxlength de
+				// los campos y los popovers de ayuda del panel.
+				'limits'   => array(
+					'title'        => JG_REST::MAX_TITLE_CHARS,
+					'description'  => JG_REST::MAX_DESCRIPTION_CHARS,
+					'usage'        => JG_REST::MAX_USAGE_CHARS,
+					'measurements' => JG_REST::MAX_MEASUREMENTS_CHARS,
+					'images'       => JG_REST::MAX_IMAGES_PER_POST,
+					'imageMb'      => (int) ( JG_REST::MAX_UPLOAD_BYTES / 1048576 ),
+					'formats'      => JG_REST::ALLOWED_IMAGE_EXTENSIONS,
+				),
 			)
 		);
 	}
@@ -103,27 +114,27 @@ class JG_Shortcode {
 						<p class="jg-sidebar-hint">Sube imágenes desde tu dispositivo, se guardan dentro de WordPress</p>
 						<form class="jg-form" data-jg-upload>
 							<label>
-								Título
-								<input type="text" name="title" maxlength="43" placeholder="Ej. Vitrina modular 03" required>
+								<span class="jg-label-row">Título <span data-jg-hint="title"></span></span>
+								<input type="text" name="title" maxlength="<?php echo (int) JG_REST::MAX_TITLE_CHARS; ?>" placeholder="Ej. Vitrina modular 03" required>
 							</label>
 							<label>
-								Descripción
-								<textarea name="description" maxlength="120" rows="3" placeholder="Breve descripción de la pieza…"></textarea>
+								<span class="jg-label-row">Descripción <span data-jg-hint="description"></span></span>
+								<textarea name="description" maxlength="<?php echo (int) JG_REST::MAX_DESCRIPTION_CHARS; ?>" rows="3" placeholder="Breve descripción de la pieza…"></textarea>
 								</label>
 								<label>
-									Uso
-									<input type="text" name="usage" maxlength="43" placeholder="Ej. Exhibición en vitrinas">
+									<span class="jg-label-row">Uso <span data-jg-hint="usage"></span></span>
+									<input type="text" name="usage" maxlength="<?php echo (int) JG_REST::MAX_USAGE_CHARS; ?>" placeholder="Ej. Exhibición en vitrinas">
 								</label>
 								<label>
-									Medidas
-									<input type="text" name="measurements" maxlength="20" placeholder="Ej. 20 × 30 cm">
+									<span class="jg-label-row">Medidas <span data-jg-hint="measurements"></span></span>
+									<input type="text" name="measurements" maxlength="<?php echo (int) JG_REST::MAX_MEASUREMENTS_CHARS; ?>" placeholder="Ej. 20 × 30 cm">
 							</label>
 							<label>
-								Imágenes (hasta 10, misma pieza en distintos ángulos)
+								<span class="jg-label-row">Imágenes (misma pieza en distintos ángulos) <span data-jg-hint="images"></span></span>
 							</label>
 							<div data-jg-upload-images-mount></div>
 							<label>
-								Categoría
+								<span class="jg-label-row">Categoría <span data-jg-hint="category"></span></span>
 								<select name="category_id" data-jg-category-select >
 									<option value="">Sin categoría</option>
 								</select>

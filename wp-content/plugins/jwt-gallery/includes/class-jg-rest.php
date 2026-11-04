@@ -13,6 +13,16 @@ class JG_REST {
 
 	const MAX_UPLOAD_BYTES = 8388608;
 
+	/*
+	 * Límites de texto de cada pieza. Única fuente: el servidor valida con estas
+	 * constantes y el panel las recibe (JGGallery.limits) para el maxlength y el
+	 * popover de ayuda de cada campo. Si cambias uno, cambia aquí y nada más.
+	 */
+	const MAX_TITLE_CHARS        = 43;
+	const MAX_DESCRIPTION_CHARS  = 120;
+	const MAX_USAGE_CHARS        = 43;
+	const MAX_MEASUREMENTS_CHARS = 20;
+
 	const LOGIN_MAX_ATTEMPTS = 5;
 
 	const LOGIN_MAX_ATTEMPTS_PER_IP = 25;
@@ -227,8 +237,18 @@ class JG_REST {
 		return true;
 	}
 
+	/**
+	 * permission_callback de las rutas protegidas. Devuelve el WP_Error real
+	 * (401 sesión expirada o revocada, 403 sin permisos) en vez de `false`:
+	 * con `false` WordPress respondía su genérico "Lo siento, no tienes
+	 * permisos para hacer eso." aunque el problema fuera una sesión vencida,
+	 * y el panel no podía saber que debía volver al login.
+	 *
+	 * @return true|WP_Error
+	 */
 	public static function require_auth( WP_REST_Request $request ) {
-		return ! is_wp_error( self::authenticated_user( $request ) );
+		$user = self::authenticated_user( $request );
+		return is_wp_error( $user ) ? $user : true;
 	}
 
 	public static function login( WP_REST_Request $request ) {
@@ -745,7 +765,7 @@ class JG_REST {
 		}
 
 		if ( (int) $file['size'] > self::MAX_UPLOAD_BYTES ) {
-			return new WP_Error( 'jg_file_too_large', 'Cada imagen debe pesar menos de 8 MB.', array( 'status' => 400 ) );
+			return new WP_Error( 'jg_file_too_large', sprintf( 'Cada imagen debe pesar menos de %d MB.', self::MAX_UPLOAD_BYTES / 1048576 ), array( 'status' => 400 ) );
 		}
 
 		$ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
@@ -793,17 +813,11 @@ class JG_REST {
 	 * @return array|WP_Error Lista de URLs locales/externas o error.
 	 */
 	private static function collect_image_sources( WP_REST_Request $request ) {
-		$urls = array();
-
+		$files = array();
 		foreach ( self::prepare_file_params( $request ) as $file ) {
-			if ( UPLOAD_ERR_NO_FILE === (int) $file['error'] ) {
-				continue;
+			if ( UPLOAD_ERR_NO_FILE !== (int) $file['error'] ) {
+				$files[] = $file;
 			}
-			$stored = self::save_uploaded_image( $file );
-			if ( is_wp_error( $stored ) ) {
-				return $stored;
-			}
-			$urls[] = $stored;
 		}
 
 		$existing = $request->get_param( 'existing' );
@@ -811,15 +825,18 @@ class JG_REST {
 			$existing = $request->get_param( 'image_urls' );
 		}
 
+		$kept = array();
 		if ( ! empty( $existing ) ) {
-			$validated = self::validate_image_urls( $existing );
-			if ( is_wp_error( $validated ) ) {
-				return $validated;
+			$kept = self::validate_image_urls( $existing );
+			if ( is_wp_error( $kept ) ) {
+				return $kept;
 			}
-			$urls = array_merge( $urls, $validated );
 		}
 
-		if ( count( $urls ) > self::MAX_IMAGES_PER_POST ) {
+		// Se cuenta ANTES de guardar nada: antes se guardaban los archivos y
+		// después se rechazaba la pieza por exceso, dejándolos huérfanos en
+		// wp-content/uploads/jg-gallery/.
+		if ( count( $files ) + count( $kept ) > self::MAX_IMAGES_PER_POST ) {
 			return new WP_Error(
 				'jg_too_many_images',
 				'Puedes subir un máximo de ' . self::MAX_IMAGES_PER_POST . ' imágenes por publicación.',
@@ -827,7 +844,20 @@ class JG_REST {
 			);
 		}
 
-		return $urls;
+		$saved = array();
+		foreach ( $files as $file ) {
+			$stored = self::save_uploaded_image( $file );
+			if ( is_wp_error( $stored ) ) {
+				// Si una imagen falla (p. ej. pesa más de 8 MB), se borran las
+				// que ya se guardaron en esta misma petición: la pieza no se
+				// publica y no deben quedar archivos sin dueño.
+				self::delete_local_images( $saved );
+				return $stored;
+			}
+			$saved[] = $stored;
+		}
+
+		return array_merge( $saved, $kept );
 	}
 
 	/**
@@ -902,8 +932,8 @@ class JG_REST {
 
 	private static function get_measurements( WP_REST_Request $request ) {
 		$measurements = sanitize_text_field( (string) $request->get_param( 'measurements' ) );
-		if ( self::char_length( $measurements ) > 20 ) {
-			return new WP_Error( 'jg_measurements_too_long', 'Las medidas pueden tener hasta 20 caracteres.', array( 'status' => 400 ) );
+		if ( self::char_length( $measurements ) > self::MAX_MEASUREMENTS_CHARS ) {
+			return new WP_Error( 'jg_measurements_too_long', sprintf( 'Las medidas pueden tener hasta %d caracteres.', self::MAX_MEASUREMENTS_CHARS ), array( 'status' => 400 ) );
 		}
 
 		return $measurements;
@@ -911,8 +941,8 @@ class JG_REST {
 
 	private static function get_usage( WP_REST_Request $request ) {
 		$usage = sanitize_text_field( (string) $request->get_param( 'usage' ) );
-		if ( self::char_length( $usage ) > 43 ) {
-			return new WP_Error( 'jg_usage_too_long', 'El uso puede tener hasta 43 caracteres.', array( 'status' => 400 ) );
+		if ( self::char_length( $usage ) > self::MAX_USAGE_CHARS ) {
+			return new WP_Error( 'jg_usage_too_long', sprintf( 'El uso puede tener hasta %d caracteres.', self::MAX_USAGE_CHARS ), array( 'status' => 400 ) );
 		}
 
 		return $usage;
@@ -940,11 +970,11 @@ class JG_REST {
 		if ( '' === $title ) {
 			return new WP_Error( 'jg_no_title', 'El título es obligatorio.', array( 'status' => 400 ) );
 		}
-		if ( self::char_length( $title ) > 43 ) {
-			return new WP_Error( 'jg_title_too_long', 'El título puede tener hasta 43 caracteres.', array( 'status' => 400 ) );
+		if ( self::char_length( $title ) > self::MAX_TITLE_CHARS ) {
+			return new WP_Error( 'jg_title_too_long', sprintf( 'El título puede tener hasta %d caracteres.', self::MAX_TITLE_CHARS ), array( 'status' => 400 ) );
 		}
-		if ( self::char_length( $description ) > 120 ) {
-			return new WP_Error( 'jg_description_too_long', 'La descripción puede tener hasta 120 caracteres.', array( 'status' => 400 ) );
+		if ( self::char_length( $description ) > self::MAX_DESCRIPTION_CHARS ) {
+			return new WP_Error( 'jg_description_too_long', sprintf( 'La descripción puede tener hasta %d caracteres.', self::MAX_DESCRIPTION_CHARS ), array( 'status' => 400 ) );
 		}
 
 		$urls = self::collect_image_sources( $request );
@@ -967,6 +997,7 @@ class JG_REST {
 		);
 
 		if ( is_wp_error( $post_id ) ) {
+			self::delete_local_images( $urls );
 			return new WP_Error( 'jg_save_failed', 'No se pudo guardar la imagen.', array( 'status' => 500 ) );
 		}
 
@@ -1013,11 +1044,11 @@ class JG_REST {
 			return new WP_Error( 'jg_no_title', 'El título es obligatorio.', array( 'status' => 400 ) );
 		}
 
-		if ( self::char_length( $title ) > 43 ) {
-			return new WP_Error( 'jg_title_too_long', 'El título puede tener hasta 43 caracteres.', array( 'status' => 400 ) );
+		if ( self::char_length( $title ) > self::MAX_TITLE_CHARS ) {
+			return new WP_Error( 'jg_title_too_long', sprintf( 'El título puede tener hasta %d caracteres.', self::MAX_TITLE_CHARS ), array( 'status' => 400 ) );
 		}
-		if ( self::char_length( $description ) > 120 ) {
-			return new WP_Error( 'jg_description_too_long', 'La descripción puede tener hasta 120 caracteres.', array( 'status' => 400 ) );
+		if ( self::char_length( $description ) > self::MAX_DESCRIPTION_CHARS ) {
+			return new WP_Error( 'jg_description_too_long', sprintf( 'La descripción puede tener hasta %d caracteres.', self::MAX_DESCRIPTION_CHARS ), array( 'status' => 400 ) );
 		}
 
 		$old_urls = get_post_meta( $post->ID, '_jg_image_url', false );

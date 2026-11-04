@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '2.3.0' );
+define( 'TA_VERSION', '2.3.3' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -34,8 +34,9 @@ function ta_assets() {
 	// Analítica (Microsoft Clarity y Google Tag Manager): solo si hay algún ID
 	// configurado. Sus scripts NO se imprimen aquí: ta-consent.js los inyecta
 	// únicamente después de que el visitante acepta la analítica en el banner
-	// (Ley 21.719, consentimiento previo).
-	if ( ta_analytics_enabled() ) {
+	// (Ley 21.719, consentimiento previo). Nunca en las páginas privadas del
+	// panel (ta_is_private_page).
+	if ( ta_should_load_analytics() ) {
 		wp_enqueue_script( 'ta-consent', get_template_directory_uri() . '/assets/js/ta-consent.js', array(), TA_VERSION, true );
 		wp_add_inline_script(
 			'ta-consent',
@@ -108,6 +109,31 @@ function ta_analytics_enabled() {
 	return (bool) ( ta_get_clarity_id() || ta_get_gtm_id() || ta_get_ga4_id() );
 }
 
+/**
+ * ¿Es una página privada de la empresa? Login y panel del plugin JWT Gallery
+ * (shortcodes [jwt_gallery] y [jwt_gallery_panel]). Se detecta por el
+ * shortcode y no por el slug (CLAUDE.md, regla 5): sirve igual en local y en
+ * producción. En estas páginas NO se carga la analítica ni se muestra el
+ * banner de cookies: son de uso interno para mantener el sitio (pedido del
+ * cliente) y no se debe grabar al personal. Filtro: `ta_is_private_page`.
+ */
+function ta_is_private_page() {
+	$private = false;
+	if ( is_singular() ) {
+		$content = (string) get_post_field( 'post_content', get_queried_object_id() );
+		$private = has_shortcode( $content, 'jwt_gallery' ) || has_shortcode( $content, 'jwt_gallery_panel' );
+	}
+	return (bool) apply_filters( 'ta_is_private_page', $private );
+}
+
+/**
+ * Analítica y banner de cookies: solo si hay alguna herramienta configurada y
+ * la página no es privada.
+ */
+function ta_should_load_analytics() {
+	return ta_analytics_enabled() && ! ta_is_private_page();
+}
+
 function ta_sanitize_clarity_id( $value ) {
 	$value = strtolower( trim( (string) $value ) );
 	return preg_match( '/^[a-z0-9]{6,20}$/', $value ) ? $value : '';
@@ -118,7 +144,7 @@ function ta_sanitize_clarity_id( $value ) {
  * y ta-consent.js lo muestra si el visitante aún no decidió.
  */
 function ta_render_consent_banner() {
-	if ( ! ta_analytics_enabled() ) {
+	if ( ! ta_should_load_analytics() ) {
 		return;
 	}
 	$tools = array_filter(
@@ -127,14 +153,21 @@ function ta_render_consent_banner() {
 			( ta_get_ga4_id() || ta_get_gtm_id() ) ? '<strong>Google Analytics</strong>' : '',
 		)
 	);
+	// "Más información" lleva a la Política de cookies; si no existe, a la
+	// sección 8 de la Política de Privacidad.
+	$cookies_page = ta_get_cookies_page();
 	$privacy_page = ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) );
-	$privacy_url  = $privacy_page ? get_permalink( $privacy_page ) : home_url( '/' );
+	if ( $cookies_page ) {
+		$info_url = get_permalink( $cookies_page );
+	} else {
+		$info_url = ( $privacy_page ? get_permalink( $privacy_page ) : home_url( '/' ) ) . '#seccion-9';
+	}
 	?>
 	<div class="ta-consent" id="ta-consent" role="region" aria-label="Preferencias de cookies" hidden>
 		<div class="ta-consent-inner">
 			<p class="ta-consent-text">
 				Usamos cookies de analítica de <?php echo wp_kses( implode( ' y ', $tools ), array( 'strong' => array() ) ); ?> para entender cómo se usa el sitio y mejorarlo. Solo se activan si las aceptas. Los datos que escribes en el formulario de cotización nunca se graban.
-				<a href="<?php echo esc_url( $privacy_url ); ?>#seccion-8">Más información</a>
+				<a href="<?php echo esc_url( $info_url ); ?>">Más información</a>
 			</p>
 			<div class="ta-consent-actions">
 				<button type="button" class="ta-button ta-consent-btn ta-consent-btn--reject" data-ta-consent="reject">Rechazar</button>
@@ -1037,6 +1070,45 @@ function ta_handle_contact_submit() {
  *
  * @return array<int, array{name: string, slug: string, images: array<int, array{title: string, description: string, images: array<int, string>}>}>
  */
+/**
+ * Categorías del catálogo para el desplegable "Catálogo" del menú: TODAS las
+ * categorías del plugin, tengan o no piezas publicadas (pedido del cliente:
+ * al crear o borrar una categoría en el panel, aparece o desaparece del menú
+ * en la siguiente carga). Mismo criterio que las pestañas del catálogo
+ * (page-nuestras-soluciones.php, hide_empty false). Una sola consulta liviana
+ * por carga de página (caché estática).
+ *
+ * @return array<int, array{name: string, slug: string}>
+ */
+function ta_get_catalog_categories() {
+	static $categories = null;
+	if ( null !== $categories ) {
+		return $categories;
+	}
+	$categories = array();
+	if ( ! taxonomy_exists( 'jg_gallery_category' ) ) {
+		return $categories;
+	}
+	$terms = get_terms(
+		array(
+			'taxonomy'   => 'jg_gallery_category',
+			'hide_empty' => false,
+			'orderby'    => 'name',
+			'order'      => 'ASC',
+		)
+	);
+	if ( is_wp_error( $terms ) ) {
+		return $categories;
+	}
+	foreach ( $terms as $term ) {
+		$categories[] = array(
+			'name' => $term->name,
+			'slug' => $term->slug,
+		);
+	}
+	return $categories;
+}
+
 function ta_get_solutions_by_category() {
 	if ( ! post_type_exists( 'jg_gallery_image' ) || ! taxonomy_exists( 'jg_gallery_category' ) ) {
 		return array();
@@ -1361,7 +1433,7 @@ function ta_nav_menu_fallback( $args ) {
 		$groups = array();
 
 		if ( ! empty( $item['caret'] ) ) {
-			$groups = ta_get_solutions_by_category();
+			$groups = ta_get_catalog_categories();
 
 			if ( ! empty( $groups ) ) {
 				$classes[] = 'ta-nav-has-caret';
@@ -1397,18 +1469,11 @@ function ta_nav_menu_fallback( $args ) {
 
 /**
  * Walker del menú principal: le agrega al ítem "Catálogo" (el que apunta a
- * "Nuestras Soluciones") un desplegable con un link por cada categoría de
- * `ta_get_solutions_by_category()` — las mismas categorías con imágenes
- * publicadas que arma las secciones de esa página (con id="categoria-{slug}",
- * page-nuestras-soluciones.php §1.8). Al reusar esa función, el desplegable
- * queda siempre sincronizado con el plugin sin tocar el menú a mano: una
- * categoría nueva con al menos una imagen publicada aparece sola, y una que
- * se vacía o se borra desaparece sola, en la siguiente carga de página.
- */
-/**
- * Walker del menú principal: le agrega al ítem "Catálogo" (el que apunta a
- * "Nuestras Soluciones") un desplegable con un link por cada categoría de
- * `ta_get_solutions_by_category()`.
+ * "Nuestras Soluciones") un desplegable con "Todas las piezas" y un link por
+ * cada categoría de `ta_get_catalog_categories()`: TODAS las categorías del
+ * plugin, también las que aún no tienen piezas. Se sincroniza solo con el
+ * panel: una categoría creada aparece y una borrada desaparece en la
+ * siguiente carga de página, sin tocar el menú de WordPress.
  */
 class TA_Nav_Walker extends Walker_Nav_Menu {
     private $solutions_page_id = null;
@@ -1424,7 +1489,7 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
     // 1. Agregamos la clase 'ta-nav-has-caret' al <li> de Catálogo si tiene categorías
     public function start_el( &$output, $item, $depth = 0, $args = null, $id = 0 ) {
         if ( 0 === $depth && 'page' === $item->object && (int) $item->object_id === $this->get_solutions_page_id() ) {
-            $groups = ta_get_solutions_by_category();
+            $groups = ta_get_catalog_categories();
             if ( ! empty( $groups ) ) {
                 $item->classes[] = 'ta-nav-has-caret';
             }
@@ -1435,7 +1500,7 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
     // 2. Inyectamos el botón flecha y el desplegable <ul class="ta-nav-dropdown">
     public function end_el( &$output, $item, $depth = 0, $args = null ) {
         if ( 0 === $depth && 'page' === $item->object && (int) $item->object_id === $this->get_solutions_page_id() ) {
-            $groups = ta_get_solutions_by_category();
+            $groups = ta_get_catalog_categories();
 
             if ( ! empty( $groups ) ) {
                 $catalog_url = get_permalink( $this->get_solutions_page_id() );
@@ -1467,6 +1532,145 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
  * acordeón con índice lateral. El contenido se sigue editando en WordPress como
  * texto normal: cada <h2> se convierte en una sección plegable al mostrarse.
  */
+/**
+ * Página "Política de cookies" (se edita en WordPress como texto con secciones
+ * <h2>N. Título</h2>, igual que la Política de Privacidad). Búsqueda flexible,
+ * no por slug exacto (CLAUDE.md, regla 5). Devuelve null si no existe: en ese
+ * caso el footer vuelve a mostrar el botón "Preferencias de cookies".
+ */
+function ta_get_cookies_page() {
+	return ta_find_page( array( 'politica-de-cookies', 'politica-cookies', 'cookies' ) );
+}
+
+/**
+ * ¿La página actual es la Política de cookies?
+ */
+function ta_is_cookies_page() {
+	$page = is_page() ? ta_get_cookies_page() : null;
+	return $page && (int) $page->ID === (int) get_queried_object_id();
+}
+
+/*
+ * ---- Textos legales versionados con el tema ----
+ *
+ * Pedido del cliente: local y producción deben verse iguales. Los textos de
+ * Privacidad, Términos y Política de cookies viven en la base de datos (no
+ * viajan en el ZIP), así que el tema los lleva en legal/*.html y los aplica
+ * UNA vez por cada TA_LEGAL_VERSION: crea la página si falta y reemplaza el
+ * contenido si cambió. WordPress guarda la versión anterior como revisión.
+ *
+ * Para cambiar un texto legal: edita legal/<archivo>.html Y sube
+ * TA_LEGAL_VERSION. Lo que se edite a mano en WordPress se reemplaza en la
+ * siguiente versión de los textos (CLAUDE.md, regla 5).
+ */
+define( 'TA_LEGAL_VERSION', '2026-11-04.1' );
+
+/**
+ * Documentos legales: archivo, título y slug con que se crea si falta, y los
+ * candidatos de búsqueda (flexible, no por slug exacto; regla 5).
+ */
+function ta_legal_documents() {
+	return array(
+		'privacidad' => array(
+			'file'    => 'politica-de-privacidad.html',
+			'title'   => 'Política de Privacidad',
+			'slug'    => 'politica-de-privacidad',
+			'needles' => array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ),
+		),
+		'terminos'   => array(
+			'file'    => 'terminos-y-condiciones.html',
+			'title'   => 'Términos y Condiciones',
+			'slug'    => 'terminos-y-condiciones',
+			'needles' => array( 'terminos-y-condiciones', 'termino-y-condiciones', 'termino' ),
+		),
+		'cookies'    => array(
+			'file'    => 'politica-de-cookies.html',
+			'title'   => 'Política de cookies',
+			'slug'    => 'politica-de-cookies',
+			'needles' => array( 'politica-de-cookies', 'politica-cookies', 'cookies' ),
+		),
+	);
+}
+
+function ta_sync_legal_pages() {
+	if ( get_option( 'ta_legal_version' ) === TA_LEGAL_VERSION ) {
+		return;
+	}
+	// Evita que dos visitas simultáneas creen la página dos veces.
+	if ( get_transient( 'ta_legal_sync_lock' ) ) {
+		return;
+	}
+	set_transient( 'ta_legal_sync_lock', 1, MINUTE_IN_SECONDS );
+
+	$log = array();
+	$ok  = true;
+
+	foreach ( ta_legal_documents() as $key => $doc ) {
+		$path = get_template_directory() . '/legal/' . $doc['file'];
+		if ( ! is_readable( $path ) ) {
+			$ok          = false;
+			$log[ $key ] = 'falta el archivo';
+			continue;
+		}
+		$content = trim( (string) file_get_contents( $path ) );
+		$page    = ta_find_page( $doc['needles'] );
+
+		if ( $page ) {
+			if ( trim( $page->post_content ) === $content ) {
+				$log[ $key ] = 'sin cambios (ID ' . $page->ID . ')';
+				continue;
+			}
+			$result = wp_update_post(
+				wp_slash(
+					array(
+						'ID'           => $page->ID,
+						'post_content' => $content,
+					)
+				),
+				true
+			);
+			$log[ $key ] = is_wp_error( $result ) ? 'error: ' . $result->get_error_message() : 'actualizada (ID ' . $page->ID . ')';
+		} else {
+			$result = wp_insert_post(
+				wp_slash(
+					array(
+						'post_type'    => 'page',
+						'post_status'  => 'publish',
+						'post_title'   => $doc['title'],
+						'post_name'    => $doc['slug'],
+						'post_content' => $content,
+					)
+				),
+				true
+			);
+			$log[ $key ] = is_wp_error( $result ) ? 'error: ' . $result->get_error_message() : 'creada (ID ' . $result . ')';
+		}
+
+		if ( is_wp_error( $result ) ) {
+			$ok = false;
+		}
+	}
+
+	update_option(
+		'ta_legal_sync_log',
+		array(
+			'version' => TA_LEGAL_VERSION,
+			'date'    => current_time( 'mysql' ),
+			'result'  => $log,
+		),
+		false
+	);
+	// Solo se marca como aplicada si todo salió bien; si no, se reintenta.
+	if ( $ok ) {
+		update_option( 'ta_legal_version', TA_LEGAL_VERSION, true );
+	}
+	delete_transient( 'ta_legal_sync_lock' );
+}
+// "init" y no "after_switch_theme": al reemplazar el tema por ZIP con la
+// misma carpeta no se dispara after_switch_theme. Tras la primera vez, el
+// costo es una sola lectura de opción (autocargada).
+add_action( 'init', 'ta_sync_legal_pages', 20 );
+
 function ta_is_legal_page() {
 	if ( ! is_page() ) {
 		return false;
@@ -1477,6 +1681,7 @@ function ta_is_legal_page() {
 	$legal_pages = array(
 		ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) ),
 		ta_find_page( array( 'terminos-y-condiciones', 'termino-y-condiciones', 'termino' ) ),
+		ta_get_cookies_page(),
 	);
 
 	foreach ( $legal_pages as $page ) {

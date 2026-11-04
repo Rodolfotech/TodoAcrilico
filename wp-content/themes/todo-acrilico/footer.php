@@ -74,7 +74,15 @@ $ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacid
 		<div class="ta-footer-legal">
 			<a href="<?php echo esc_url( $ta_footer_privacidad ? get_permalink( $ta_footer_privacidad ) : home_url( '/' ) ); ?>">Política de privacidad</a>
 			<a href="<?php echo esc_url( $ta_footer_terminos ? get_permalink( $ta_footer_terminos ) : home_url( '/' ) ); ?>">Términos y condiciones</a>
-			<?php if ( ta_analytics_enabled() ) : ?>
+			<?php
+			// "Política de cookies" reemplaza a "Preferencias de cookies": la página
+			// incluye el botón para cambiar o retirar el consentimiento. Si la página
+			// aún no existe, se mantiene el botón para no perder la revocación.
+			$ta_footer_cookies = ta_get_cookies_page();
+			if ( $ta_footer_cookies ) :
+				?>
+				<a href="<?php echo esc_url( get_permalink( $ta_footer_cookies ) ); ?>">Política de cookies</a>
+			<?php elseif ( ta_analytics_enabled() ) : ?>
 				<button type="button" class="ta-footer-consent" data-ta-consent-open>Preferencias de cookies</button>
 			<?php endif; ?>
 			<span>Diseñado con foco en usabilidad</span>

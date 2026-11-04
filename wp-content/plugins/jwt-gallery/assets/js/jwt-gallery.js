@@ -7,7 +7,19 @@
 	var LOGIN_URL = window.JGGallery ? window.JGGallery.loginUrl : '';
 	var PANEL_URL = window.JGGallery ? window.JGGallery.panelUrl : '';
 	var PER_PAGE = 9;
-	var MAX_IMAGES_PER_POST = 10;
+
+	// Límites reales del servidor (JG_REST, vía wp_localize_script). Los
+	// valores de respaldo solo se usan si el objeto no llegó.
+	var LIMITS = (window.JGGallery && window.JGGallery.limits) || {
+		title: 43,
+		description: 120,
+		usage: 43,
+		measurements: 20,
+		images: 10,
+		imageMb: 8,
+		formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
+	};
+	var MAX_IMAGES_PER_POST = LIMITS.images;
 
 	var EYE_ICON =
 		'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -58,12 +70,42 @@
 		return headers;
 	}
 
+	// Errores del servidor que significan "la sesión ya no sirve" (expiró,
+	// se cerró en otro lado o se inició sesión de nuevo en otro navegador,
+	// porque solo hay un token válido por usuario). No incluye el 401 del
+	// login, que es "correo o contraseña incorrectos".
+	var SESSION_ERROR_CODES = [
+		'jg_invalid_token', 'jg_invalid_header', 'jg_invalid_alg', 'jg_invalid_signature',
+		'jg_malformed_token', 'jg_invalid_issuer', 'jg_expired_token', 'jg_token_revoked',
+		'jg_unknown_user',
+	];
+	var sessionExpiredHandled = false;
+
+	function handleExpiredSession() {
+		if (sessionExpiredHandled) return;
+		sessionExpiredHandled = true;
+		clearSession();
+		showConfirmModal('Tu sesión expiró o se inició sesión con esta cuenta en otro navegador. Vuelve a iniciar sesión para continuar.', {
+			title: 'Sesión cerrada',
+			confirmLabel: 'Iniciar sesión',
+			hideCancel: true,
+		}).then(function () {
+			window.location.href = LOGIN_URL;
+		});
+	}
+
 	function apiFetch(path, options) {
 		options = options || {};
 		options.credentials = 'include';
 		return fetch(REST_URL + path, options).then(function (res) {
 			return res.json().then(
 				function (data) {
+					if (res.status === 401 && data && SESSION_ERROR_CODES.indexOf(data.code) !== -1 && getSession()) {
+						handleExpiredSession();
+						// Promesa que nunca se resuelve: así quien llamó no muestra
+						// además su propio mensaje de error; la página va al login.
+						return new Promise(function () {});
+					}
 					return { ok: res.ok, data: data };
 				},
 				function () {
@@ -214,7 +256,7 @@
 	 * categories, just a message and two buttons.
 	 *
 	 * @param {string} message
-	 * @param {{title?: string, confirmLabel?: string, cancelLabel?: string, danger?: boolean}} [options]
+	 * @param {{title?: string, confirmLabel?: string, cancelLabel?: string, danger?: boolean, hideCancel?: boolean}} [options]
 	 * @returns {Promise<boolean>}
 	 */
 	function showConfirmModal(message, options) {
@@ -275,7 +317,7 @@
 			});
 			document.addEventListener('keydown', onKeydown);
 
-			actions.appendChild(cancelBtn);
+			if (!options.hideCancel) actions.appendChild(cancelBtn);
 			actions.appendChild(confirmBtn);
 			modal.appendChild(actions);
 			overlay.appendChild(modal);
@@ -494,6 +536,7 @@
 
 		initCategoryManager(root, state);
 		initUploadForm(root, state);
+		mountHints(root, state);
 
 		loadCategories(root, state).then(function () {
 			loadImages(root, state);
@@ -1059,46 +1102,46 @@
 		form.hidden = true;
 
 		var titleLabel = document.createElement('label');
-		titleLabel.textContent = 'Título';
+		labelWithHint(titleLabel, 'Título', 'title', state);
 		var titleInput = document.createElement('input');
 		titleInput.type = 'text';
 		titleInput.required = true;
-		titleInput.maxLength = 43;
+		titleInput.maxLength = LIMITS.title;
 		titleInput.value = item.title;
 		titleLabel.appendChild(titleInput);
 
 		var descLabel = document.createElement('label');
-		descLabel.textContent = 'Descripción';
+		labelWithHint(descLabel, 'Descripción', 'description', state);
 		var descInput = document.createElement('textarea');
-		descInput.maxLength = 120;
+		descInput.maxLength = LIMITS.description;
 		descInput.rows = 3;
 		descInput.value = item.description || '';
 		descLabel.appendChild(descInput);
 
 		var usageLabel = document.createElement('label');
-		usageLabel.textContent = 'Uso';
+		labelWithHint(usageLabel, 'Uso', 'usage', state);
 		var usageInput = document.createElement('input');
 		usageInput.type = 'text';
-		usageInput.maxLength = 43;
+		usageInput.maxLength = LIMITS.usage;
 		usageInput.placeholder = 'Ej. Exhibición en vitrinas';
 		usageInput.value = item.usage || '';
 		usageLabel.appendChild(usageInput);
 
 		var measurementsLabel = document.createElement('label');
-		measurementsLabel.textContent = 'Medidas';
+		labelWithHint(measurementsLabel, 'Medidas', 'measurements', state);
 		var measurementsInput = document.createElement('input');
 		measurementsInput.type = 'text';
-		measurementsInput.maxLength = 20;
+		measurementsInput.maxLength = LIMITS.measurements;
 		measurementsInput.placeholder = 'Ej. 20 × 30 cm';
 		measurementsInput.value = item.measurements || '';
 		measurementsLabel.appendChild(measurementsInput);
 
 		var imagesLabel = document.createElement('label');
-		imagesLabel.textContent = 'Imágenes (hasta 10)';
+		labelWithHint(imagesLabel, 'Imágenes', 'images', state);
 		var imagesPicker = buildImagePicker(item.images);
 
 		var catLabel = document.createElement('label');
-		catLabel.textContent = 'Categoría';
+		labelWithHint(catLabel, 'Categoría', 'category', state);
 		var catSelect = document.createElement('select');
 		var noneOpt = document.createElement('option');
 		noneOpt.value = '';
@@ -1195,6 +1238,199 @@
 
 		return form;
 	}
+
+	// ---- popover de ayuda reutilizable -------------------------------------
+	//
+	// createHint(key, state) devuelve un botón "i" con su popover. El contenido
+	// sale de HINTS[key] y se arma al abrir, así refleja siempre los límites
+	// del servidor y las categorías actuales. Para agregar ayuda a otro campo:
+	// sumar una entrada en HINTS y poner <span data-jg-hint="clave"></span>
+	// junto al texto del label (o usar labelWithHint() en formularios de JS).
+
+	function formatList(items) {
+		if (items.length < 2) return items.join('');
+		return items.slice(0, -1).join(', ') + ' y ' + items[items.length - 1];
+	}
+
+	function charsHint(title, max, required) {
+		return {
+			title: title,
+			lines: [
+				required ? 'Campo obligatorio.' : 'Campo opcional.',
+				'Máximo ' + max + ' caracteres, incluidos los espacios.',
+			],
+		};
+	}
+
+	var HINTS = {
+		title: function () {
+			return charsHint('Título', LIMITS.title, true);
+		},
+		description: function () {
+			return charsHint('Descripción', LIMITS.description, false);
+		},
+		usage: function () {
+			return charsHint('Uso', LIMITS.usage, false);
+		},
+		measurements: function () {
+			return charsHint('Medidas', LIMITS.measurements, false);
+		},
+		images: function () {
+			var formats = (LIMITS.formats || []).map(function (f) {
+				return '.' + String(f).toLowerCase();
+			});
+			return {
+				title: 'Imágenes',
+				lines: [
+					'Al menos 1 y hasta ' + LIMITS.images + ' imágenes por pieza.',
+					'Peso máximo: ' + LIMITS.imageMb + ' MB por imagen.',
+					'Formatos: ' + formatList(formats) + '.',
+				],
+				tip: 'Recomendado: sube en .webp. Pesa mucho menos que .jpg o .png con la misma calidad, y el catálogo carga más rápido.',
+			};
+		},
+		category: function (state) {
+			var names = ((state && state.categories) || []).map(function (c) {
+				return capitalize(c.name);
+			});
+			return {
+				title: 'Categorías disponibles',
+				list: names,
+				empty: 'Aún no hay categorías creadas.',
+				lines: [
+					'Opcional: si no eliges una, la pieza queda como «Sin categoría».',
+					'Puedes crear categorías nuevas en el bloque «Categorías».',
+				],
+			};
+		},
+	};
+
+	var hintCounter = 0;
+	var openHint = null;
+
+	function closeHint(returnFocus) {
+		if (!openHint) return;
+		var current = openHint;
+		openHint = null;
+		current.pop.hidden = true;
+		current.btn.setAttribute('aria-expanded', 'false');
+		if (returnFocus) current.btn.focus();
+	}
+
+	function fillHint(pop, data) {
+		pop.innerHTML = '';
+		var heading = document.createElement('p');
+		heading.className = 'jg-hint-title';
+		heading.textContent = data.title;
+		pop.appendChild(heading);
+
+		if (data.list) {
+			if (data.list.length) {
+				var ul = document.createElement('ul');
+				ul.className = 'jg-hint-list';
+				data.list.forEach(function (text) {
+					var li = document.createElement('li');
+					li.textContent = text;
+					ul.appendChild(li);
+				});
+				pop.appendChild(ul);
+			} else {
+				var empty = document.createElement('p');
+				empty.className = 'jg-hint-empty';
+				empty.textContent = data.empty;
+				pop.appendChild(empty);
+			}
+		}
+
+		(data.lines || []).forEach(function (text) {
+			var line = document.createElement('p');
+			line.textContent = text;
+			pop.appendChild(line);
+		});
+
+		if (data.tip) {
+			var tip = document.createElement('p');
+			tip.className = 'jg-hint-tip';
+			tip.textContent = data.tip;
+			pop.appendChild(tip);
+		}
+	}
+
+	function createHint(key, state) {
+		if (!HINTS[key]) return document.createTextNode('');
+		var id = 'jg-hint-' + ++hintCounter;
+
+		var wrap = document.createElement('span');
+		wrap.className = 'jg-hint';
+
+		var btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'jg-hint-btn';
+		btn.setAttribute('aria-expanded', 'false');
+		btn.setAttribute('aria-controls', id);
+		btn.setAttribute('aria-label', 'Ver ayuda');
+		btn.textContent = 'i';
+
+		var pop = document.createElement('div');
+		pop.className = 'jg-hint-pop';
+		pop.id = id;
+		pop.setAttribute('role', 'note');
+		pop.hidden = true;
+
+		btn.addEventListener('click', function (e) {
+			// El botón vive dentro de un <label>: evitar que el clic enfoque
+			// o abra el campo asociado.
+			e.preventDefault();
+			e.stopPropagation();
+			if (openHint && openHint.btn === btn) {
+				closeHint(false);
+				return;
+			}
+			closeHint(false);
+			fillHint(pop, HINTS[key](state));
+			pop.hidden = false;
+			btn.setAttribute('aria-expanded', 'true');
+			openHint = { btn: btn, pop: pop };
+		});
+
+		// Un clic dentro del popover tampoco debe activar el campo del label.
+		pop.addEventListener('click', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+		});
+
+		wrap.appendChild(btn);
+		wrap.appendChild(pop);
+		return wrap;
+	}
+
+	function mountHints(root, state) {
+		root.querySelectorAll('[data-jg-hint]').forEach(function (slot) {
+			if (slot.childNodes.length) return;
+			slot.appendChild(createHint(slot.getAttribute('data-jg-hint'), state));
+		});
+	}
+
+	// Para formularios creados en JS: texto del label + popover.
+	function labelWithHint(label, text, key, state) {
+		var row = document.createElement('span');
+		row.className = 'jg-label-row';
+		row.appendChild(document.createTextNode(text + ' '));
+		row.appendChild(createHint(key, state));
+		label.appendChild(row);
+	}
+
+	document.addEventListener('click', function (e) {
+		if (openHint && !openHint.pop.contains(e.target) && e.target !== openHint.btn) {
+			closeHint(false);
+		}
+	});
+
+	document.addEventListener('keydown', function (e) {
+		if (e.key === 'Escape' && openHint) {
+			closeHint(true);
+		}
+	});
 
 	// ---- bootstrap ----------------------------------------------------------
 
