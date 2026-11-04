@@ -1,6 +1,6 @@
-# SPEC.md — Especificación funcional (formulario de cotización, menú de navegación, analítica con Clarity y Google Tag Manager, y páginas legales)
+# SPEC.md — Especificación funcional (formulario de cotización, menú de navegación, analítica con Clarity, Google Analytics 4 y Google Tag Manager, y páginas legales)
 
-> **Para una IA o desarrollador que modifique el sitio:** este archivo describe el comportamiento **aprobado por el cliente** al 2026-11-04 (tema 2.2.0, plugin 2.0.0). Cada regla fue pedida explícitamente. Si un cambio contradice algo de aquí, **pregunta antes**; no "mejores" una regla por tu cuenta.
+> **Para una IA o desarrollador que modifique el sitio:** este archivo describe el comportamiento **aprobado por el cliente** al 2026-11-04 (tema 2.3.0, plugin 2.0.0). Cada regla fue pedida explícitamente. Si un cambio contradice algo de aquí, **pregunta antes**; no "mejores" una regla por tu cuenta.
 >
 > Código involucrado:
 > - `wp-content/themes/todo-acrilico/page-contacto.php`: HTML del formulario, modales y todo el JavaScript.
@@ -39,9 +39,9 @@ Si el usuario presiona **"Enviar mensaje"** y ocurre cualquier error, el formula
 
 Cada regla de la tabla de abajo existe **dos veces**: en JavaScript (`validateField()` en `page-contacto.php`) y en PHP (`ta_handle_contact_submit()`). **Si cambias una, cambia la otra.** El servidor es la barrera real, porque el JS se puede saltar.
 
-### R5. La analítica (Microsoft Clarity y Google Tag Manager) no cambia el sitio ni el formulario
+### R5. La analítica (Microsoft Clarity, Google Analytics 4 y Google Tag Manager) no cambia el sitio ni el formulario
 
-La integración de Microsoft Clarity y de Google Tag Manager con GA4 (detalle en la sección "Analítica") **no debe alterar en nada** el funcionamiento ni el aspecto del sitio ni del formulario:
+La integración de Microsoft Clarity, Google Analytics 4 y Google Tag Manager (detalle en la sección "Analítica") **no debe alterar en nada** el funcionamiento ni el aspecto del sitio ni del formulario:
 
 - **En pantalla no se oculta nada del formulario, nunca.** Cada campo, valor escrito, error, modal y botón se ve exactamente igual con o sin analítica, haya aceptado o rechazado el visitante. El banner de cookies reserva su espacio abajo, así que no tapa el formulario ni el botón "Enviar mensaje".
 - **El formulario está marcado para que Clarity nunca grabe datos personales:** la tarjeta `.ta-contact-form-card` lleva `data-clarity-mask="true"`. Clarity enmascara todo su contenido en las grabaciones y mapas de calor. Esta marca solo actúa dentro de Clarity: **no oculta nada al usuario**. No la quites ni la muevas a un elemento más chico.
@@ -130,13 +130,14 @@ Muestra "Espera un momento", una cuenta regresiva de **60** segundos y el botón
 
 ---
 
-## Analítica: Microsoft Clarity y Google Tag Manager (con consentimiento previo)
+## Analítica: Microsoft Clarity, Google Analytics 4 y Google Tag Manager (con consentimiento previo)
 
-**Regla general:** Clarity y Google Tag Manager **solo se cargan después de que el visitante presiona "Aceptar"** en el banner de cookies (Ley 21.719, consentimiento previo). Antes de eso no se pide nada a `clarity.ms` ni a `googletagmanager.com`, y no se instala ninguna cookie de analítica. Un único banner cubre ambas herramientas. Además se cumple la regla R5: no cambian el sitio ni el formulario.
+**Regla general:** Clarity, GA4 y Google Tag Manager **solo se cargan después de que el visitante presiona "Aceptar"** en el banner de cookies (Ley 21.719, consentimiento previo). Antes de eso no se pide nada a `clarity.ms` ni a `googletagmanager.com`, y no se instala ninguna cookie de analítica. Un único banner cubre ambas herramientas. Además se cumple la regla R5: no cambian el sitio ni el formulario.
 
 - **IDs** (se cambian en **Apariencia → Personalizar → Analítica (Clarity y Google Tag Manager)**; un campo **vacío** desactiva esa herramienta; si ambos están vacíos no hay banner, ni scripts, ni enlace "Preferencias de cookies"):
   - **Clarity:** `z81r92medx`, constante `TA_CLARITY_DEFAULT_ID`.
-  - **Google Tag Manager:** `GTM-K7FR5V9K`, constante `TA_GTM_DEFAULT_ID`. GA4 y cualquier otra etiqueta **se configuran dentro del contenedor de GTM**, no en el tema.
+  - **Google Analytics 4:** `G-2KL8SPE9DY`, constante `TA_GA4_DEFAULT_ID`. Se carga **directamente con gtag.js desde el tema**.
+  - **Google Tag Manager:** `GTM-K7FR5V9K`, constante `TA_GTM_DEFAULT_ID`. Sirve para etiquetas **adicionales**. ⚠️ **No agregues GA4 (`G-2KL8SPE9DY`) también dentro de GTM**, o cada visita se contará dos veces.
 - **Banner** (`#ta-consent`, impreso en `wp_footer` por `ta_render_consent_banner()`):
   - Fijo abajo, con texto, el enlace "Más información" (a la sección 8 de la Política) y dos botones **del mismo tamaño**: "Rechazar" y "Aceptar". Ninguno se destaca para forzar la aceptación.
   - Aparece mientras el visitante no haya decidido.
@@ -145,14 +146,14 @@ Muestra "Espera un momento", una cuenta regresiva de **60** segundos y el botón
 - **Decisión:** se guarda en `localStorage['ta_cookie_consent']` como `{analytics, date, v}`. Dura 12 meses y luego se vuelve a preguntar.
 - **Aceptar:**
   - **Clarity:** se inyecta `https://www.clarity.ms/tag/{ID}` y se llama `clarity('consent')`.
-  - **GTM:** primero se fija el modo de consentimiento de Google, `gtag('consent','default', {analytics_storage:'granted', ad_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'})`, porque el visitante aceptó **solo analítica**. Luego se empuja el evento `gtm.js` a `dataLayer` (snippet oficial) y se inyecta `https://www.googletagmanager.com/gtm.js?id={ID}`.
+  - **GA4 y GTM:** primero se fija **una sola vez** el modo de consentimiento de Google, `gtag('consent','default', {analytics_storage:'granted', ad_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'})`, porque el visitante aceptó **solo analítica**. Luego GA4 hace `gtag('js')` y `gtag('config', ID)` e inyecta `gtag/js?id={ID}`, y GTM empuja el evento `gtm.js` e inyecta `gtm.js?id={ID}` (snippets oficiales). El orden en `dataLayer` es: `consent default` → `js` → `config` → `gtm.js`.
 - **Rechazar:** no se carga nada.
 - **Retirar el consentimiento:** desde el footer, "Preferencias de cookies" (`[data-ta-consent-open]`) reabre el banner. Si el visitante había aceptado y ahora rechaza, se borran las cookies `_clck`, `_clsk`, `CLID`, `ANONCHK`, `MR`, `MUID`, `SM`, `_ga`, `_ga_*`, `_gid` y `_gat*`, y se recarga la página.
 - **No hay `<noscript>` de GTM:** sin JavaScript no se puede dar consentimiento, así que no se carga el iframe de GTM.
 - **Política de Privacidad, sección 8:** tiene dos tablas: elementos técnicos (incluye `ta_cookie_consent`) y cookies de analítica (Clarity, `_ga` y `_ga_<ID>`). La base de licitud de la analítica es el **consentimiento**, y explica cómo retirarlo. **Si cambia algo de la analítica o del banner, actualiza esa sección** (también en producción, porque es contenido de la base de datos). **Si se agregan etiquetas nuevas en GTM** (por ejemplo, Google Ads o Meta Pixel), hay que declararlas en la Política y probablemente pedir un consentimiento separado para publicidad: no basta con publicarlas en GTM.
-- **Código:** `functions.php` (`ta_get_clarity_id()`, `ta_get_gtm_id()`, sus `ta_sanitize_*`, `ta_analytics_enabled()`, `ta_render_consent_banner()`, Customizer y enqueue), `assets/js/ta-consent.js`, `footer.php` (enlace) y `style.css` (`.ta-consent*`, `.ta-footer-consent`).
+- **Código:** `functions.php` (`ta_get_clarity_id()`, `ta_get_ga4_id()`, `ta_get_gtm_id()`, sus `ta_sanitize_*`, `ta_analytics_enabled()`, `ta_render_consent_banner()`, Customizer y enqueue), `assets/js/ta-consent.js`, `footer.php` (enlace) y `style.css` (`.ta-consent*`, `.ta-footer-consent`).
 - **Prohibido:**
-  - Cargar Clarity o GTM directamente en `header.php` (incluido el snippet `<script>` que entrega Google Tag Manager) o sin consentimiento.
+  - Cargar Clarity, GA4 o GTM directamente en `header.php` (incluidos los snippets `<script>` que entregan Google Analytics y Google Tag Manager) o sin consentimiento.
   - Quitar el botón "Rechazar" o hacerlo menos visible.
   - Quitar `data-clarity-mask` del formulario o activar en Clarity la opción que **desenmascara** el contenido.
   - Conceder `ad_storage` u otros consentimientos de publicidad con el botón "Aceptar" actual, que cubre solo analítica.

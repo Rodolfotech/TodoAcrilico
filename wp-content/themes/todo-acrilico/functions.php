@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '2.2.0' );
+define( 'TA_VERSION', '2.3.0' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -43,6 +43,7 @@ function ta_assets() {
 				array(
 					'clarityId' => ta_get_clarity_id(),
 					'gtmId'     => ta_get_gtm_id(),
+					'ga4Id'     => ta_get_ga4_id(),
 				)
 			) . ';',
 			'before'
@@ -83,9 +84,28 @@ function ta_sanitize_gtm_id( $value ) {
 	return preg_match( '/^GTM-[A-Z0-9]{4,12}$/', $value ) ? $value : '';
 }
 
+define( 'TA_GA4_DEFAULT_ID', 'G-2KL8SPE9DY' ); // ID de medición de Google Analytics 4 de Todo Acrílico.
+
+/**
+ * ID de medición de GA4, cargado directamente con gtag.js (no a través de GTM).
+ * Por defecto TA_GA4_DEFAULT_ID; se cambia en Personalizar → Analítica. Vacío =
+ * GA4 desactivado. Importante: no configurar además GA4 dentro del contenedor de
+ * GTM, o cada visita se contaría dos veces.
+ */
+function ta_get_ga4_id() {
+	$id = (string) get_theme_mod( 'ta_ga4_id', TA_GA4_DEFAULT_ID );
+	$id = (string) apply_filters( 'ta_ga4_id', $id );
+	return preg_match( '/^G-[A-Z0-9]{6,12}$/', $id ) ? $id : '';
+}
+
+function ta_sanitize_ga4_id( $value ) {
+	$value = strtoupper( trim( (string) $value ) );
+	return preg_match( '/^G-[A-Z0-9]{6,12}$/', $value ) ? $value : '';
+}
+
 /** Hay banner de cookies si al menos una herramienta de analítica está configurada. */
 function ta_analytics_enabled() {
-	return (bool) ( ta_get_clarity_id() || ta_get_gtm_id() );
+	return (bool) ( ta_get_clarity_id() || ta_get_gtm_id() || ta_get_ga4_id() );
 }
 
 function ta_sanitize_clarity_id( $value ) {
@@ -104,7 +124,7 @@ function ta_render_consent_banner() {
 	$tools = array_filter(
 		array(
 			ta_get_clarity_id() ? '<strong>Microsoft Clarity</strong>' : '',
-			ta_get_gtm_id() ? '<strong>Google Analytics</strong> (vía Google Tag Manager)' : '',
+			( ta_get_ga4_id() || ta_get_gtm_id() ) ? '<strong>Google Analytics</strong>' : '',
 		)
 	);
 	$privacy_page = ta_find_page( array( 'politica-de-privacidad', 'politica-privacidad', 'privacidad' ) );
@@ -265,8 +285,8 @@ function ta_customize_register( $wp_customize ) {
 	$wp_customize->add_section(
 		'ta_analytics',
 		array(
-			'title'       => 'Analítica (Clarity y Google Tag Manager)',
-			'description' => 'IDs de Microsoft Clarity y de Google Tag Manager. Deja un campo vacío para desactivar esa herramienta. Ambas se cargan solo si el visitante acepta las cookies de analítica en el banner.',
+			'title'       => 'Analítica (Clarity, Google Analytics y Tag Manager)',
+			'description' => 'IDs de Microsoft Clarity, Google Analytics 4 y Google Tag Manager. Deja un campo vacío para desactivar esa herramienta. Todas se cargan solo si el visitante acepta las cookies de analítica en el banner. No configures GA4 también dentro de GTM: contaría cada visita dos veces.',
 			'priority'    => 160,
 		)
 	);
@@ -303,6 +323,25 @@ function ta_customize_register( $wp_customize ) {
 		array(
 			'label'       => 'ID del contenedor de Google Tag Manager',
 			'description' => 'Formato GTM-XXXXXXX (tagmanager.google.com).',
+			'section'     => 'ta_analytics',
+			'type'        => 'text',
+		)
+	);
+
+	$wp_customize->add_setting(
+		'ta_ga4_id',
+		array(
+			'default'           => TA_GA4_DEFAULT_ID,
+			'sanitize_callback' => 'ta_sanitize_ga4_id',
+			'transport'         => 'refresh',
+		)
+	);
+
+	$wp_customize->add_control(
+		'ta_ga4_id',
+		array(
+			'label'       => 'ID de medición de Google Analytics 4',
+			'description' => 'Formato G-XXXXXXXXXX (Analytics → Administrar → Flujos de datos → Web).',
 			'section'     => 'ta_analytics',
 			'type'        => 'text',
 		)

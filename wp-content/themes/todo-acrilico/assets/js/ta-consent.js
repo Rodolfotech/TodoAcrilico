@@ -1,8 +1,8 @@
 /*
- * Consentimiento de cookies de analítica + carga diferida de Microsoft Clarity y
- * Google Tag Manager (GA4 se configura dentro del contenedor de GTM).
+ * Consentimiento de cookies de analítica + carga diferida de Microsoft Clarity,
+ * Google Analytics 4 (gtag.js directo) y Google Tag Manager.
  * Reglas (SPEC.md, "Analítica: Microsoft Clarity y Google Tag Manager"):
- * - Clarity y GTM se inyectan SOLO después de que el visitante presiona "Aceptar".
+ * - Clarity, GA4 y GTM se inyectan SOLO después de que el visitante presiona "Aceptar".
  * - La decisión se guarda 12 meses en localStorage (ta_cookie_consent) y se puede
  *   cambiar desde "Preferencias de cookies" del footer.
  * - Todo va en try/catch: un fallo aquí (o de Clarity) no debe afectar al sitio
@@ -12,7 +12,8 @@
 	var config = window.taConsentConfig || {};
 	var clarityId = config.clarityId;
 	var gtmId = config.gtmId;
-	if (!clarityId && !gtmId) {
+	var ga4Id = config.ga4Id;
+	if (!clarityId && !gtmId && !ga4Id) {
 		return;
 	}
 
@@ -20,6 +21,8 @@
 	var MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 	var clarityLoaded = false;
 	var gtmLoaded = false;
+	var ga4Loaded = false;
+	var consentModeSet = false;
 
 	function readConsent() {
 		try {
@@ -52,34 +55,61 @@
 		} catch (err) {}
 	}
 
-	// Snippet oficial de GTM. Antes de cargarlo se fija el modo de consentimiento
-	// de Google: el visitante aceptó solo analítica, así que la publicidad queda
-	// denegada aunque el contenedor tenga etiquetas de anuncios.
+	// Modo de consentimiento de Google, una sola vez y ANTES de GA4 o GTM: el
+	// visitante aceptó solo analítica, así que la publicidad queda denegada.
+	function setGoogleConsentMode() {
+		if (consentModeSet) {
+			return;
+		}
+		consentModeSet = true;
+		window.dataLayer = window.dataLayer || [];
+		window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+		window.gtag('consent', 'default', {
+			analytics_storage: 'granted',
+			ad_storage: 'denied',
+			ad_user_data: 'denied',
+			ad_personalization: 'denied'
+		});
+	}
+
+	function injectScript(src) {
+		var t = document.createElement('script');
+		t.async = true;
+		t.src = src;
+		var y = document.getElementsByTagName('script')[0];
+		y.parentNode.insertBefore(t, y);
+	}
+
+	// Google Analytics 4 directo (snippet oficial de gtag.js).
+	function loadGa4() {
+		if (!ga4Id || ga4Loaded) {
+			return;
+		}
+		ga4Loaded = true;
+		try {
+			setGoogleConsentMode();
+			window.gtag('js', new Date());
+			window.gtag('config', ga4Id);
+			injectScript('https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(ga4Id));
+		} catch (err) {}
+	}
+
+	// Snippet oficial de GTM (para etiquetas adicionales; GA4 NO se configura ahí).
 	function loadGtm() {
 		if (!gtmId || gtmLoaded) {
 			return;
 		}
 		gtmLoaded = true;
 		try {
-			window.dataLayer = window.dataLayer || [];
-			window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
-			window.gtag('consent', 'default', {
-				analytics_storage: 'granted',
-				ad_storage: 'denied',
-				ad_user_data: 'denied',
-				ad_personalization: 'denied'
-			});
+			setGoogleConsentMode();
 			window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-			var t = document.createElement('script');
-			t.async = true;
-			t.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtmId);
-			var y = document.getElementsByTagName('script')[0];
-			y.parentNode.insertBefore(t, y);
+			injectScript('https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(gtmId));
 		} catch (err) {}
 	}
 
 	function loadAnalytics() {
 		loadClarity();
+		loadGa4();
 		loadGtm();
 	}
 
@@ -149,7 +179,7 @@
 				hideBanner();
 				if (accepted) {
 					loadAnalytics();
-				} else if (clarityLoaded || gtmLoaded || (previous && previous.analytics)) {
+				} else if (clarityLoaded || gtmLoaded || ga4Loaded || (previous && previous.analytics)) {
 					// Retiro del consentimiento: borrar cookies y recargar para
 					// que los scripts ya cargados (Clarity, GTM) dejen de ejecutarse.
 					deleteAnalyticsCookies();
