@@ -1,5 +1,7 @@
 # Tema "Todo Acrílico" — Documentación
 
+> **Ubicación (desde 2026-11-06):** este archivo vive en `wp-content/themes/todo-acrilico/` y está en git. El repositorio es **público**: no escribas aquí contraseñas ni claves (van en `CREDENCIALES.local` y `wp-config.php`). Los ZIP excluyen `*.md`.
+>
 > **IA / desarrollador: lee esto primero.**
 > 1. Las reglas que no se deben romper están en **`CLAUDE.md`** (sección "Guía para IA").
 > 2. El comportamiento aprobado del formulario, los modales, el menú (móvil y desplegable Catálogo), la analítica, las páginas legales y el panel está en **`SPEC.md`**.

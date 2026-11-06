@@ -1,5 +1,7 @@
 # JWT Gallery — Documentación del plugin
 
+> **Ubicación (desde 2026-11-06):** este archivo vive en `wp-content/plugins/jwt-gallery/` y está en git. El repositorio es **público**: no escribas aquí contraseñas ni claves (van en `CREDENCIALES.local` y `wp-config.php`). Los ZIP excluyen `*.md`.
+>
 > **IA / desarrollador: lee esto primero.**
 > - Reglas generales que no se deben romper: **`CLAUDE.md`**. Para el plugin, la **regla 7** (revocación por `jti` con un solo token válido por usuario, límites en constantes de `JG_REST`, popovers de ayuda, `require_auth()` que devuelve el error real, sin archivos huérfanos, pruebas nunca con `admin@`). También la regla 6: las cookies y claves del panel (`jg_session`) se declaran en la **Política de cookies** (`legal/politica-de-cookies.html` del tema). El comportamiento aprobado del panel está en **SPEC.md**, sección "Panel del catálogo".
 > - **2.0.1 (2026-11-04):** popovers de ayuda, límites centralizados, modal "Sesión cerrada", sin archivos huérfanos y arreglo del ancho en móvil (§12.51–§12.53). Antes de eso no hubo cambios de código desde 2.0.0 (2026-10-20).
