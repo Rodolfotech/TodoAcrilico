@@ -75,15 +75,18 @@ $ta_footer_privacidad = ta_find_page( array( 'politica-de-privacidad', 'privacid
 			<a href="<?php echo esc_url( $ta_footer_privacidad ? get_permalink( $ta_footer_privacidad ) : home_url( '/' ) ); ?>">Política de privacidad</a>
 			<a href="<?php echo esc_url( $ta_footer_terminos ? get_permalink( $ta_footer_terminos ) : home_url( '/' ) ); ?>">Términos y condiciones</a>
 			<?php
-			// "Política de cookies" reemplaza a "Preferencias de cookies": la página
-			// incluye el botón para cambiar o retirar el consentimiento. Si la página
-			// aún no existe, se mantiene el botón para no perder la revocación.
+			// "Política de cookies" (la página) y "Configurar cookies" (botón que
+			// reabre el banner de Aceptar/Rechazar) en TODAS las páginas públicas.
+			// Ley 21.719, Art. 12: el consentimiento se revoca "en cualquier
+			// momento", por un medio "similar o equivalente" al usado para darlo
+			// y "permanentemente disponible". No quitar el botón (CLAUDE.md, regla 12).
 			$ta_footer_cookies = ta_get_cookies_page();
 			if ( $ta_footer_cookies ) :
 				?>
 				<a href="<?php echo esc_url( get_permalink( $ta_footer_cookies ) ); ?>">Política de cookies</a>
-			<?php elseif ( ta_analytics_enabled() ) : ?>
-				<button type="button" class="ta-footer-consent" data-ta-consent-open>Preferencias de cookies</button>
+			<?php endif; ?>
+			<?php if ( ta_should_load_analytics() ) : ?>
+				<button type="button" class="ta-footer-consent" data-ta-consent-open>Configurar cookies</button>
 			<?php endif; ?>
 			<span>Diseñado con foco en usabilidad</span>
 		</div>

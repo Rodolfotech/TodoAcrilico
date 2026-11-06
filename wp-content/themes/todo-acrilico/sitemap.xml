@@ -78,19 +78,6 @@
     <priority>0.9</priority>
   </url>
 
-  <!-- Galería / Panel -->
-  <url>
-    <loc>https://todoacrilico.cl/wp/galeria/</loc>
-    <lastmod>2026-10-20</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://todoacrilico.cl/wp/galeria-panel/</loc>
-    <lastmod>2026-10-20</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.3</priority>
-  </url>
+  <!-- Login y panel del plugin (/galeria/, /galeria-panel/): privados, NO van en el sitemap y llevan noindex (plugin JG_Template). -->
 
 </urlset>
