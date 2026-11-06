@@ -21,7 +21,7 @@ while ( have_posts() ) :
 					?>
 					<div class="ta-cookie-prefs">
 						<p>Puede aceptar, rechazar o retirar en cualquier momento su consentimiento para las cookies de analítica.</p>
-						<button type="button" class="ta-button ta-button--dark" data-ta-consent-open>Cambiar preferencias de cookies</button>
+						<button type="button" class="ta-button ta-button--dark" data-ta-consent-open>Configurar cookies</button>
 					</div>
 					<?php
 				}

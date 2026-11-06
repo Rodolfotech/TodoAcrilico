@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'TA_VERSION', '2.3.3' );
+define( 'TA_VERSION', '2.3.6' );
 
 function ta_setup() {
 	add_theme_support( 'title-tag' );
@@ -59,7 +59,7 @@ define( 'TA_CLARITY_DEFAULT_ID', 'z81r92medx' ); // Proyecto Clarity de Todo Acr
  * ID del proyecto de Microsoft Clarity. Por defecto TA_CLARITY_DEFAULT_ID (así
  * funciona apenas se sube el tema, sin configurar nada); se puede cambiar en
  * Personalizar → Analítica. Guardarlo vacío desactiva Clarity: no hay banner,
- * ni script, ni enlace "Preferencias de cookies".
+ * ni script, ni botón "Configurar cookies".
  */
 function ta_get_clarity_id() {
 	$id = (string) get_theme_mod( 'ta_clarity_id', TA_CLARITY_DEFAULT_ID );
@@ -1109,6 +1109,162 @@ function ta_get_catalog_categories() {
 	return $categories;
 }
 
+/*
+ * ---- Categorías del catálogo en Google (pedido del cliente) ----
+ *
+ * Cada categoría tiene su URL `/catalogo/?categoria={slug}` y debe indexarse:
+ * 1. Sitemap: proveedor "catalogo" dentro de wp-sitemap.xml con TODAS las
+ *    categorías (también las nuevas o vacías). Se arma en cada petición, así
+ *    que crear o borrar una categoría en el panel la agrega o quita sola.
+ * 2. Canónica propia para cada categoría válida (antes todas apuntaban a
+ *    /catalogo/ y Google las trataba como duplicadas).
+ * 3. Slugs antiguos (vidrios → trabajos-especiales) redirigen con 301.
+ */
+
+/**
+ * URL del catálogo filtrado por una categoría.
+ */
+function ta_catalog_category_url( $slug ) {
+	$page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones' ) );
+	if ( ! $page ) {
+		return '';
+	}
+	return add_query_arg( 'categoria', $slug, get_permalink( $page ) );
+}
+
+/**
+ * Slugs antiguos de categorías → slug actual (redirección 301).
+ * Filtro: `ta_catalog_legacy_slugs`.
+ */
+function ta_catalog_legacy_slugs() {
+	return (array) apply_filters( 'ta_catalog_legacy_slugs', array( 'vidrios' => 'trabajos-especiales' ) );
+}
+
+/**
+ * ¿Es la página del catálogo (plantilla page-nuestras-soluciones.php)?
+ */
+function ta_is_catalog_page() {
+	if ( ! is_page() ) {
+		return false;
+	}
+	$page = ta_find_page( array( 'catalogo', 'catálogo', 'nuestras-soluciones', 'soluciones' ) );
+	return $page && (int) $page->ID === (int) get_queried_object_id();
+}
+
+/**
+ * Categoría válida pedida en ?categoria=, o '' si no hay o no existe.
+ */
+function ta_requested_catalog_category() {
+	if ( empty( $_GET['categoria'] ) || ! ta_is_catalog_page() ) {
+		return '';
+	}
+	$slug = sanitize_key( wp_unslash( $_GET['categoria'] ) );
+	foreach ( ta_get_catalog_categories() as $cat ) {
+		if ( $cat['slug'] === $slug ) {
+			return $slug;
+		}
+	}
+	return '';
+}
+
+add_action(
+	'template_redirect',
+	function () {
+		if ( empty( $_GET['categoria'] ) || ! ta_is_catalog_page() ) {
+			return;
+		}
+		$slug   = sanitize_key( wp_unslash( $_GET['categoria'] ) );
+		$legacy = ta_catalog_legacy_slugs();
+		if ( isset( $legacy[ $slug ] ) && ! term_exists( $slug, 'jg_gallery_category' ) ) {
+			$target = ta_catalog_category_url( $legacy[ $slug ] );
+			if ( $target ) {
+				wp_safe_redirect( $target, 301 );
+				exit;
+			}
+		}
+	}
+);
+
+add_filter(
+	'get_canonical_url',
+	function ( $url, $post ) {
+		if ( ! is_page() || (int) $post->ID !== (int) get_queried_object_id() ) {
+			return $url;
+		}
+		$slug = ta_requested_catalog_category();
+		return $slug ? add_query_arg( 'categoria', $slug, $url ) : $url;
+	},
+	10,
+	2
+);
+
+add_action(
+	'wp_sitemaps_init',
+	function ( $wp_sitemaps ) {
+		if ( ! class_exists( 'WP_Sitemaps_Provider' ) || class_exists( 'TA_Sitemaps_Catalog' ) ) {
+			return;
+		}
+
+		/**
+		 * Sitemap "catalogo": una URL por categoría del plugin
+		 * (wp-sitemap-catalogo-categorias-1.xml).
+		 */
+		class TA_Sitemaps_Catalog extends WP_Sitemaps_Provider {
+			public function __construct() {
+				$this->name        = 'catalogo';
+				$this->object_type = 'catalogo';
+			}
+
+			public function get_object_subtypes() {
+				return array( 'categorias' => (object) array( 'name' => 'categorias' ) );
+			}
+
+			public function get_url_list( $page_num, $object_subtype = '' ) {
+				if ( $page_num > 1 ) {
+					return array();
+				}
+				$urls = array();
+				foreach ( ta_get_catalog_categories() as $cat ) {
+					$loc = ta_catalog_category_url( $cat['slug'] );
+					if ( ! $loc ) {
+						continue;
+					}
+					$entry  = array( 'loc' => $loc );
+					$latest = get_posts(
+						array(
+							'post_type'      => 'jg_gallery_image',
+							'post_status'    => 'publish',
+							'posts_per_page' => 1,
+							'orderby'        => 'modified',
+							'order'          => 'DESC',
+							'fields'         => 'ids',
+							'no_found_rows'  => true,
+							'tax_query'      => array(
+								array(
+									'taxonomy' => 'jg_gallery_category',
+									'field'    => 'slug',
+									'terms'    => $cat['slug'],
+								),
+							),
+						)
+					);
+					if ( $latest ) {
+						$entry['lastmod'] = get_post_modified_time( DATE_W3C, true, $latest[0] );
+					}
+					$urls[] = $entry;
+				}
+				return $urls;
+			}
+
+			public function get_max_num_pages( $object_subtype = '' ) {
+				return ta_get_catalog_categories() ? 1 : 0;
+			}
+		}
+
+		$wp_sitemaps->registry->add_provider( 'catalogo', new TA_Sitemaps_Catalog() );
+	}
+);
+
 function ta_get_solutions_by_category() {
 	if ( ! post_type_exists( 'jg_gallery_image' ) || ! taxonomy_exists( 'jg_gallery_category' ) ) {
 		return array();
@@ -1533,10 +1689,10 @@ class TA_Nav_Walker extends Walker_Nav_Menu {
  * texto normal: cada <h2> se convierte en una sección plegable al mostrarse.
  */
 /**
- * Página "Política de cookies" (se edita en WordPress como texto con secciones
- * <h2>N. Título</h2>, igual que la Política de Privacidad). Búsqueda flexible,
- * no por slug exacto (CLAUDE.md, regla 5). Devuelve null si no existe: en ese
- * caso el footer vuelve a mostrar el botón "Preferencias de cookies".
+ * Página "Política de cookies" (texto en legal/politica-de-cookies.html, lo
+ * aplica ta_sync_legal_pages()). Búsqueda flexible, no por slug exacto
+ * (CLAUDE.md, regla 5). Devuelve null si no existe: el footer omite el enlace,
+ * pero el botón "Configurar cookies" se muestra igual.
  */
 function ta_get_cookies_page() {
 	return ta_find_page( array( 'politica-de-cookies', 'politica-cookies', 'cookies' ) );
@@ -1563,7 +1719,7 @@ function ta_is_cookies_page() {
  * TA_LEGAL_VERSION. Lo que se edite a mano en WordPress se reemplaza en la
  * siguiente versión de los textos (CLAUDE.md, regla 5).
  */
-define( 'TA_LEGAL_VERSION', '2026-11-04.1' );
+define( 'TA_LEGAL_VERSION', '2026-11-06.1' );
 
 /**
  * Documentos legales: archivo, título y slug con que se crea si falta, y los

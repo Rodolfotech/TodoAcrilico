@@ -11,6 +11,7 @@ class JG_CPT {
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'register' ) );
+		add_action( 'init', array( __CLASS__, 'migrate_legacy_slugs' ), 20 );
 	}
 
 	public static function register() {
@@ -46,6 +47,34 @@ class JG_CPT {
 				'hierarchical'      => false,
 			)
 		);
+	}
+
+	/**
+	 * Slugs antiguos que deben pasar a su slug actual. Producción tenía la
+	 * categoría "Trabajos Especiales" con el slug `vidrios` (se renombró desde
+	 * el panel, que solo cambia el nombre), así que sus URL decían
+	 * ?categoria=vidrios. Se corrige UNA vez: mismo término (mismo ID), las
+	 * piezas no cambian. El tema redirige con 301 la URL antigua.
+	 */
+	const LEGACY_SLUGS = array( 'vidrios' => 'trabajos-especiales' );
+
+	public static function migrate_legacy_slugs() {
+		$done    = (array) get_option( 'jg_slug_migrations', array() );
+		$pending = array_diff_key( self::LEGACY_SLUGS, $done );
+		if ( ! $pending ) {
+			return; // Caso normal: una lectura de opción autocargada y nada más.
+		}
+		foreach ( $pending as $old => $new ) {
+			$term = get_term_by( 'slug', $old, self::TAXONOMY );
+			if ( $term && ! get_term_by( 'slug', $new, self::TAXONOMY ) ) {
+				$result = wp_update_term( $term->term_id, self::TAXONOMY, array( 'slug' => $new ) );
+				if ( is_wp_error( $result ) ) {
+					continue; // Se reintenta en la próxima carga.
+				}
+			}
+			$done[ $old ] = current_time( 'mysql' );
+		}
+		update_option( 'jg_slug_migrations', $done, true );
 	}
 
 	public static function seed_default_categories() {
